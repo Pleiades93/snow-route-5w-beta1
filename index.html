@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-z++KcKmzHlIr7wjyXwGhPBmLgviJPW9BiydFs2yhOt1lmvSOJJXwBkYlnBDjlgp0' https://cdn.jsdelivr.net; style-src-elem 'sha384-ZVF6KtCugYXHefI57fMWWJM2WcvVBoLtLDPuEUk3uoCQ1DB2Gkuc6Y7ZT5xBbdYs' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-bEFfX/JQiyUAox8pdewF87xJLoSy/gflbJA8AAi3jrgYvkJ0otmQnumHnV4ZnBPR' https://cdn.jsdelivr.net; style-src-elem 'sha384-ZVF6KtCugYXHefI57fMWWJM2WcvVBoLtLDPuEUk3uoCQ1DB2Gkuc6Y7ZT5xBbdYs' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -135,7 +135,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.2</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.3</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -348,7 +348,7 @@ const GLP = (() => {
   let sel = null;                 // {name, idx} - fed from the app's selStretch
   let YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';   // METRO, locked in the prototype (r26)
   const pendingColor = n => MAIN.has(n) ? YELLOW : RED;
-  const fontStack = ['Noto Sans Regular'];
+  let fontStack = ['Noto Sans Regular']; // replaced per-style by GLP.setFont (the app adopts the basemap's own stack, prototype pickFont rule)
   const glowPreset = 1;   // SOFT - the locked selection preset (prototype r24)
   let lastSig = null;
   function pushSources() {
@@ -2046,7 +2046,8 @@ function managePulse() {
     pushSources();
   }
   function active() { return !!GLM; }
-  return { init, drop, sync, syncSel, active };
+  function setFont(stack) { if (Array.isArray(stack) && stack.length) fontStack = stack.slice(); }
+  return { init, drop, sync, syncSel, active, setFont };
 })();
 window.GLP = GLP;
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
@@ -2084,8 +2085,17 @@ function addTrailLayers() {
   map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
   map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#38bdf8', 'line-width': 3, 'line-opacity': 0.7 } });
 }
+function pickFontFromStyle() { // prototype pickFont: adopt the CURRENT basemap's own label font stack (Versatiles uses noto_sans_regular, CARTO a Montserrat stack - a guessed font renders NO text)
+  try {
+    const syms = (map.getStyle().layers || []).filter(l => l.type === 'symbol' && l.layout && l.layout['text-font']);
+    const road = syms.find(l => /road|highway|street|label/i.test(l.id));
+    const pick = (road || syms[0] || {}).layout && (road || syms[0]).layout['text-font'];
+    if (pick && window.GLP) window.GLP.setFont(pick);
+  } catch (e) { /* keep the default stack */ }
+}
 function onStyleReady() {
   glOk = true; noteMapState();
+  pickFontFromStyle();
   if (window.GLP && !map.getSource('centres')) window.GLP.init(map);
   else if (window.GLP) window.GLP.sync();
   addReferenceLayers(); addGpsLayers(); addTrailLayers(); pushGps(); drawTrail(); refreshAll();
@@ -2096,9 +2106,14 @@ function setBasemap() {
   map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']);
   if (restackArmed) return;
   restackArmed = true;
-  const go = () => { if (!restackArmed) return; restackArmed = false; onStyleReady(); };
+  const go = () => { if (!restackArmed) return; restackArmed = false; map.off('styledata', waiter); onStyleReady(); };
+  const waiter = () => { // prototype swap rule: restack as soon as the new style actually has layers and our sources are gone
+    const st = map.getStyle();
+    if (st && st.layers && st.layers.length && !map.getSource('centres')) go();
+  };
   map.once('style.load', go); // fast path
-  map.once('load', go);       // proven path (the prototype's trigger) - whichever fires first wins; onStyleReady is idempotent
+  map.on('styledata', waiter); // the reliable path
+  setTimeout(go, 12000);       // last resort (go is guarded; onStyleReady is idempotent)
 }
 
 // ===== SELECTION + CHIPS =====
@@ -2636,4 +2651,5 @@ $('flipBtn').addEventListener('click', () => { if (!tapGuard('flipBtn')) return;
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => { /* SW is optional */ }); }
 applyNight(); applyFlip(); refreshAll(); checkStale(); syncWake();
 if (runStart) startGps(true);
+map.once('load', () => { fetch(isNight() ? GL_STYLES.day : GL_STYLES.night).catch(() => {}); }); // pre-warm the other style so the first day/night swap is instant
 </script></body></html>
