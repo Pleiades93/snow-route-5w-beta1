@@ -2099,6 +2099,7 @@ function setBasemap() { map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']); ma
 
 // ===== SELECTION + CHIPS =====
 let sel = null; // {name, idx, anchor:[lat,lng]}
+let selStretch = null; // {name, idx} — the paint engine reads this global in syncSel()
 let swallowClickUntil = 0;
 function projLL(p) { return map.project([p[1], p[0]]); }
 function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy; let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t)); }
@@ -2150,8 +2151,8 @@ function positionChips() {
   });
 }
 map.on('move', positionChips);
-function selectStretch(name, idx, anchor) { sel = { name, idx, anchor }; if (window.GLP) { window.GLP.sel.name = name; window.GLP.sel.idx = idx; window.GLP.syncSel(); } showChips(); renderPanel(); }
-function deselect() { sel = null; clearChips(); if (window.GLP) { window.GLP.sel.name = null; window.GLP.syncSel(); } renderPanel(); }
+function selectStretch(name, idx, anchor) { sel = { name, idx, anchor }; selStretch = { name, idx }; if (window.GLP) window.GLP.syncSel(); showChips(); renderPanel(); }
+function deselect() { sel = null; selStretch = null; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
 map.on('click', e => {
   if (Date.now() < swallowClickUntil) return;
   const pt = flipPt(map.project([e.lngLat.lng, e.lngLat.lat]));

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-BxOlk1ELqBrSLdAmVmsIZlznN7Z/Tpti7HXfCO5YyhmUQLhKo5Od/rDZKPmj1dKJ' https://cdn.jsdelivr.net; style-src-elem 'sha384-ZVF6KtCugYXHefI57fMWWJM2WcvVBoLtLDPuEUk3uoCQ1DB2Gkuc6Y7ZT5xBbdYs' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-eBYWfiwYsA22yxMcr07Au/QYH94DMeyzS1EVYiJc/s9W2A5yNXj+xGGNQRHACaA4' https://cdn.jsdelivr.net; style-src-elem 'sha384-ZVF6KtCugYXHefI57fMWWJM2WcvVBoLtLDPuEUk3uoCQ1DB2Gkuc6Y7ZT5xBbdYs' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2100,6 +2100,7 @@ function setBasemap() { map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']); ma
 
 // ===== SELECTION + CHIPS =====
 let sel = null; // {name, idx, anchor:[lat,lng]}
+let selStretch = null; // {name, idx} — the paint engine reads this global in syncSel()
 let swallowClickUntil = 0;
 function projLL(p) { return map.project([p[1], p[0]]); }
 function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy; let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t)); }
@@ -2151,8 +2152,8 @@ function positionChips() {
   });
 }
 map.on('move', positionChips);
-function selectStretch(name, idx, anchor) { sel = { name, idx, anchor }; if (window.GLP) { window.GLP.sel.name = name; window.GLP.sel.idx = idx; window.GLP.syncSel(); } showChips(); renderPanel(); }
-function deselect() { sel = null; clearChips(); if (window.GLP) { window.GLP.sel.name = null; window.GLP.syncSel(); } renderPanel(); }
+function selectStretch(name, idx, anchor) { sel = { name, idx, anchor }; selStretch = { name, idx }; if (window.GLP) window.GLP.syncSel(); showChips(); renderPanel(); }
+function deselect() { sel = null; selStretch = null; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
 map.on('click', e => {
   if (Date.now() < swallowClickUntil) return;
   const pt = flipPt(map.project([e.lngLat.lng, e.lngLat.lat]));
