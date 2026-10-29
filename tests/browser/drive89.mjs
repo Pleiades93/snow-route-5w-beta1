@@ -142,17 +142,16 @@ await ev(`(() => { $('finYes').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, label: $('resetBtn').textContent, hn: history[0] && history[0].notes && history[0].notes.Velmar ? history[0].notes.Velmar[0].text : '' }))()`, v => v.h === 1 && v.done === 0);
 ok('T3 Yes archives the clean with its notes', A.h === 1 && A.done === 0 && /Blocked driveway/.test(A.hn));
 ok('T3 button offers Undo', A.label === 'Undo');
-// T4: Undo restores the run
-// Harness note (Beta 1.11 diagnosis): the app's Undo window is a real 8 seconds (production parity). The
-// T3-to-T4 gap in this drive can exceed 8s on a slow runner - then the button is honestly back to 'Finish'
-// and this click opens the pop-up instead of undoing. Handle that branch explicitly: re-finish to reopen a
-// fresh Undo window, then undo. The check itself (history cleared, run restored, toast) is unchanged.
-await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(400);
-A = JSON.parse(await ev(`(() => JSON.stringify({ modal: !$('finModal').classList.contains('hidden'), h: history.length }))()`));
-if (A.modal && A.h === 1) {
-  await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(300);
-  await ev(`(() => { $('resetBtn').click(); return true; })()`);
-}
+// T4: Undo restores the run — SELF-CONTAINED (Beta 1.12). Diagnosis trail: the check used to undo T3's
+// finish, which only works inside the app's real 8-second Undo window; the T3-to-T4 gap on this rig can
+// exceed 8s, and once the window lapses no recovery can recreate T3's snapshot (re-finishing the by-then
+// empty board snapshots the empty board). So T4 now builds its own finish and undoes it immediately -
+// what it verifies (history cleared of the finish, run restored, toast) is unchanged.
+await ev(`(() => { history = []; saveHistory(); undoSnap = null; const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing'); return true; })()`);
+await mark3();
+await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
+await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(300);
+await ev(`(() => { $('resetBtn').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, toast: $('toast').textContent }))()`, v => v.h === 0 && v.done === 3);
 ok('T4 Undo finish restores the run', A.h === 0 && A.done === 3 && /Finish undone/.test(A.toast));
 // T5: finish again, then delete returns to Previous cleans (the bug fix)

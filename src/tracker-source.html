@@ -163,7 +163,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.11</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.12</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -1934,11 +1934,11 @@ function addStack() {
   // under yellow at junctions. The green (completed) family is back
   // where it was before round 21 (Andrew: revert the green part) -
   // band casing and band render above the unfinished centre paint.
-  add(line('t1-casing', 'centres', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28], 'line-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 0, 13.3, 1] }, { 'line-cap': 'butt' }));
-  add(line('t1-casingb', 'bands', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 0, 13.3, 1] }, { 'line-cap': 'butt' }));
-  add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 0, 13.3, 1] }, { 'line-cap': 'butt' }));
-  add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 0, 13.3, 1] }, { 'line-cap': 'butt' }));
-  add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3, 'line-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 0, 13.3, 1] }, { 'line-cap': 'butt' }));
+  add(line('t1-casing', 'centres', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28], 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
+  add(line('t1-casingb', 'bands', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
+  add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
+  add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
+  add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
   // --- selection glow (round 16, restored onto the r15 paint at
   // Andrew's direction 2026-10-29): three nested widths in the
   // street's OWN colour under the vibrant redraw; managePulse
@@ -1984,27 +1984,27 @@ function addStack() {
   // Round 39: FOUR tier layers (see assignTiers) with staggered
   // minzooms - 13.7 / 13.35 / 13.0 / 12.6 - so the names depopulate
   // shortest-first as he zooms out through 13.7 to 12.6, while every
-  // tier still melts with the paint over the 12.6-13.3 band. Longest
+  // tier still pops with the paint at 12.6 (Beta 1.12: no fading). Longest
   // tier appended last so it wins placement among the tiers.
   const PT_MIN = [13.7, 13.35, 13.0, 12.6];
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.2, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 0, 13.3, 1], 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.2, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 0, 12.6, 1], 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
-  // into a blob. ONE melt band, 12.6 to 13.3 (r38: Andrew picked
-  // 'much later' of three offered bands - the route stays fully solid
-  // until the view is ~2.5x wider than Overview): the route paint and its
-  // street names fade out together while the point of interest fades
-  // in - no in-between state where the colours show without names
-  // (his r37 correction: the staggered switches looked broken). Hard
+  // into a blob. The switch point is GL zoom 12.6 (the old 12.6-13.3 melt
+  // band's lower edge). Beta 1.12 (Andrew): NO FADING - fading 'looks
+  // cheesy'; at 12.6 the route paint and its street names POP out and the
+  // point of interest POPS in, Apple/Google style, and the reverse zooming
+  // in - paint and names switch together, never one without the other
+  // (his r37 correction: staggered switches looked broken). Hard
   // floors sit just outside the band (paint 12.5, names 12.6, POI
   // capped 13.3) so fully-faded layers stop drawing / colliding.
-  add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 1, 13.3, 0] } });
-  add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 1, 13.3, 0] } });
-  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': 'Route 5W', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.6, 1, 13.3, 0], 'text-halo-width': 1.6 } });
+  add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0] } });
+  add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0] } });
+  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': 'Route 5W', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-halo-width': 1.6 } });
   ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-edge', 't1-sel', 't1-selband', 't1-sele', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
   glHideLabels(GLM);
   pushSources();
