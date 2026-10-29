@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-0mQDCLwciLykFMtE/WhiDW6dWuY+WV/sr1BQrJJDwcffxAzMBo/oJ70m2gKePWLy' https://cdn.jsdelivr.net; style-src-elem 'sha384-j7BIySAbaUcVTKQi8xMrTVWkXd990URPaN3vhDs7uaxyPPxvFNNGXVfs5CXYz2BL' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-537bLi6YNtYRKoy2goVoPQ+wTK3EI/cvbOSRPbvNe8BwXFma1QO27+WZ39iM+X7/' https://cdn.jsdelivr.net; style-src-elem 'sha384-J7P9U0c92BjKAwjmvzhLMs+gaTyi/6b7r+oKeUI8l8I8bNwEwZM2ZrCDmpEuY7k7' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -84,7 +84,7 @@
   #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(-148px, -72px) scale(1); transition-delay: 60ms; }
   #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(-162px, -12px) scale(1); transition-delay: 20ms; }
   #fanBtns.open .fanItem:nth-of-type(6) { transform: translate(-110px, 38px) scale(1); transition-delay: 0ms; }
-  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: 74dvh; display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
+  .sheet { touch-action: none; position: absolute; left: 0; right: 0; bottom: 0; z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: 74dvh; display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform .28s ease, visibility 0s; }
   .grab { padding: 9px 0 5px; cursor: grab; touch-action: none; flex: none; }
   .grabBar { width: 44px; height: 5px; border-radius: 3px; background: #4a5262; margin: 0 auto; }
@@ -164,7 +164,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.9</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.10</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -2403,40 +2403,58 @@ function renderList() { // production row design: tap a street's name area to op
   });
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderList(); }));
-function closeSheets() { [$('sheet'), $('pacePanel')].forEach(s => { s.classList.remove('open'); s.style.height = ''; s.style.maxHeight = ''; }); }
-// Draggable sheets (Andrew, Beta 1.9): the little line at the top of each panel is a grab handle - drag up and
-// the panel grows to fill the screen, drag down and it shrinks back, drag down far and it closes. Dragging
-// lives ONLY on the handle, so the panel's inside keeps its normal finger scrolling.
+function closeSheets() { [$('sheet'), $('pacePanel')].forEach(s => { s.classList.remove('open'); s.classList.remove('full'); s.style.height = ''; s.style.maxHeight = ''; }); }
+// Draggable sheets (Andrew, Beta 1.9 spec, refined 1.10): the WHOLE panel drags, not just the handle line.
+// Three stops: swipe up = fill the screen (FULL), swipe down = back to the standard open height (DEFAULT),
+// swipe down again = closed. While the panel is at DEFAULT the list inside does not scroll (the drag moves
+// the panel); at FULL the inside scrolls with the finger, and a downward drag hands back to the panel once
+// the inside reaches its top. Taps (under the move threshold) pass through to buttons/rows untouched.
+const SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150;
 function makeSheetDraggable(sheet) {
-  const grab = sheet.querySelector('.grab');
-  if (!grab) return;
-  let startY = 0, startH = 0, dragging = false;
-  grab.addEventListener('pointerdown', e => {
-    dragging = true; startY = e.clientY; startH = sheet.offsetHeight;
-    sheet.classList.add('dragging'); sheet.classList.remove('snapping');
-    grab.setPointerCapture(e.pointerId);
-    e.preventDefault();
+  const scroller = sheet.querySelector('#sheetBody, #pacePad');
+  let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null;
+  sheet.addEventListener('pointerdown', e => {
+    if (dragging) return;
+    dragging = true; moved = false; pid = e.pointerId;
+    startY = lastY = e.clientY; startH = sheet.offsetHeight;
   });
-  grab.addEventListener('pointermove', e => {
-    if (!dragging) return;
+  sheet.addEventListener('pointermove', e => {
+    if (!dragging || e.pointerId !== pid) return;
+    const dy = e.clientY - lastY; lastY = e.clientY;
+    const total = startY - e.clientY; // +ve = finger travelled up
+    if (!moved && Math.abs(total) < 9) return;
+    if (!moved) {
+      moved = true;
+      sheet.classList.add('dragging'); sheet.classList.remove('snapping');
+      try { sheet.setPointerCapture(pid); } catch (err) {}
+    }
     const vh = window.innerHeight;
-    const h = Math.max(150, Math.min(vh * 0.96, startH + (startY - e.clientY)));
+    const isFull = sheet.classList.contains('full');
+    if (isFull && scroller && dy > 0 && scroller.scrollTop > 0) { scroller.scrollTop -= dy; return; } // inside scrolls down-list
+    if (isFull && scroller && dy < 0 && scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1) { scroller.scrollTop -= dy; return; } // inside scrolls up-list
+    // otherwise the panel itself follows the finger
+    const h = Math.max(SHEET_MIN_PX, Math.min(vh * SHEET_FULL_VH, startH + total));
     sheet.style.maxHeight = 'none';
     sheet.style.height = h + 'px';
     e.preventDefault();
   });
-  const end = () => {
-    if (!dragging) return;
+  const end = e => {
+    if (!dragging || (e && e.pointerId !== pid)) return;
     dragging = false;
+    if (!moved) return;
     sheet.classList.remove('dragging'); sheet.classList.add('snapping');
-    const vh = window.innerHeight, h = sheet.offsetHeight;
-    if (h < vh * 0.30) { closeSheets(); return; } // dragged down far: close
-    if (h > vh * 0.84) { sheet.style.height = (vh * 0.94) + 'px'; } // dragged up high: pin near-full
-    else { sheet.style.height = ''; sheet.style.maxHeight = ''; } // otherwise: back to the standard height
+    // swallow the click this drag would otherwise deliver to a row/button
+    const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); };
+    document.addEventListener('click', swallow, true);
+    setTimeout(() => document.removeEventListener('click', swallow, true), 350);
+    const vh = window.innerHeight, h = sheet.offsetHeight, defH = vh * 0.74;
+    if (h < defH * 0.55) { closeSheets(); return; }
+    if (h > (defH + vh * SHEET_FULL_VH) / 2) { sheet.style.height = (vh * SHEET_FULL_VH) + 'px'; sheet.classList.add('full'); }
+    else { sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.classList.remove('full'); }
     setTimeout(() => sheet.classList.remove('snapping'), 260);
   };
-  grab.addEventListener('pointerup', end);
-  grab.addEventListener('pointercancel', end);
+  sheet.addEventListener('pointerup', end);
+  sheet.addEventListener('pointercancel', end);
 }
 makeSheetDraggable($('sheet'));
 makeSheetDraggable($('pacePanel'));
