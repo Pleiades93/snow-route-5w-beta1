@@ -134,7 +134,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.1</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.2</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -2058,19 +2058,10 @@ function noteMapState() { const dead = mapNoteArmed && !glOk && !mapNoteOff; $('
 $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } });
-function glHideLabels(m) { // basemap's own road names OFF; place names kept (prototype r31/r34 rule).
-  // ONLY basemap (vector-tile) layers are touched: our own GeoJSON layers have no sourceLayer and are never hidden.
-  const keep = /^(label_city|label_town|label_village|label_state|label_country|label-place-|label-boundary|place_)/;
-  const OURS = new Set(['centres', 'sel', 'selGlow', 'labels', 'labelpts', 'routepoi', 'hit', 'ref', 'gps', 'trail']);
-  for (const L of (m.getStyle().layers || [])) {
-    if (L.type !== 'symbol') continue;
-    if (!L['source-layer'] && !L.sourceLayer) continue; // not a basemap vector layer - hands off
-    if (OURS.has(L.source)) continue;
-    const hasText = L.layout && L.layout['text-field'];
-    if (!hasText) continue;
-    if (keep.test(L.id)) continue;
-    try { m.setLayoutProperty(L.id, 'visibility', 'none'); } catch (e) { /* layer gone */ }
-  }
+function glHideLabels(m) { // REAL-MAP RULE (Andrew, 2026-10-29, Beta 1.2): the basemap keeps ALL its names -
+  // cities, places AND street names, like Apple/Google Maps. Nothing is hidden. The app's own route-name
+  // system (point labels, tiers, melt, POI) layers on top. This function is the engine's call site; it is
+  // deliberately a no-op now (it hid basemap road names in the prototype era, r34 - superseded by Andrew).
 }
 function addReferenceLayers() {
   if (map.getSource('ref')) return;
