@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-eBYWfiwYsA22yxMcr07Au/QYH94DMeyzS1EVYiJc/s9W2A5yNXj+xGGNQRHACaA4' https://cdn.jsdelivr.net; style-src-elem 'sha384-ZVF6KtCugYXHefI57fMWWJM2WcvVBoLtLDPuEUk3uoCQ1DB2Gkuc6Y7ZT5xBbdYs' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-MpzkyS3CPY5685E7VQqs7DMAoNg8v1Stxb6em1kBwkFH4d6WEjKS4LzqkVxIro/e' https://cdn.jsdelivr.net; style-src-elem 'sha384-ZVF6KtCugYXHefI57fMWWJM2WcvVBoLtLDPuEUk3uoCQ1DB2Gkuc6Y7ZT5xBbdYs' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -135,7 +135,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.1</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -2059,10 +2059,14 @@ function noteMapState() { const dead = mapNoteArmed && !glOk && !mapNoteOff; $('
 $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } });
-function glHideLabels(m) { // basemap's own road names OFF; place names kept (prototype r31/r34 rule)
+function glHideLabels(m) { // basemap's own road names OFF; place names kept (prototype r31/r34 rule).
+  // ONLY basemap (vector-tile) layers are touched: our own GeoJSON layers have no sourceLayer and are never hidden.
   const keep = /^(label_city|label_town|label_village|label_state|label_country|label-place-|label-boundary|place_)/;
+  const OURS = new Set(['centres', 'sel', 'selGlow', 'labels', 'labelpts', 'routepoi', 'hit', 'ref', 'gps', 'trail']);
   for (const L of (m.getStyle().layers || [])) {
     if (L.type !== 'symbol') continue;
+    if (!L['source-layer'] && !L.sourceLayer) continue; // not a basemap vector layer - hands off
+    if (OURS.has(L.source)) continue;
     const hasText = L.layout && L.layout['text-field'];
     if (!hasText) continue;
     if (keep.test(L.id)) continue;
@@ -2096,7 +2100,15 @@ function onStyleReady() {
   addReferenceLayers(); addGpsLayers(); addTrailLayers(); pushGps(); drawTrail(); refreshAll();
 }
 map.on('load', onStyleReady);
-function setBasemap() { map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']); map.once('style.load', onStyleReady); }
+let restackArmed = false;
+function setBasemap() {
+  map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']);
+  if (restackArmed) return;
+  restackArmed = true;
+  const go = () => { if (!restackArmed) return; restackArmed = false; onStyleReady(); };
+  map.once('style.load', go); // fast path
+  map.once('load', go);       // proven path (the prototype's trigger) - whichever fires first wins; onStyleReady is idempotent
+}
 
 // ===== SELECTION + CHIPS =====
 let sel = null; // {name, idx, anchor:[lat,lng]}
@@ -2106,13 +2118,20 @@ function projLL(p) { return map.project([p[1], p[0]]); }
 function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy; let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t)); }
 function nearestStreet(pt) { let best = null, bd = Infinity; for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd }; }
 function nearestStretch(name, pt) { let bi = 0, bd = Infinity; STRETCH[name].parts.forEach((part, idx) => { for (let i = 1; i < part.length; i++) { const d = ptSegDistPx(pt, projLL(part[i - 1]), projLL(part[i])); if (d < bd) { bd = d; bi = idx; } } }); return { idx: bi, d: bd }; }
-function stretchNormal(name, idx, anchor) {
+function geoSideFrame(name, idx, anchorLL) {
+  // The engine's convention: side 0 = geographic LEFT of the stitched line (off0, +3.3 m), side 1 = RIGHT.
+  // Returns the anchor's projection on the stretch + the geographic LEFT unit vector (metre space).
   const part = STRETCH[name].parts[idx];
-  let bi = 0, bd = Infinity, bt = 0;
-  for (let i = 1; i < part.length; i++) { const a = projLL(part[i - 1]), b = projLL(part[i]); const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy || 1; let t = ((anchor.x - a.x) * vx + (anchor.y - a.y) * vy) / L2; t = Math.max(0, Math.min(1, t)); const d = Math.hypot(anchor.x - (a.x + vx * t), anchor.y - (a.y + vy * t)); if (d < bd) { bd = d; bi = i; bt = t; } }
-  const a = projLL(part[bi - 1]), b = projLL(part[bi]);
-  let vx = b.x - a.x, vy = b.y - a.y; const L = Math.hypot(vx, vy) || 1; vx /= L; vy /= L;
-  return { px: a.x + vx * L * bt, py: a.y + vy * L * bt, nx: -vy, ny: vx };
+  const px = anchorLL[1] * MLNG, py = anchorLL[0] * MLAT;
+  let best = { d: Infinity, gx: 0, gy: 0, lx: 0, ly: 0 };
+  for (let i = 1; i < part.length; i++) {
+    const ax = part[i - 1][1] * MLNG, ay = part[i - 1][0] * MLAT, bx = part[i][1] * MLNG, by = part[i][0] * MLAT;
+    const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1;
+    let t = ((px - ax) * vx + (py - ay) * vy) / L2; t = Math.max(0, Math.min(1, t));
+    const gx = ax + vx * t, gy = ay + vy * t, d = Math.hypot(px - gx, py - gy);
+    if (d < best.d) { const L = Math.sqrt(L2); best = { d, gx, gy, lx: -vy / L, ly: vx / L }; }
+  }
+  return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
 function flipPt(pt) { if (!flipped) return pt; const c = map.getCanvas(); return { x: c.clientWidth - pt.x, y: c.clientHeight - pt.y }; }
 function clearChips() { $('chips').innerHTML = ''; }
@@ -2134,21 +2153,22 @@ function showChips() {
 function positionChips() {
   if (!sel) return;
   const kids = $('chips').children; if (kids.length !== 2) return;
-  const anchorLL = sel.anchor;
-  const ap = flipPt(projLL(anchorLL));
-  const nrm = stretchNormal(sel.name, sel.idx, projLL(anchorLL));
-  const size = map.getCanvas().clientWidth, hgt = map.getCanvas().clientHeight;
+  const frame = geoSideFrame(sel.name, sel.idx, sel.anchor);
+  const base = projLL(frame.baseLL);
+  const probe = projLL([frame.baseLL[0] + frame.left[1] * 12 / MLAT, frame.baseLL[1] + frame.left[0] * 12 / MLNG]);
+  let lx = probe.x - base.x, ly = probe.y - base.y; const LL = Math.hypot(lx, ly) || 1; lx /= LL; ly /= LL; // screen direction of geographic LEFT
+  const cw = map.getCanvas().clientWidth, ch = map.getCanvas().clientHeight;
   [0, 1].forEach(side => {
-    const sgn = side === 0 ? 1 : -1;
-    let x = nrm.px + nrm.nx * 40 * sgn, y = nrm.py + nrm.ny * 40 * sgn;
-    if (flipped) { x = size - x; y = hgt - y; }
-    x = Math.max(22, Math.min(size - 22, x)); y = Math.max(22, Math.min(hgt - 22, y));
+    const sgn = side === 0 ? 1 : -1; // side 0 sits on geographic LEFT, side 1 on geographic RIGHT - the same sides the engine paints
+    let dx = lx * sgn, dy = ly * sgn;
+    let x = base.x + dx * 40, y = base.y + dy * 40;
+    if (flipped) { x = cw - x; y = ch - y; dx = -dx; dy = -dy; }
+    x = Math.max(22, Math.min(cw - 22, x)); y = Math.max(22, Math.min(ch - 22, y));
     kids[side].style.left = (x - 20) + 'px'; kids[side].style.top = (y - 20) + 'px';
-    const dirx = nrm.nx * sgn, diry = nrm.ny * sgn;
     const done = !!(pieces[sel.name][sel.idx] & (side ? 2 : 1));
     kids[side].querySelector('.chipBtn').innerHTML = done
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + (Math.atan2(diry, dirx) * 180 / Math.PI) + 'deg)"><path d="M4 12 H19 M13 5.5 L19.5 12 L13 18.5"/></svg>';
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg)"><path d="M4 12 H19 M13 5.5 L19.5 12 L13 18.5"/></svg>';
   });
 }
 map.on('move', positionChips);
