@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-537bLi6YNtYRKoy2goVoPQ+wTK3EI/cvbOSRPbvNe8BwXFma1QO27+WZ39iM+X7/' https://cdn.jsdelivr.net; style-src-elem 'sha384-J7P9U0c92BjKAwjmvzhLMs+gaTyi/6b7r+oKeUI8l8I8bNwEwZM2ZrCDmpEuY7k7' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-XjLeeKZ6ug4qOM8AIjWIp21ocTQnKnDSEJo252EEl9gg95PQ0AIuJndchI2nhTDT' https://cdn.jsdelivr.net; style-src-elem 'sha384-h9d1Gspar0B43efGLc6oVlc0vMS49z4rTjVJWmyVirJBpeGorpDuG+uF9bQNoXjN' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -89,7 +89,7 @@
   .grab { padding: 9px 0 5px; cursor: grab; touch-action: none; flex: none; }
   .grabBar { width: 44px; height: 5px; border-radius: 3px; background: #4a5262; margin: 0 auto; }
   .sheet.dragging { transition: none; }
-  .sheet.snapping { transition: transform .28s ease, visibility 0s, height .22s ease, max-height .22s ease; }
+  .sheet.snapping { transition: transform .28s ease, visibility 0s, height .26s cubic-bezier(.25,.8,.3,1), max-height .26s cubic-bezier(.25,.8,.3,1); }
   #sheetBody { flex: 1 1 auto; min-height: 0; }
   #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 14px 6px; }
   #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
@@ -164,7 +164,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.10</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.11</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -2412,11 +2412,12 @@ function closeSheets() { [$('sheet'), $('pacePanel')].forEach(s => { s.classList
 const SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150;
 function makeSheetDraggable(sheet) {
   const scroller = sheet.querySelector('#sheetBody, #pacePad');
-  let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null;
+  let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null, panelMoved = false, samples = [];
   sheet.addEventListener('pointerdown', e => {
     if (dragging) return;
-    dragging = true; moved = false; pid = e.pointerId;
+    dragging = true; moved = false; panelMoved = false; pid = e.pointerId;
     startY = lastY = e.clientY; startH = sheet.offsetHeight;
+    samples = [{ t: performance.now(), y: e.clientY }];
   });
   sheet.addEventListener('pointermove', e => {
     if (!dragging || e.pointerId !== pid) return;
@@ -2436,6 +2437,9 @@ function makeSheetDraggable(sheet) {
     const h = Math.max(SHEET_MIN_PX, Math.min(vh * SHEET_FULL_VH, startH + total));
     sheet.style.maxHeight = 'none';
     sheet.style.height = h + 'px';
+    panelMoved = true;
+    samples.push({ t: performance.now(), y: e.clientY });
+    if (samples.length > 8) samples.shift();
     e.preventDefault();
   });
   const end = e => {
@@ -2448,6 +2452,24 @@ function makeSheetDraggable(sheet) {
     document.addEventListener('click', swallow, true);
     setTimeout(() => document.removeEventListener('click', swallow, true), 350);
     const vh = window.innerHeight, h = sheet.offsetHeight, defH = vh * 0.74;
+    // FLICK (Andrew, Beta 1.11 - the Waze gesture): a fast short swipe throws the panel to its next stop
+    // instead of following the finger the whole way. Velocity from the last ~120ms of movement, px/ms,
+    // positive = upward. Only when the panel itself moved (a flick that scrolled the list stays a scroll).
+    let flick = 0;
+    if (panelMoved && samples.length > 1) {
+      const now = performance.now();
+      const s0 = samples.find(s => now - s.t <= 130) || samples[0];
+      const dt = now - s0.t;
+      if (dt >= 30) { const v = (s0.y - lastY) / dt; if (Math.abs(v) > 0.30) flick = v > 0 ? 1 : -1; }
+    }
+    if (flick) {
+      const isFull = sheet.classList.contains('full');
+      if (flick > 0) { sheet.style.height = (vh * SHEET_FULL_VH) + 'px'; sheet.classList.add('full'); } // up: fill (already full = stay)
+      else if (isFull) { sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.classList.remove('full'); } // down from full: back to default
+      else { closeSheets(); return; } // down from default: close
+      setTimeout(() => sheet.classList.remove('snapping'), 300);
+      return;
+    }
     if (h < defH * 0.55) { closeSheets(); return; }
     if (h > (defH + vh * SHEET_FULL_VH) / 2) { sheet.style.height = (vh * SHEET_FULL_VH) + 'px'; sheet.classList.add('full'); }
     else { sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.classList.remove('full'); }

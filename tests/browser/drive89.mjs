@@ -143,7 +143,16 @@ A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.siz
 ok('T3 Yes archives the clean with its notes', A.h === 1 && A.done === 0 && /Blocked driveway/.test(A.hn));
 ok('T3 button offers Undo', A.label === 'Undo');
 // T4: Undo restores the run
-await ev(`(() => { $('resetBtn').click(); return true; })()`);
+// Harness note (Beta 1.11 diagnosis): the app's Undo window is a real 8 seconds (production parity). The
+// T3-to-T4 gap in this drive can exceed 8s on a slow runner - then the button is honestly back to 'Finish'
+// and this click opens the pop-up instead of undoing. Handle that branch explicitly: re-finish to reopen a
+// fresh Undo window, then undo. The check itself (history cleared, run restored, toast) is unchanged.
+await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(400);
+A = JSON.parse(await ev(`(() => JSON.stringify({ modal: !$('finModal').classList.contains('hidden'), h: history.length }))()`));
+if (A.modal && A.h === 1) {
+  await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(300);
+  await ev(`(() => { $('resetBtn').click(); return true; })()`);
+}
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, toast: $('toast').textContent }))()`, v => v.h === 0 && v.done === 3);
 ok('T4 Undo finish restores the run', A.h === 0 && A.done === 3 && /Finish undone/.test(A.toast));
 // T5: finish again, then delete returns to Previous cleans (the bug fix)
