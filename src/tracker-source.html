@@ -83,8 +83,8 @@
   #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(-148px, -72px) scale(1); transition-delay: 60ms; }
   #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(-162px, -12px) scale(1); transition-delay: 20ms; }
   #fanBtns.open .fanItem:nth-of-type(6) { transform: translate(-110px, 38px) scale(1); transition-delay: 0ms; }
-  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: 74dvh; display: flex; flex-direction: column; transform: translateY(102%); transition: transform .28s ease; padding-bottom: var(--sab); }
-  .sheet.open { transform: translateY(0); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: 74dvh; display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
+  .sheet.open { transform: translateY(0); visibility: visible; transition: transform .28s ease, visibility 0s; }
   #sheetHandle { width: 44px; height: 5px; border-radius: 3px; background: #4a5262; margin: 8px auto 2px; flex: none; }
   #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 14px 6px; }
   #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
@@ -134,7 +134,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.5</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.6</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -183,14 +183,14 @@
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">Not yet</button><button id="finYes">Finish clean</button></div></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">Cancel</button><button id="noteYes">Save note</button></div></div></div>
-<div id="xport" class="modal hidden"><div class="card"><h3>Export &amp; backup</h3><textarea id="xText"></textarea><div class="grid">
-  <button id="xCopy">Copy</button><button id="xShare">Share</button>
-  <button id="xGpx">GPX trail</button><button id="xBak">Backup</button>
-  <button id="xImp">Restore</button><button id="xClr" class="red">Clear trail</button>
-  <button id="xPre">Download route maps</button><button id="xRes" class="red">Close</button>
-</div><div id="xPreStat"></div><div id="xSum"></div></div></div>
+<div id="xport" class="modal hidden"><div class="card"><h3 id="xTitle">Snow log</h3><textarea id="xText" readonly></textarea><div class="grid">
+  <button id="xShare">Share</button><button id="xCopy">Copy</button>
+  <button id="xSum">Summary</button><button id="xGpx">GPX trail</button>
+  <button id="xBak">Backup (JSON)</button><button id="xRes">Restore</button>
+  <button id="xImp" style="display:none">Import backup</button><button id="xClr" class="red">Clear trail</button>
+  <button id="xPre">Download route maps</button><button id="xClose" class="red">Close</button>
+</div><div id="xPreStat"></div></div></div>
 <div id="toast"></div>
-<input type="file" id="impFile" accept="application/json,.json" style="display:none">
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 <script>
 // ===== ROUTE DATA (the physical route — verbatim from production) =====
@@ -2097,10 +2097,33 @@ function noteMapState() { const dead = mapNoteArmed && !glOk && !mapNoteOff; $('
 $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } });
-function glHideLabels(m) { // REAL-MAP RULE (Andrew, 2026-10-29, Beta 1.2): the basemap keeps ALL its names -
-  // cities, places AND street names, like Apple/Google Maps. Nothing is hidden. The app's own route-name
-  // system (point labels, tiers, melt, POI) layers on top. This function is the engine's call site; it is
-  // deliberately a no-op now (it hid basemap road names in the prototype era, r34 - superseded by Andrew).
+function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
+  // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
+  // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
+  // each service's naming), same size curve per kind of name, road names from the same zoom in both. The words
+  // themselves come from the same map data in both styles. The engine calls this at the end of its stack build;
+  // our own route layers are never touched (they carry no 'source-layer').
+  try {
+    const glyphs = (m.getStyle() && m.getStyle().glyphs) || '';
+    const font = glyphs.indexOf('versatiles') >= 0 ? ['noto_sans_regular'] : ['Noto Sans Regular'];
+    const SIZE = {
+      road: ['interpolate', ['linear'], ['zoom'], 12, 10, 15, 13, 18, 15],
+      place: ['interpolate', ['linear'], ['zoom'], 8, 12, 12, 14, 16, 16],
+      water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
+      other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
+    };
+    for (const L of m.getStyle().layers) {
+      if (L.type !== 'symbol' || !L.layout || !L.layout['text-field'] || !L['source-layer']) continue;
+      const sl = L['source-layer'], id = L.id || '';
+      let kind = 'other';
+      if (sl === 'street_labels' || sl === 'streets_polygons_labels' || sl === 'roads' || id.indexOf('roadname') === 0 || id.indexOf('label-street') === 0 || id.indexOf('label-motorway') === 0) kind = 'road';
+      else if (sl === 'place_labels' || sl === 'places' || sl === 'boundary_labels' || id.indexOf('place_') === 0 || id.indexOf('label-place') === 0 || id.indexOf('label-boundary') === 0) kind = 'place';
+      else if (sl.indexOf('water') === 0 || id.indexOf('water') === 0) kind = 'water';
+      m.setLayoutProperty(L.id, 'text-font', font);
+      m.setLayoutProperty(L.id, 'text-size', SIZE[kind]);
+      if (kind === 'road') m.setLayerZoomRange(L.id, 13, 24);
+    }
+  } catch (e) { /* a style without label layers has nothing to normalize */ }
 }
 function addReferenceLayers() {
   if (map.getSource('ref')) return;
@@ -2122,11 +2145,15 @@ function addTrailLayers() {
   map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
   map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#38bdf8', 'line-width': 3, 'line-opacity': 0.7 } });
 }
-function pickFontFromStyle() { // prototype pickFont: adopt the CURRENT basemap's own label font stack (Versatiles uses noto_sans_regular, CARTO a Montserrat stack - a guessed font renders NO text)
+function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for OUR route labels (Beta 1.6: same
+  // typeface day and night - Versatiles names it noto_sans_regular, CARTO lists Noto Sans Regular inside its
+  // stacks; a guessed stack renders NO text, so prefer a stack the style itself carries and mentions Noto)
   try {
     const syms = (map.getStyle().layers || []).filter(l => l.type === 'symbol' && l.layout && l.layout['text-font']);
+    const notoRoad = syms.find(l => /road|highway|street|label/i.test(l.id) && /noto/i.test(l.layout['text-font'].join(' ')));
+    const notoAny = syms.find(l => /noto/i.test(l.layout['text-font'].join(' ')));
     const road = syms.find(l => /road|highway|street|label/i.test(l.id));
-    const pick = (road || syms[0] || {}).layout && (road || syms[0]).layout['text-font'];
+    const pick = (notoRoad || notoAny || road || syms[0] || {}).layout && (notoRoad || notoAny || road || syms[0]).layout['text-font'];
     if (pick && window.GLP) window.GLP.setFont(pick);
   } catch (e) { /* keep the default stack */ }
 }
@@ -2420,7 +2447,7 @@ function finishRun() {
     if (!lsSet(LS.hist, JSON.stringify(newHist))) { toast('Storage full — finish stopped, run intact', 3600); return; } // verified write BEFORE anything clears
     history = newHist;
   }
-  undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice() };
+  undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun };
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; coveredIdx = {};
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   stopGps(); deselect(); saveAll(); finishChange();
@@ -2433,11 +2460,12 @@ function finishRun() {
 function doUndo() {
   if (!undoSnap) return;
   clearTimeout(undoTimer);
+  const undoSnapGpsWas = !!undoSnap.gpsWas; // undo restores the pre-finish state: GPS restarts only if it was actually running for the run (a fresh watch's first error toast would otherwise overwrite the 'Finish undone' toast)
   doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov;
   history = undoSnap.hist;
   undoSnap = null;
   const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing');
-  saveAll(); finishChange(); if (runStart) startGps(true);
+  saveAll(); finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
   toast('Finish undone — run restored');
 }
 function checkStale() {
@@ -2597,31 +2625,64 @@ function stopGps(silent) {
 }
 $('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) stopGps(); else startGps(false); });
 
-// ===== EXPORT / BACKUP / RESTORE =====
-function summaryText() {
-  const n = STREETNAMES.filter(streetComplete).length;
-  const lines = ['Route 5W — ' + n + ' of 34 streets · ' + Math.round(workDoneM() / totalWorkM() * 100) + '% of side-work'];
-  if (runStart) lines.push('Clean started ' + fmtClock(new Date(runStart)));
-  for (const nm of STREETNAMES) if (streetComplete(nm)) lines.push('✓ ' + nm + (doneTimes[nm] ? ' · ' + fmtClock(new Date(doneTimes[nm])) : ''));
-  return lines.join('\n');
+// ===== EXPORT / BACKUP / RESTORE (production showX model: one panel, four modes) =====
+function fmtStamp(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString() + ' ' + fmtClock(d); }
+function buildReport() {
+  const byTime = m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || ''));
+  const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
+  const L = ['Route 5W — snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of 34'];
+  if (ts.length) {
+    L.push('Started: ' + fmtStamp(new Date(ts[0]).toISOString()) + '   Last: ' + fmtStamp(new Date(ts[ts.length - 1]).toISOString()) + '   Duration: ' + fmtDur(ts[ts.length - 1] - ts[0]));
+    if (trail.length > 1) L.push('GPS distance since start: ' + trailKm(ts[0]).toFixed(1) + ' km');
+  }
+  L.push('', 'Street, Completed');
+  [...doneSet].sort(byTime(doneTimes)).forEach(n => L.push(n + ', ' + (doneTimes[n] ? fmtStamp(doneTimes[n]) : '(no time)') + (doneVia[n] === 'gps' ? ' (GPS-verified)' : '')));
+  const todo = STREETNAMES.filter(n => !doneSet.has(n));
+  if (todo.length) L.push('', 'Not done: ' + todo.join(', '));
+  const fl = STREETNAMES.filter(n => notes[n] && notes[n].length);
+  if (fl.length) { L.push('', 'Notes & flags:'); fl.forEach(n => L.push(n + ' — ' + flagText(n))); }
+  history.slice().reverse().forEach(h => {
+    const items = h.items || {}, ks = Object.keys(items).sort(byTime(items));
+    L.push('', 'Archived run (finished ' + fmtStamp(h.at) + ', ' + ks.length + ' streets' + (h.startedAt ? ', started ' + fmtStamp(h.startedAt) : '') + (h.km ? ', ' + h.km + ' km' : '') + ')');
+    ks.forEach(n => L.push(n + ', ' + (items[n] ? fmtStamp(items[n]) : '(no time)') + ((h.via || {})[n] === 'gps' ? ' (GPS-verified)' : '')));
+  });
+  return L.join('\n');
 }
-function openExport() { $('xText').value = summaryText(); $('xSum').textContent = 'Trail points: ' + trail.length + ' · History entries: ' + history.length; const rec = parseJ(lsGet(LS.pre), null); $('xPreStat').textContent = rec ? 'Route maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Route maps not downloaded yet — preload for offline use.'; $('xport').classList.remove('hidden'); }
-$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; closeFan(); openExport(); });
-$('xRes').addEventListener('click', () => $('xport').classList.add('hidden'));
-$('xCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('xText').value); toast('Copied'); } catch (e) { $('xText').select(); toast('Select and copy manually'); } });
-$('xShare').addEventListener('click', async () => { if (navigator.share) { try { await navigator.share({ text: summaryText() }); } catch (e) { /* dismissed */ } } else toast('Share is not offered here — use Copy'); });
-$('xGpx').addEventListener('click', () => {
-  if (!trail.length) { toast('No trail recorded yet'); return; }
+function buildGpx() {
   let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Route 5W Beta"><trk><name>Route 5W trail</name><trkseg>\n';
   for (const p of trail) g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
   g += '</trkseg></trk></gpx>';
-  dl(new Blob([g], { type: 'application/gpx+xml' }), 'route5w-trail.gpx');
-});
+  return g;
+}
+let xMode = 'summary';
+function showX(mode) {
+  xMode = mode;
+  const ta = $('xText');
+  ta.readOnly = mode !== 'restore';
+  $('xImp').style.display = mode === 'restore' ? '' : 'none';
+  if (mode === 'gpx') { ta.value = buildGpx(); $('xTitle').textContent = 'GPS trail (GPX)'; }
+  else if (mode === 'backup') { ta.value = buildBackup(); $('xTitle').textContent = 'Backup — share or copy this and keep it safe'; }
+  else if (mode === 'restore') { ta.value = ''; $('xTitle').textContent = 'Restore — paste a backup here, then tap Import backup'; }
+  else { ta.value = buildReport(); $('xTitle').textContent = 'Snow log'; }
+  $('xShare').style.display = navigator.share ? '' : 'none';
+  const rec = parseJ(lsGet(LS.pre), null);
+  $('xPreStat').textContent = rec ? 'Route maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Route maps not downloaded yet — preload for offline use.';
+  $('xport').classList.remove('hidden');
+  ta.scrollTop = 0;
+}
+function openExport() { showX('summary'); }
+$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; closeFan(); openExport(); });
+$('xClose').addEventListener('click', () => $('xport').classList.add('hidden'));
+$('xSum').addEventListener('click', () => showX('summary'));
+$('xGpx').addEventListener('click', () => showX('gpx'));
+$('xBak').addEventListener('click', () => showX('backup'));
+$('xRes').addEventListener('click', () => showX('restore'));
+$('xCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('xText').value); toast('Copied'); } catch (e) { $('xText').select(); toast('Select and copy manually'); } });
+$('xShare').addEventListener('click', async () => { if (navigator.share) { try { await navigator.share({ text: $('xText').value }); } catch (e) { /* dismissed */ } } else toast('Share is not offered here — use Copy'); });
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
 function backupObj() { const data = {}; for (const k of BACKUP_KEYS) { const v = lsGet(k); if (v != null) data[k] = v; } return { app: 'snow5w-backup', v: 1, at: new Date().toISOString(), data }; }
-function buildBackup() { return JSON.stringify(backupObj()); }
-function downloadBackup() { dl(new Blob([JSON.stringify(backupObj(), null, 1)], { type: 'application/json' }), 'route5w-backup.json'); toast('Backup downloaded'); }
-$('xBak').addEventListener('click', downloadBackup);
+function buildBackup() { return JSON.stringify(backupObj(), null, 1); }
+function downloadBackup() { dl(new Blob([buildBackup()], { type: 'application/json' }), 'route5w-backup.json'); toast('Backup downloaded'); }
 let clrArmed = false, clrTimer = 0;
 $('xClr').addEventListener('click', () => {
   if (!clrArmed) { clrArmed = true; $('xClr').textContent = 'Sure?'; clrTimer = setTimeout(() => { clrArmed = false; $('xClr').textContent = 'Clear trail'; }, 5000); return; }
@@ -2631,7 +2692,7 @@ $('xClr').addEventListener('click', () => {
   // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
   if (saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
   else { trailDirty = true; toast('Trail cleared on screen, but saving failed — will keep retrying', 3200); }
-  $('xSum').textContent = 'Trail points: ' + trail.length + ' · History entries: ' + history.length;
+  if (xMode === 'gpx') showX('gpx');
 });
 function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure
   if (!parsed || parsed.app !== 'snow5w-backup' || !parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Route 5W backup', 3200); return; }
@@ -2682,12 +2743,7 @@ function doRestore() {
   try { parsed = JSON.parse($('xText').value); } catch (e) { toast('That is not a valid backup — paste the whole backup text', 3200); return; }
   restoreBackup(parsed);
 }
-$('xImp').addEventListener('click', () => { const v = $('xText').value.trim(); if (v.startsWith('{')) doRestore(); else $('impFile').click(); });
-$('impFile').addEventListener('change', async ev => {
-  const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
-  let obj = null; try { obj = JSON.parse(await f.text()); } catch (e) { toast('That file is not a backup', 3200); return; }
-  restoreBackup(obj);
-});
+$('xImp').addEventListener('click', () => doRestore());
 
 // ===== PRELOAD (offline route maps) =====
 function tileNums(lng, lat, z) { const n = 2 ** z; const x = Math.floor((lng + 180) / 360 * n); const la = lat * Math.PI / 180; const y = Math.floor((1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n); return [x, y]; }
