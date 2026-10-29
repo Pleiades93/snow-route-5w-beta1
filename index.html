@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-bEFfX/JQiyUAox8pdewF87xJLoSy/gflbJA8AAi3jrgYvkJ0otmQnumHnV4ZnBPR' https://cdn.jsdelivr.net; style-src-elem 'sha384-ZVF6KtCugYXHefI57fMWWJM2WcvVBoLtLDPuEUk3uoCQ1DB2Gkuc6Y7ZT5xBbdYs' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-HrvXOyPaepw8laTNjsmLLrRzUXKXu6sJBQJgHpQC7vc9qOAug82x4KdZqTBBluL7' https://cdn.jsdelivr.net; style-src-elem 'sha384-ScyLIlMR3sz1tT18oPMc8raIqGUJi/azVM54TjK1ax3upKDDz6+PA+GAjQ5vkJIo' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -54,7 +54,7 @@
   #mapNote { position: absolute; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(78px + var(--sab)); z-index: 1003; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
-  #mapNoteNo { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #e63a2e; color: #fff; }
+  #mapNoteNo { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 44px; background: #e63a2e; color: #fff; }
   #chips { position: absolute; inset: 0; z-index: 950; pointer-events: none; }
   .sideChip { position: absolute; width: 40px; height: 40px; pointer-events: auto; }
   .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
@@ -135,7 +135,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.4</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.5</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -184,7 +184,7 @@
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">Not yet</button><button id="finYes">Finish clean</button></div></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">Cancel</button><button id="noteYes">Save note</button></div></div></div>
-<div id="xport" class="modal hidden"><div class="card"><h3>Export &amp; backup</h3><textarea id="xText" readonly></textarea><div class="grid">
+<div id="xport" class="modal hidden"><div class="card"><h3>Export &amp; backup</h3><textarea id="xText"></textarea><div class="grid">
   <button id="xCopy">Copy</button><button id="xShare">Share</button>
   <button id="xGpx">GPX trail</button><button id="xBak">Backup</button>
   <button id="xImp">Restore</button><button id="xClr" class="red">Clear trail</button>
@@ -297,18 +297,44 @@ const STREETNAMES = Object.keys(ROADS);
 const names = STREETNAMES; // the paint engine's name for the street list
 
 // ===== STATE =====
+const STREETSET = new Set(STREETNAMES);
 let doneSet = new Set(parseJ(lsGet(LS.done), []));
 let doneTimes = parseJ(lsGet(LS.times), {});
 for (const k of Object.keys(doneTimes)) { if (typeof doneTimes[k] !== 'string' || isNaN(Date.parse(doneTimes[k]))) delete doneTimes[k]; }
 let doneVia = parseJ(lsGet(LS.via), {});
+if (!doneVia || typeof doneVia !== 'object' || Array.isArray(doneVia)) doneVia = {};
 let notes = parseJ(lsGet(LS.notes), {});
+// Notes model (production): {street: [{k:'note', at, text} | {k:'car'|'hazard'|'missed'|'salt', at}]} - normalize at load:
+// a non-array value (e.g. a legacy string) is dropped, entries keep only object shapes with a string kind.
+if (!notes || typeof notes !== 'object' || Array.isArray(notes)) notes = {};
+Object.keys(notes).forEach(n => { if (!STREETSET.has(n) || !Array.isArray(notes[n])) delete notes[n]; else notes[n] = notes[n].filter(f => f && typeof f === 'object' && typeof f.k === 'string'); });
 let history = parseJ(lsGet(LS.hist), []);
-let runStart = parseJ(lsGet(LS.start), null);
+// History (production): chronological (oldest first); items is a street->time MAP (legacy array entries migrate to it).
+// Sanitized at load: real entries only, real streets only, times null or parseable - anything else is dropped, never crashes.
+if (!Array.isArray(history)) history = [];
+history = history.filter(h => h && typeof h === 'object' && !Array.isArray(h) && !isNaN(Date.parse(h.at)) && h.items && typeof h.items === 'object');
+for (const h of history) {
+  const m = {};
+  if (Array.isArray(h.items)) { for (const n of h.items) if (typeof n === 'string' && STREETSET.has(n)) m[n] = (h.times && typeof h.times[n] === 'string' && !isNaN(Date.parse(h.times[n]))) ? h.times[n] : null; }
+  else { for (const n of Object.keys(h.items)) { const t = h.items[n]; if (STREETSET.has(n) && (t === null || (typeof t === 'string' && !isNaN(Date.parse(t))))) m[n] = t; } }
+  h.items = m;
+}
+history = history.filter(h => Object.keys(h.items).length > 0);
+function isFullRun(h) { return !!(h && h.items && Object.keys(h.items).length >= 34); }
+function trimHistory(list) { const out = list.slice(); while (out.length > 10) { const i = out.findIndex(h => !isFullRun(h)); out.splice(i >= 0 ? i : 0, 1); } return out; }
+function saveHistory() { history = trimHistory(history); lsSet(LS.hist, JSON.stringify(history)); }
+// Run start (production): epoch milliseconds, stored as a bare digit string (NOT JSON).
+let runStart = 0;
+try { runStart = +lsGet(LS.start) || 0; } catch (e) { runStart = 0; }
+function saveStart() { if (runStart) lsSet(LS.start, String(runStart)); else lsDel(LS.start); }
 let trail = parseJ(lsGet(LS.trail), []);
+// Trail (production): [lat, lng, epochSeconds] triples; out-of-range or impossible points are dropped at load (SEC-9a bounds).
+trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
 let coveredIdx = parseJ(lsGet(LS.cov), {});
+if (!coveredIdx || typeof coveredIdx !== 'object' || Array.isArray(coveredIdx)) coveredIdx = {};
 let flipped = lsGet(LS.flip) === '1';
 let pieces = {}, pieceTimes = {};
-function streetComplete(n) { const p = pieces[n]; if (!p) return doneSet.has(n); return p.every(v => v === 3); }
+function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return doneSet.has(n); return p.every(v => v === 3); }
 (function loadSides() {
   const raw = parseJ(lsGet(LS.sides), null);
   let P = null, T = {};
@@ -337,12 +363,24 @@ function saveAll() {
   lsSet(LS.via, JSON.stringify(doneVia));
   lsSet(LS.notes, JSON.stringify(notes));
   lsSet(LS.hist, JSON.stringify(history));
-  lsSet(LS.start, JSON.stringify(runStart));
+  saveStart();
   lsSet(LS.cov, JSON.stringify(coveredIdx));
   lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes }));
 }
-let trailDirtyAt = 0;
-function saveTrail(force) { const now = Date.now(); if (!force && now - trailDirtyAt < 45000) return; trailDirtyAt = now; lsSet(LS.trail, JSON.stringify(trail)); }
+// Aux flush (production model): the trail JSON is the big write (~250 KB at cap) - at most every 45 s while
+// recording, always when forced (page hide/close). Dirty flags clear ONLY when the write actually lands, so a
+// failed write is retried by the next flush instead of silently dropping GPS points. While `restoring` is set
+// (a restore is mid-flight), flushes are refused so the restore's reload cannot clobber the restored data.
+let trailDirty = false, auxDirty = false, lastTrailSave = 0, restoring = false;
+function saveTrail() { return lsSet(LS.trail, JSON.stringify(trail)); }
+function flushAux(force) {
+  if (restoring) return;
+  if (auxDirty && lsSet(LS.cov, JSON.stringify(coveredIdx))) auxDirty = false;
+  if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); }
+}
+setInterval(() => flushAux(false), 15000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAux(true); });
+window.addEventListener('pagehide', () => flushAux(true));
 const GLP = (() => {
   let GLM = null;                 // the MapLibre map instance (recreated per setBasemap)
   let sel = null;                 // {name, idx} - fed from the app's selStretch
@@ -2201,13 +2239,24 @@ function togglePiece(name, idx, side) {
   showChips(); finishChange();
   if ((now & bit) && streetComplete(name)) toast('✓ ' + name + ' · ' + fmtClock(new Date()));
 }
-function markStreet(name, done) {
-  pieces[name] = STRETCH[name].parts.map(() => done ? 3 : 0);
-  pieceTimes[name] = STRETCH[name].parts.map(() => done ? [new Date().toISOString(), new Date().toISOString()] : [null, null]);
-  if (done) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'street'; } else { doneSet.delete(name); delete doneTimes[name]; delete doneVia[name]; }
-  showChips(); finishChange();
-  toast(done ? '✓ ' + name + ' · ' + fmtClock(new Date()) : 'Unmarked ' + name);
+function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
+  if (typeof undoSnap !== 'undefined' && undoSnap) { undoSnap = null; clearTimeout(undoTimer); const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing'); }
+  pieces[name] = STRETCH[name].parts.map(() => 3);
+  const mts = at || new Date().toISOString();
+  const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
+  pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
+  doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
+  finishChange();
+  toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === 34 ? ' — ALL 34 DONE' : ''));
 }
+function markUndone(name) {
+  pieces[name] = STRETCH[name].parts.map(() => 0);
+  pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
+  doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
+  finishChange();
+  toast('Unmarked ' + name);
+}
+function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() {
   const p = $('info');
   if (!sel) { p.classList.add('hidden'); return; }
@@ -2243,7 +2292,7 @@ function renderList() {
   el.innerHTML = rows.map(n => {
     const done = streetComplete(n);
     const t = doneTimes[n] ? ' · ' + fmtClock(new Date(doneTimes[n])) : '';
-    const nt = notes[n] ? ' · 📝' : '';
+    const nt = (Array.isArray(notes[n]) && notes[n].length) ? ' · 📝' : '';
     return '<div class="li' + (sel && sel.name === n ? ' sel' : '') + '" data-n="' + esc(n) + '"><div class="dot" style="background:' + (done ? GREEN : (MAIN.has(n) ? YELLOW : RED)) + '"></div><div class="nm">' + esc(n) + '</div><div class="meta">' + (done ? 'done' + t : STRETCH[n].parts.length + ' stretches') + nt + '</div></div>';
   }).join('') || '<div style="padding:14px 4px;color:#8fa0b3">Nothing here.</div>';
   el.querySelectorAll('.li').forEach(li => li.addEventListener('click', () => {
@@ -2258,9 +2307,9 @@ function renderList() {
 function renderCleanView() {
   const el = $('cleanView'); if (!el) return;
   if (!history.length) { el.innerHTML = ''; return; }
-  const h = history[0];
+  const h = history[history.length - 1]; // history is chronological - the LAST entry is the latest clean
   el.innerHTML = '<div style="padding:12px 4px 4px;font-weight:700">Last clean — ' + esc(new Date(h.at).toLocaleDateString()) + '</div>' +
-    h.items.map(n => '<div class="li"><div class="dot" style="background:' + GREEN + '"></div><div class="nm">' + esc(n) + '</div><div class="meta">' + (h.times && h.times[n] ? fmtClock(new Date(h.times[n])) : '') + '</div></div>').join('');
+    Object.keys(h.items).map(n => '<div class="li"><div class="dot" style="background:' + GREEN + '"></div><div class="nm">' + esc(n) + '</div><div class="meta">' + (h.items[n] ? fmtClock(new Date(h.items[n])) : '') + '</div></div>').join('');
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderList(); }));
 function closeSheets() { $('sheet').classList.remove('open'); $('pacePanel').classList.remove('open'); }
@@ -2271,19 +2320,19 @@ $('paceBtn').addEventListener('click', () => { if (!tapGuard('paceBtn')) return;
 function refreshAll() { updateCount(); renderPanel(); renderList(); }
 
 // ===== PACE (one source) =====
-function refRun() {
-  const full = history.find(h => h.items && h.items.length === 34);
-  if (full) return full;
-  return history.find(h => h.items && h.items.length >= 5) || null;
+function refRun() { // newest qualifying clean wins (history is chronological, so search from the end)
+  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length === 34) return h; }
+  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length >= 5) return h; }
+  return null;
 }
 function paceInfo() {
   const ref = refRun();
   let perHour = null, perStreetMin = null;
-  if (ref && ref.startedAt) { const hrs = (Date.parse(ref.at) - Date.parse(ref.startedAt)) / 3600000; if (hrs > 0.05) { perHour = ref.items.length / hrs; perStreetMin = 60 / perHour; } }
+  if (ref && ref.startedAt) { const hrs = (Date.parse(ref.at) - Date.parse(ref.startedAt)) / 3600000; if (hrs > 0.05) { perHour = Object.keys(ref.items).length / hrs; perStreetMin = 60 / perHour; } }
   let etaTxt = '';
   if (runStart) {
     const doneN = STREETNAMES.filter(streetComplete).length;
-    const elapsedH = (Date.now() - Date.parse(runStart)) / 3600000;
+    const elapsedH = (Date.now() - runStart) / 3600000;
     const rate = (doneN >= 1 && elapsedH > 0.02) ? doneN / elapsedH : perHour;
     if (rate) { const leftH = (34 - doneN) / rate; if (doneN < 34) etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + fmtClock(new Date(Date.now() + leftH * 3600000)); }
   }
@@ -2301,7 +2350,7 @@ function renderPace() {
   const p = paceInfo();
   const ref = p.ref;
   $('pacePad').innerHTML =
-    '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + ref.items.length + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
+    '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + Object.keys(ref.items).length + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
     '<div>Pace: <b>' + (p.perHour ? p.perHour.toFixed(1) + ' streets/hr · ' + p.perStreetMin.toFixed(0) + ' min/street' : '—') + '</b></div>' +
     '<div>This run: <b>' + (runStart ? 'started ' + fmtClock(new Date(runStart)) + (p.etaTxt ? ' · ' + p.etaTxt : '') : 'not started') + '</b></div>' +
     '<div>Work done: <b>' + Math.round(workDoneM()) + ' m of ' + Math.round(totalWorkM()) + ' m of street sides</b></div>' +
@@ -2319,43 +2368,73 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
-function startClean() { runStart = new Date().toISOString(); saveAll(); startGps(true); updateCount(); syncWake(); toast('Clean started · ' + fmtClock(new Date())); checkStale(); }
-function cancelStart() { const wasRunGps = gpsFromRun; runStart = null; saveAll(); if (wasRunGps) stopGps(); updateCount(); syncWake(); toast('Start cancelled'); }
+function startClean() { runStart = Date.now(); saveAll(); startGps(true); updateCount(); syncWake(); toast('Clean started · ' + fmtClock(new Date())); checkStale(); }
+function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; saveAll(); if (wasRunGps) stopGps(); updateCount(); syncWake(); toast('Start cancelled'); }
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
 let undoSnap = null, undoTimer = 0;
 $('resetBtn').addEventListener('click', () => {
   if (!tapGuard('resetBtn')) return;
   if (undoSnap) { doUndo(); return; }
-  const n = doneSet.size;
-  $('finMsg').textContent = n + ' of 34 streets done' + (runStart ? ' · started ' + fmtClock(new Date(runStart)) : '') + '.\nThe run is saved to history first, then the map clears.';
+  const nDone = doneSet.size, nNotes = Object.keys(notes).length;
+  $('finMsg').textContent = (nDone || nNotes)
+    ? (nDone + ' of 34 streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : ''))
+    : 'Nothing is marked yet. Finishing just clears the board - nothing will be saved.';
   $('finModal').classList.remove('hidden');
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
 $('finYes').addEventListener('click', () => { if (!tapGuard('finYes')) return; $('finModal').classList.add('hidden'); finishRun(); });
-function archiveRun() {
-  const items = STREETNAMES.filter(streetComplete);
-  const entry = { at: new Date().toISOString(), items, via: { ...doneVia }, notes: { ...notes }, times: { ...doneTimes }, km: +(workDoneM() / 2000).toFixed(2), startedAt: runStart, sides: { p: JSON.parse(JSON.stringify(pieces)), t: JSON.parse(JSON.stringify(pieceTimes)) } };
-  if (gpsPath.length) entry.path = gpsPath.slice();
-  history.unshift(entry); history = history.slice(0, 10);
+function thinOnce(pts, stepSec) {
+  const out = []; let last = -Infinity;
+  for (const p of pts) { if (p[2] - last >= stepSec) { out.push(p); last = p[2]; } }
+  if (pts.length && out.length && out[out.length - 1] !== pts[pts.length - 1]) out.push(pts[pts.length - 1]);
+  return out;
+}
+function thinPath(pts) {
+  let step = 15, out = thinOnce(pts, step);
+  while (out.length > 3000) { step *= 2; const nx = thinOnce(out, step); if (nx.length >= out.length) break; out = nx; }
+  return out;
+}
+function trailKm(sinceMs) {
+  let d = 0;
+  for (let i = 1; i < trail.length; i++) {
+    if (trail[i][2] * 1000 < sinceMs || trail[i][2] - trail[i - 1][2] > 300) continue; // ignore gaps where tracking was off
+    d += distM(trail[i - 1], trail[i]);
+  }
+  return d / 1000;
+}
+function buildSnap() { // production archive shape: items is a street->time map; km is trail distance; the GPS path is thinned FROM the trail
+  if (!doneSet.size && !Object.keys(notes).length) return null;
+  const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
+  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })), km: ts.length ? +trailKm(ts[0]).toFixed(1) : 0, startedAt: (runStart && ts.length && runStart <= ts[0]) ? new Date(runStart).toISOString() : (ts.length ? new Date(ts[0]).toISOString() : null) };
+  doneSet.forEach(n => { snap.items[n] = doneTimes[n] || null; });
+  const sMs = Date.parse(snap.startedAt);
+  if (!isNaN(sMs)) { const pp = thinPath(trail.filter(p => p[2] * 1000 >= sMs - 60000)); if (pp.length > 1) snap.path = pp; }
+  return snap;
 }
 function finishRun() {
-  undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: history.slice() };
-  archiveRun();
-  if (!lsSet(LS.hist, JSON.stringify(history))) { toast('Storage full — finish stopped, run intact', 3600); undoSnap = null; return; }
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; runStart = null; coveredIdx = {};
+  const snap = buildSnap();
+  const archiving = !!(snap && doneSet.size >= 3); // production rule: under 3 streets clears WITHOUT being saved
+  const prevHist = history;
+  if (archiving) {
+    const newHist = trimHistory([...history, snap]);
+    if (!lsSet(LS.hist, JSON.stringify(newHist))) { toast('Storage full — finish stopped, run intact', 3600); return; } // verified write BEFORE anything clears
+    history = newHist;
+  }
+  undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice() };
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; coveredIdx = {};
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
-  gpsPath = []; stopGps(); deselect(); saveAll(); finishChange();
-  const rb = $('resetBtn'); rb.textContent = 'Undo finish'; rb.classList.add('undoing'); rb.style.display = '';
+  stopGps(); deselect(); saveAll(); finishChange();
+  const rb = $('resetBtn'); rb.textContent = 'Undo'; rb.classList.add('undoing'); rb.style.display = '';
   clearTimeout(undoTimer);
   undoTimer = setTimeout(() => { undoSnap = null; rb.textContent = 'Finish'; rb.classList.remove('undoing'); updateCount(); }, 8000);
-  toast('Clean archived · ' + history[0].items.length + ' streets', 3000);
-  maybeBackupNudge();
+  toast(archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved', 3000);
+  if (archiving) maybeBackupNudge();
 }
 function doUndo() {
   if (!undoSnap) return;
   clearTimeout(undoTimer);
-  doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov;
+  doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov;
   history = undoSnap.hist;
   undoSnap = null;
   const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing');
@@ -2363,7 +2442,7 @@ function doUndo() {
   toast('Finish undone — run restored');
 }
 function checkStale() {
-  const stale = runStart && (Date.now() - Date.parse(runStart) > 12 * 3600000);
+  const stale = runStart && (Date.now() - runStart > 12 * 3600000);
   $('stale').classList.toggle('hidden', !stale);
   if (stale) $('staleText').textContent = 'This clean started ' + fmtClock(new Date(runStart)) + ' — over 12 hours ago. Finish it, or keep going?';
 }
@@ -2379,21 +2458,34 @@ function maybeBackupNudge() {
 $('bakLater').addEventListener('click', () => { lsSet(LS.exp, JSON.stringify({ nudgedAt: Date.now() })); $('bakNudge').classList.add('hidden'); });
 $('bakSave').addEventListener('click', () => { lsSet(LS.exp, JSON.stringify({ nudgedAt: Date.now() })); $('bakNudge').classList.add('hidden'); openExport(); downloadBackup(); });
 
-// ===== NOTES =====
+// ===== NOTES (production model: notes[street] = [{k:'note', at, text} | {k: flag kind, at}]) =====
+const FLAGS = { car: 'Car blocking', hazard: 'Hazard', missed: 'Missed spot', salt: 'Needs salt' };
+function noteEntry(n) { return (Array.isArray(notes[n]) ? notes[n] : []).find(f => f.k === 'note'); }
+function noteTextOf(n) { const e = noteEntry(n); return e && typeof e.text === 'string' ? e.text : ''; }
+function setNoteText(n, txt) {
+  const t = (txt || '').trim();
+  const arr = Array.isArray(notes[n]) ? notes[n].slice() : [];
+  const i = arr.findIndex(f => f.k === 'note');
+  if (!t) { if (i >= 0) arr.splice(i, 1); }
+  else if (i >= 0) { arr[i] = Object.assign({}, arr[i], { text: t, at: new Date().toISOString() }); }
+  else arr.push({ k: 'note', at: new Date().toISOString(), text: t });
+  if (arr.length) notes[n] = arr; else delete notes[n];
+  saveAll();
+}
+function flagText(n) { return (Array.isArray(notes[n]) ? notes[n] : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : (FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : '')).join('; '); }
 let noteFor = null;
-function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note — ' + name; $('noteText').value = notes[name] || ''; $('noteModal').classList.remove('hidden'); }
+function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note — ' + name; $('noteText').value = noteTextOf(name); $('noteModal').classList.remove('hidden'); }
 $('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden'));
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
-  const v = $('noteText').value.trim();
-  if (v) notes[noteFor] = v; else delete notes[noteFor];
-  $('noteModal').classList.add('hidden'); saveAll(); renderList(); toast('Note saved');
+  setNoteText(noteFor, $('noteText').value);
+  $('noteModal').classList.add('hidden'); renderList(); toast('Note saved');
 });
 
 // ===== GPS (checklist SS7) =====
-let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, fixWin = [], lastFixAt = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, gpsPath = [], lastPathAt = 0, staleWatchTimer = 0;
+let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, fixWin = [], lastFixAt = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
 const SAMPLES = {};
-(function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 8) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
+(function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
 for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => i < SAMPLES[n].length); }
 let suggested = new Set();
 function pushGps() {
@@ -2411,8 +2503,8 @@ function drawTrail() {
   const feats = [];
   if (runStart && trail.length > 1) {
     let seg = [trail[0]];
-    for (let i = 1; i < trail.length; i++) { const gap = trail[i].t - trail[i - 1].t > 300000 || distM([trail[i - 1].lat, trail[i - 1].lng], [trail[i].lat, trail[i].lng]) > 1000; if (gap) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p.lng, p.lat]) } }); seg = [trail[i]]; } else seg.push(trail[i]); }
-    if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p.lng, p.lat]) } });
+    for (let i = 1; i < trail.length; i++) { const gap = trail[i][2] - trail[i - 1][2] > 300 || distM(trail[i - 1], trail[i]) > 1000; if (gap) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); seg = [trail[i]]; } else seg.push(trail[i]); }
+    if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } });
   }
   src.setData({ type: 'FeatureCollection', features: feats });
 }
@@ -2461,10 +2553,9 @@ function acceptFix(pos) {
   if (!inB && offRouteArmed) { offRouteArmed = false; toast("You are outside the route area — GPS won't mark streets here", 3600); }
   if (inB) offRouteArmed = true;
   if (runStart) {
-    trail.push({ lat: sm[0], lng: sm[1], t: now });
+    trail.push([+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)]);
     if (trail.length > TRAIL_MAX) trail.splice(0, trail.length - TRAIL_MAX);
-    saveTrail(false); drawTrail();
-    if (now - lastPathAt > 15000) { lastPathAt = now; gpsPath.push([+sm[0].toFixed(6), +sm[1].toFixed(6)]); if (gpsPath.length > 3000) gpsPath.splice(0, gpsPath.length - 3000); }
+    trailDirty = true; flushAux(false); drawTrail();
     coverFix(sm);
   }
 }
@@ -2473,11 +2564,11 @@ function coverFix(ll) {
   for (const n of STREETNAMES) {
     if (streetComplete(n) || suggested.has(n)) continue;
     const pts = SAMPLES[n]; const set = new Set(coveredIdx[n] || []);
-    for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 25) { set.add(i); changed = true; } }
+    for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 22) { set.add(i); changed = true; } }
     if (set.size) coveredIdx[n] = [...set];
-    if (set.size >= Math.ceil(pts.length * 0.9) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
+    if (set.size >= Math.ceil(pts.length * 0.85) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
   }
-  if (changed) lsSet(LS.cov, JSON.stringify(coveredIdx));
+  if (changed) auxDirty = true;
 }
 function showSuggest(n) {
   $('sugText').textContent = n + ' looks fully covered by GPS but is not marked done.';
@@ -2523,36 +2614,80 @@ $('xShare').addEventListener('click', async () => { if (navigator.share) { try {
 $('xGpx').addEventListener('click', () => {
   if (!trail.length) { toast('No trail recorded yet'); return; }
   let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Route 5W Beta"><trk><name>Route 5W trail</name><trkseg>\n';
-  for (const p of trail) g += '<trkpt lat="' + p.lat + '" lon="' + p.lng + '"><time>' + new Date(p.t).toISOString() + '</time></trkpt>\n';
+  for (const p of trail) g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
   g += '</trkseg></trk></gpx>';
   dl(new Blob([g], { type: 'application/gpx+xml' }), 'route5w-trail.gpx');
 });
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
 function backupObj() { const data = {}; for (const k of BACKUP_KEYS) { const v = lsGet(k); if (v != null) data[k] = v; } return { app: 'snow5w-backup', v: 1, at: new Date().toISOString(), data }; }
+function buildBackup() { return JSON.stringify(backupObj()); }
 function downloadBackup() { dl(new Blob([JSON.stringify(backupObj(), null, 1)], { type: 'application/json' }), 'route5w-backup.json'); toast('Backup downloaded'); }
 $('xBak').addEventListener('click', downloadBackup);
-$('xClr').addEventListener('click', () => { if (!tapGuard('xClr')) return; trail = []; gpsPath = []; saveTrail(true); drawTrail(); $('xSum').textContent = 'Trail points: 0 · History entries: ' + history.length; toast('Trail cleared'); });
-$('xImp').addEventListener('click', () => $('impFile').click());
+let clrArmed = false, clrTimer = 0;
+$('xClr').addEventListener('click', () => {
+  if (!clrArmed) { clrArmed = true; $('xClr').textContent = 'Sure?'; clrTimer = setTimeout(() => { clrArmed = false; $('xClr').textContent = 'Clear trail'; }, 5000); return; }
+  clearTimeout(clrTimer); clrArmed = false; $('xClr').textContent = 'Clear trail';
+  trail = []; drawTrail();
+  // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
+  // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
+  if (saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
+  else { trailDirty = true; toast('Trail cleared on screen, but saving failed — will keep retrying', 3200); }
+  $('xSum').textContent = 'Trail points: ' + trail.length + ' · History entries: ' + history.length;
+});
+function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure
+  if (!parsed || parsed.app !== 'snow5w-backup' || !parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Route 5W backup', 3200); return; }
+  if (parsed.v !== 1) { toast('Unsupported backup version (' + String(parsed.v) + ') — nothing was changed', 3200); return; }
+  const JSON_SHAPE = { [LS.done]: 'arr', [LS.times]: 'obj', [LS.hist]: 'arr', [LS.notes]: 'obj', [LS.via]: 'obj', [LS.trail]: 'arr', [LS.cov]: 'obj', [LS.sides]: 'obj' };
+  const entries = [];
+  for (const k of BACKUP_KEYS) {
+    let v = parsed.data[k];
+    if (v === undefined) continue; // missing-key policy: a key absent from the backup leaves the current value untouched
+    if (typeof v !== 'string') { toast('Backup has a bad value for ' + k + ' — nothing was changed', 3200); return; }
+    const shape = JSON_SHAPE[k];
+    if (shape) {
+      let pv; try { pv = JSON.parse(v); } catch (e) { toast('Backup value for ' + k + ' is not valid JSON — nothing was changed', 3200); return; }
+      if (k === LS.done && pv && typeof pv === 'object' && !Array.isArray(pv)) {
+        v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && STREETSET.has(nm))); // legacy done-set was a street->time map; migrate like the loader does
+      } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + k + ' has the wrong shape — nothing was changed', 3200); return; }
+    }
+    entries.push([k, v]);
+  }
+  if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
+  const snap = {}; let snapOk = true;
+  for (const k of BACKUP_KEYS) { try { snap[k] = localStorage.getItem(k); } catch (e) { snapOk = false; } }
+  if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
+  const rollback = () => {
+    let okBack = true;
+    for (const k of BACKUP_KEYS) {
+      try { if (snap[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, snap[k]); } catch (e) { /* verified below */ }
+      try { if (localStorage.getItem(k) !== snap[k]) okBack = false; } catch (e) { okBack = false; }
+    }
+    return okBack;
+  };
+  for (const pair of entries) {
+    const k = pair[0], v = pair[1];
+    let wrote = false;
+    try { wrote = lsSet(k, v) && localStorage.getItem(k) === v; } catch (e) { wrote = false; }
+    if (!wrote) {
+      if (rollback()) toast('Restore failed while writing ' + k + ' — your current data was put back, nothing was changed', 3800);
+      else toast('Restore failed while writing ' + k + ' — and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
+      return;
+    }
+  }
+  restoring = true; trailDirty = false; auxDirty = false; // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
+  toast('Backup restored — reloading');
+  setTimeout(() => location.reload(), 600);
+}
+function doRestore() {
+  let parsed;
+  try { parsed = JSON.parse($('xText').value); } catch (e) { toast('That is not a valid backup — paste the whole backup text', 3200); return; }
+  restoreBackup(parsed);
+}
+$('xImp').addEventListener('click', () => { const v = $('xText').value.trim(); if (v.startsWith('{')) doRestore(); else $('impFile').click(); });
 $('impFile').addEventListener('change', async ev => {
   const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
   let obj = null; try { obj = JSON.parse(await f.text()); } catch (e) { toast('That file is not a backup', 3200); return; }
-  if (!obj || obj.app !== 'snow5w-backup' || !obj.data) { toast('That file is not a Route 5W backup', 3200); return; }
-  // validate every value's shape BEFORE writing anything; snapshot for rollback
-  const snap = {}; for (const k of BACKUP_KEYS) snap[k] = lsGet(k);
-  for (const k of Object.keys(obj.data)) {
-    if (!BACKUP_KEYS.includes(k)) continue;
-    const v = obj.data[k];
-    if (typeof v !== 'string') { toast('Backup has a bad value — nothing changed', 3200); return; }
-    try { JSON.parse(v); } catch (e) { toast('Backup has unreadable data — nothing changed', 3200); return; }
-  }
-  try {
-    for (const k of BACKUP_KEYS) if (k in obj.data) { if (!lsSet(k, obj.data[k])) throw new Error('write'); }
-    for (const k of BACKUP_KEYS) if (k in obj.data && lsGet(k) !== obj.data[k]) throw new Error('verify');
-  } catch (e) {
-    for (const k of BACKUP_KEYS) { if (snap[k] == null) lsDel(k); else lsSet(k, snap[k]); }
-    toast('Restore failed — your current data was put back', 3600); return;
-  }
-  toast('Backup restored — reloading'); setTimeout(() => location.reload(), 700);
+  restoreBackup(obj);
 });
 
 // ===== PRELOAD (offline route maps) =====
