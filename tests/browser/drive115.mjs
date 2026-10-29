@@ -136,7 +136,7 @@ try {
   ok('A1 notice shows when the GL style can never load', await until(noteVisible, 18000));
   ok('A2 notice text explains streets still work', await ev(`/still work/.test(document.querySelector('#mapNote span').textContent)`));
   ok('A3 no GL load recorded', await ev(`glOk === false`));
-  ok('A4 streets list still renders with no map (34 rows)', await ev(`document.querySelectorAll('#streetList .li').length === 34`));
+  ok('A4 streets list still renders with no map (34 rows)', await ev(`document.querySelectorAll('#streetList .srow').length === 34`));
   await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(600);
   ok('A5 marking still works on the dead map', await ev(`pieces.Velmar[0] === 1`));
   let R1 = await rects();

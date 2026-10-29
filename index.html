@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-QYwAuZ9uvdkcfsfM49OISbQu+jH2ol3SYaWrErkots2LP6k+XkTAyuA/HBAoJT4j' https://cdn.jsdelivr.net; style-src-elem 'sha384-k+SiByUNW30ElY1AELeySAnAFl3NSZPrCLxXIp3J6b+DnOLmKW2clzjz4EnP85Ia' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-UCE4P+5F9/C50pxWsNEjl8e5qVEoteigbdncFqQJq1UU97UR82BBJ3gNxEucQRow' https://cdn.jsdelivr.net; style-src-elem 'sha384-PXQEjbfrXeYg8gkvXJbif0OoLYeevJMhDlk2RfZBHLgFM08BzVH4FdI/lBO0EGeK' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -94,11 +94,36 @@
   #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: #2b303c; color: #b9c6d4; min-height: 38px; }
   #filters button.on { background: #2c7be5; color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
-  .li { display: flex; align-items: center; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #2b303c; cursor: pointer; }
-  .li .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
-  .li .nm { font-size: 15px; font-weight: 600; flex: 1; }
-  .li .meta { font-size: 11px; color: #8fa0b3; text-align: right; line-height: 1.5; }
-  .li.sel { background: rgba(44,123,229,.16); border-radius: 8px; }
+  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid #333; font-size: 16px; cursor: pointer; min-height: 48px; }
+  .srow .dot { width: 15px; height: 15px; border-radius: 50%; background: #ef476f; flex-shrink: 0; }
+  .srow.main .dot { background: #ffc233; }
+  .srow.done .dot { background: #06d6a0; }
+  .srow.done .nm { color: #9fd3ae; }
+  .srow .tm { margin-left: auto; font-size: 12px; color: #8fae99; white-space: nowrap; }
+  .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
+  .srow .nt { font-size: 12px; color: #c9a86a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
+  .srow .sbtn { margin-left: 2px; width: 42px; height: 42px; flex-shrink: 0; border: 1px solid #444; border-radius: var(--rad-btn); background: #262a33; font-size: 17px; padding: 0; }
+  .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid #333; }
+  .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: #14161a; color: #fff; border: 1px solid #444; border-radius: var(--rad-btn); padding: 9px; font-size: 15px; font-family: inherit; }
+  .noteEd .nhint { font-size: 12px; color: #8fae99; margin-top: 5px; }
+  #cleanView { padding: 4px 2px 14px; }
+  .cvHead { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
+  .cvHead .cvTtl { font-weight: 800; font-size: 16px; flex: 1; }
+  .cvHead button { border: 1px solid #444; background: #262a33; color: #fff; border-radius: var(--rad-btn); min-height: 40px; padding: 0 12px; font-size: 14px; font-weight: 700; }
+  .cvMeta { font-size: 13px; color: #b9c2cc; padding: 0 2px 8px; line-height: 1.5; white-space: pre-wrap; }
+  .cvRow { padding: 10px 4px; border-bottom: 1px solid #333; cursor: pointer; }
+  .cvRow .cvTop { display: flex; align-items: baseline; gap: 8px; }
+  .cvRow .cvNm { font-size: 15px; font-weight: 700; flex: 1; }
+  .cvRow .cvTm { font-size: 12px; color: #8fae99; white-space: nowrap; }
+  .cvRow .cvNt { font-size: 12px; color: #c9a86a; margin-top: 3px; }
+  .cvDet { font-size: 13px; color: #d7dde3; line-height: 1.55; padding: 6px 2px 2px; white-space: pre-wrap; }
+  .cvSec { font-weight: 800; font-size: 13px; color: #9fb4c8; padding: 12px 2px 4px; }
+  .cvDel { width: 100%; margin-top: 14px; min-height: 44px; border: 1px solid #7a3a3a; background: #4a2323; color: #fff; border-radius: var(--rad-btn); font-size: 14px; font-weight: 700; }
+  .cvDel.armed { background: #8c2f2f; }
+  .psec { font-weight: 800; font-size: 13px; color: #9fb4c8; padding: 12px 2px 4px; }
+  .prow { display: flex; justify-content: space-between; gap: 8px; padding: 7px 2px; font-size: 13.5px; border-bottom: 1px solid #2b303c; }
+  .prow.histRow { cursor: pointer; }
+  .prow.histRow span:last-child { color: #7db4e8; }
   #pacePad { padding: 4px 14px 14px; font-size: 14px; line-height: 1.65; color: #dfe7ef; overflow-y: auto; }
   #pacePad b { color: #fff; }
   #pacePad button { border: none; border-radius: var(--rad-btn); padding: 10px 14px; font-size: 14px; font-weight: 700; min-height: 42px; background: #1e7a46; color: #fff; margin-top: 10px; }
@@ -135,7 +160,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.7</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.8</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -2322,37 +2347,63 @@ function updateCount() {
 
 // ===== LIST SHEET =====
 let listFilter = 'all';
-function renderList() {
+let noteOpenFor = null, noteSaveTimer = 0;
+function renderList() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
-  const rows = STREETNAMES.filter(n => listFilter === 'all' || (listFilter === 'done') === streetComplete(n));
-  el.innerHTML = rows.map(n => {
-    const done = streetComplete(n);
-    const t = doneTimes[n] ? ' · ' + fmtClock(new Date(doneTimes[n])) : '';
-    const nt = (Array.isArray(notes[n]) && notes[n].length) ? ' · 📝' : '';
-    return '<div class="li' + (sel && sel.name === n ? ' sel' : '') + '" data-n="' + esc(n) + '"><div class="dot" style="background:' + (done ? GREEN : (MAIN.has(n) ? YELLOW : RED)) + '"></div><div class="nm">' + esc(n) + '</div><div class="meta">' + (done ? 'done' + t : STRETCH[n].parts.length + ' stretches') + nt + '</div></div>';
-  }).join('') || '<div style="padding:14px 4px;color:#8fa0b3">Nothing here.</div>';
-  el.querySelectorAll('.li').forEach(li => li.addEventListener('click', () => {
-    const n = li.dataset.n; if (!tapGuard('li' + n)) return;
-    closeSheets();
-    const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)];
-    map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) });
-    selectStretch(n, 0, c);
-  }));
-  renderCleanView();
-}
-function renderCleanView() {
-  const el = $('cleanView'); if (!el) return;
-  if (!history.length) { el.innerHTML = ''; return; }
-  const h = history[history.length - 1]; // history is chronological - the LAST entry is the latest clean
-  el.innerHTML = '<div style="padding:12px 4px 4px;font-weight:700">Last clean — ' + esc(new Date(h.at).toLocaleDateString()) + '</div>' +
-    Object.keys(h.items).map(n => '<div class="li"><div class="dot" style="background:' + GREEN + '"></div><div class="nm">' + esc(n) + '</div><div class="meta">' + (h.items[n] ? fmtClock(new Date(h.items[n])) : '') + '</div></div>').join('');
+  const openEd = el.querySelector('.noteEd textarea');
+  const draft = openEd ? openEd.value : null; // an in-progress note survives re-renders
+  el.innerHTML = '';
+  const arr = STREETNAMES.filter(n => listFilter === 'all' || (listFilter === 'done') === streetComplete(n));
+  if (listFilter === 'done') arr.sort((a, b) => String(doneTimes[b] || '').localeCompare(String(doneTimes[a] || '')));
+  if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">' + (listFilter === 'done' ? 'Nothing completed yet' : 'All streets done ✓') + '</div>'; return; }
+  arr.forEach(n => {
+    const d = document.createElement('div');
+    d.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
+    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nm"></div><div class="nt"></div></div><div class="tm"></div><button class="sbtn smap" title="Show on map">📍</button>';
+    d.querySelector('.nm').textContent = n;
+    const ntEl = d.querySelector('.nt');
+    const paintNt = () => { const t = noteTextOf(n); ntEl.textContent = t ? '📝 ' + t : ''; ntEl.style.display = t ? '' : 'none'; };
+    paintNt();
+    const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
+    d.querySelector('.tm').textContent = (notes[n] && notes[n].some(f => f.k !== 'note') ? '⚑ ' : '') + (doneAt ? 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')' : '');
+    d.querySelector('.smap').addEventListener('click', e => {
+      e.stopPropagation();
+      if (!tapGuard('li' + n)) return;
+      closeSheets();
+      const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)];
+      map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) });
+      selectStretch(n, 0, c);
+    });
+    d.addEventListener('click', () => {
+      noteOpenFor = noteOpenFor === n ? null : n;
+      renderList();
+      const ta = el.querySelector('.noteEd textarea');
+      if (ta) ta.focus();
+    });
+    el.appendChild(d);
+    if (noteOpenFor === n) {
+      const ed = document.createElement('div');
+      ed.className = 'noteEd';
+      ed.innerHTML = '<textarea placeholder="Note for this street — e.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nhint">Saves automatically</div>';
+      const ta = ed.querySelector('textarea');
+      ta.value = draft !== null ? draft : noteTextOf(n);
+      const hint = ed.querySelector('.nhint');
+      ta.addEventListener('input', () => {
+        hint.textContent = 'Saving…';
+        clearTimeout(noteSaveTimer);
+        noteSaveTimer = setTimeout(() => { setNoteText(n, ta.value); paintNt(); hint.textContent = 'Saved ✓'; }, 400);
+      });
+      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); setNoteText(n, ta.value); paintNt(); });
+      el.appendChild(ed);
+    }
+  });
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderList(); }));
 function closeSheets() { $('sheet').classList.remove('open'); $('pacePanel').classList.remove('open'); }
 $('listBtn').addEventListener('click', () => { if (!tapGuard('listBtn')) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { renderList(); $('sheet').classList.add('open'); } });
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
-$('paceBtn').addEventListener('click', () => { if (!tapGuard('paceBtn')) return; const open = $('pacePanel').classList.contains('open'); closeSheets(); if (!open) { renderPace(); $('pacePanel').classList.add('open'); } });
+$('paceBtn').addEventListener('click', () => { if (!tapGuard('paceBtn')) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
 function refreshAll() { updateCount(); renderPanel(); renderList(); }
 
 // ===== PACE (one source) =====
@@ -2382,16 +2433,140 @@ function statsLine() {
   if (runStart) bits.push('started ' + fmtClock(new Date(runStart)));
   return bits.join(' · ');
 }
+const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtWhen(iso) { const d = new Date(iso); if (isNaN(d)) return ''; const n = new Date(); const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate(); return same ? fmtClock(d) : MON3[d.getMonth()] + ' ' + d.getDate() + ', ' + fmtClock(d); }
+function fmtAgo(iso) { const t = Date.parse(iso); if (isNaN(t)) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' h ' + (m % 60) + ' m ago'; }
+function histDur(h) {
+  const items = (h && h.items) || {};
+  const ks = Object.keys(items).filter(n => STREETSET.has(n) && items[n]);
+  const ts = ks.map(n => Date.parse(items[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
+  if (!ts.length) return null;
+  const stA = Date.parse(h.startedAt);
+  const start = (!isNaN(stA) && stA <= ts[0]) ? stA : ts[0];
+  return { count: ks.length, durMs: ts[ts.length - 1] - start, start };
+}
+let histOpen = false;
 function renderPace() {
   const p = paceInfo();
   const ref = p.ref;
-  $('pacePad').innerHTML =
+  let html =
     '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + Object.keys(ref.items).length + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
     '<div>Pace: <b>' + (p.perHour ? p.perHour.toFixed(1) + ' streets/hr · ' + p.perStreetMin.toFixed(0) + ' min/street' : '—') + '</b></div>' +
     '<div>This run: <b>' + (runStart ? 'started ' + fmtClock(new Date(runStart)) + (p.etaTxt ? ' · ' + p.etaTxt : '') : 'not started') + '</b></div>' +
     '<div>Work done: <b>' + Math.round(workDoneM()) + ' m of ' + Math.round(totalWorkM()) + ' m of street sides</b></div>' +
     (runStart && doneSet.size === 0 ? '<button class="red" id="paceCancel">Cancel start</button>' : '');
+  html += '<div class="psec" id="histHead">Previous cleans ' + (histOpen ? '▲' : '▼') + '</div>';
+  if (histOpen) {
+    let any = 0;
+    for (let i = history.length - 1; i >= 0; i--) {
+      const d = histDur(history[i]); if (!d) continue;
+      html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of 34 streets ›</span></div>';
+      any++;
+    }
+    if (!any) html += '<div style="font-size:13px;color:#8fa0b3;padding:4px 2px">No cleans saved yet — when you finish a run and tap Finish, it lands here with its total time.</div>';
+  }
+  $('pacePad').innerHTML = html;
   const c = $('paceCancel'); if (c) c.addEventListener('click', () => { cancelStart(); closeSheets(); });
+  const hh = $('histHead'); if (hh) hh.addEventListener('click', () => { histOpen = !histOpen; renderPace(); });
+  $('pacePad').querySelectorAll('.histRow').forEach(r => r.addEventListener('click', () => openClean(+r.dataset.i)));
+}
+function openPace() { deselect(); closeSheets(); renderPace(); $('pacePanel').classList.add('open'); }
+function closePace() { $('pacePanel').classList.remove('open'); }
+
+// ===== CLEAN DETAIL (production v5.53 model): one archived clean inside the list sheet - totals, its streets
+// in mark order with per-street times, its notes, noted-but-not-cleaned group, two-tap delete. Back and Delete
+// both land on Previous cleans (expanded), never on the Streets list. =====
+let cleanIdx = null, cleanDelArmed = false, cleanDelTimer = 0;
+function cleanNoteLines(entries) { return (Array.isArray(entries) ? entries : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : ((FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : ''))); }
+function openClean(i) {
+  const h = history[i];
+  if (!h) return;
+  cleanIdx = i; cleanDelArmed = false;
+  closePace(); deselect();
+  $('filters').style.display = 'none';
+  $('streetList').style.display = 'none';
+  const cv = $('cleanView');
+  cv.classList.remove('hidden');
+  cv.innerHTML = '';
+  const head = document.createElement('div'); head.className = 'cvHead';
+  head.innerHTML = '<button class="cvBack">‹ Back</button><div class="cvTtl"></div>';
+  head.querySelector('.cvTtl').textContent = 'Clean — ' + fmtWhen(h.at);
+  head.querySelector('.cvBack').onclick = backToCleans;
+  cv.appendChild(head);
+  const d = histDur(h);
+  const meta = document.createElement('div'); meta.className = 'cvMeta';
+  meta.textContent = (d ? ('Total time ' + fmtDur(d.durMs) + ' · ') : '') + (h.items ? Object.keys(h.items).length : 0) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nTime taken per street = from the previous street (or the start). Tap a street for its details.';
+  cv.appendChild(meta);
+  const items = h.items || {};
+  const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
+  let prev = h.startedAt ? Date.parse(h.startedAt) : NaN;
+  order.forEach(n => {
+    const t = items[n] ? Date.parse(items[n]) : NaN;
+    const dur = (!isNaN(t) && !isNaN(prev)) ? t - prev : NaN;
+    if (!isNaN(t)) prev = t;
+    const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
+    const top = document.createElement('div'); top.className = 'cvTop';
+    top.innerHTML = '<div class="cvNm"></div><div class="cvTm"></div>';
+    top.querySelector('.cvNm').textContent = n;
+    top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '—') + (!isNaN(dur) ? (' · took ' + fmtDur(dur)) : '');
+    rowEl.appendChild(top);
+    const lines = cleanNoteLines((h.notes || {})[n]);
+    if (lines.length) { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ' more)' : ''); rowEl.appendChild(p); }
+    const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
+    const parts = [];
+    parts.push('Marked: ' + (items[n] ? fmtWhen(items[n]) : 'no time recorded'));
+    if (!isNaN(dur)) parts.push('Time taken: ' + fmtDur(dur) + ' (from the previous street or the start)');
+    if ((h.via || {})[n]) parts.push('How: ' + ((h.via || {})[n] === 'gps' ? 'GPS suggestion' : 'marked by tap'));
+    lines.forEach(L => parts.push(L));
+    det.textContent = parts.join('\n');
+    rowEl.appendChild(det);
+    rowEl.onclick = () => { det.style.display = det.style.display === 'none' ? '' : 'none'; };
+    cv.appendChild(rowEl);
+  });
+  const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (h.notes[n] || []).length);
+  if (notedOnly.length) {
+    const sec = document.createElement('div'); sec.className = 'cvSec'; sec.textContent = 'Notes on streets not cleaned'; cv.appendChild(sec);
+    notedOnly.forEach(n => {
+      const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
+      const top = document.createElement('div'); top.className = 'cvTop';
+      top.innerHTML = '<div class="cvNm"></div>';
+      top.querySelector('.cvNm').textContent = n;
+      rowEl.appendChild(top);
+      cleanNoteLines(h.notes[n]).forEach(L => { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = L; rowEl.appendChild(p); });
+      cv.appendChild(rowEl);
+    });
+  }
+  const del = document.createElement('button'); del.className = 'cvDel'; del.textContent = 'Delete this clean';
+  del.onclick = () => {
+    if (!cleanDelArmed) {
+      cleanDelArmed = true; del.classList.add('armed'); del.textContent = 'Tap again to confirm delete';
+      clearTimeout(cleanDelTimer);
+      cleanDelTimer = setTimeout(() => { cleanDelArmed = false; del.classList.remove('armed'); del.textContent = 'Delete this clean'; }, 5000);
+      return;
+    }
+    clearTimeout(cleanDelTimer);
+    history.splice(cleanIdx, 1);
+    saveHistory();
+    backToCleans();
+    toast('Clean deleted');
+    updateCount();
+  };
+  cv.appendChild(del);
+  $('sheet').classList.add('open');
+}
+function backToCleans() {
+  closeClean();
+  $('sheet').classList.remove('open');
+  histOpen = true;
+  openPace();
+}
+function closeClean() {
+  cleanIdx = null;
+  const cv = $('cleanView');
+  if (cv) cv.classList.add('hidden');
+  const f = $('filters'); if (f) f.style.display = '';
+  const sl = $('streetList'); if (sl) sl.style.display = '';
+  renderList();
 }
 
 // ===== RUN LIFECYCLE =====
@@ -2479,6 +2654,7 @@ function finishRun() {
   toast(archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved', 3000);
   if (archiving) maybeBackupNudge();
 }
+function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
 function doUndo() {
   if (!undoSnap) return;
   clearTimeout(undoTimer);
