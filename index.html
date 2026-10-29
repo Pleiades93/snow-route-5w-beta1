@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Lockge3xuXykxN5MT1D+fm8Vv3zQEfjPNCkqpnGW7LVfL9W9nKFvn5X4Nz+vNbqF' https://cdn.jsdelivr.net; style-src-elem 'sha384-V+MQcXGqSZS/9aFZGm0X6LMx5pzW/Sm2sCD7roBkziR74b2c2TXFE962BlCtWBZA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-QYwAuZ9uvdkcfsfM49OISbQu+jH2ol3SYaWrErkots2LP6k+XkTAyuA/HBAoJT4j' https://cdn.jsdelivr.net; style-src-elem 'sha384-k+SiByUNW30ElY1AELeySAnAFl3NSZPrCLxXIp3J6b+DnOLmKW2clzjz4EnP85Ia' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -27,7 +27,7 @@
   #hud .ver { font-size: 9px; font-weight: 600; color: #8fa0b3; line-height: 1; margin-top: 2px; letter-spacing: .04em; }
   #hud .count { font-size: 14px; color: #cfe8d8; white-space: nowrap; }
   #hud .spacer { margin-left: auto; }
-  #hud button { background: #2c7be5; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 10px; font-size: 14px; font-weight: 600; min-height: 40px; white-space: nowrap; }
+  #hud button { background: #2c7be5; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
   #hud #resetBtn { background: #c22f24; font-weight: 800; }
   #hud #resetBtn.armed { background: #8c1f16; }
@@ -135,13 +135,14 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.6</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.7</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
   <div class="row" style="margin-top:8px">
     <button id="listBtn">List</button>
     <button id="paceBtn">Pace</button>
+    <button id="clearBtn" class="ghost">Clear</button>
     <div class="spacer"></div>
     <button id="startBtn">▶ Start clean</button>
     <button id="cancelStartBtn" class="ghost" style="display:none;background:#e63a2e">Cancel start</button>
@@ -2098,6 +2099,7 @@ function noteMapState() { const dead = mapNoteArmed && !glOk && !mapNoteOff; $('
 $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } });
+const ROUTE_LABEL_NAMES = [...STREETNAMES, '5th Avenue', 'Tina Place', 'Astona Boulevard', 'Greenpark Boulevard', 'Valeria Boulevard'];
 function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
   // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
@@ -2122,7 +2124,14 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       else if (sl.indexOf('water') === 0 || id.indexOf('water') === 0) kind = 'water';
       m.setLayoutProperty(L.id, 'text-font', font);
       m.setLayoutProperty(L.id, 'text-size', SIZE[kind]);
-      if (kind === 'road') m.setLayerZoomRange(L.id, 13, 24);
+      if (kind === 'road') {
+        m.setLayerZoomRange(L.id, 13, 24);
+        // CLASH FIX (Andrew, Beta 1.7): on the 34 route streets the basemap's own along-street name and the
+        // app's bigger route label printed on top of each other. The basemap name now steps aside for route
+        // streets only (short + full map forms); every other street keeps its basemap name as before.
+        const excl = ['!', ['in', ['get', 'name'], ['literal', ROUTE_LABEL_NAMES]]];
+        m.setFilter(L.id, L.filter ? ['all', L.filter, excl] : excl);
+      }
     }
   } catch (e) { /* a style without label layers has nothing to normalize */ }
 }
@@ -2398,6 +2407,18 @@ document.addEventListener('visibilitychange', syncWake);
 function startClean() { runStart = Date.now(); saveAll(); startGps(true); updateCount(); syncWake(); toast('Clean started · ' + fmtClock(new Date())); checkStale(); }
 function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; saveAll(); if (wasRunGps) stopGps(); updateCount(); syncWake(); toast('Start cancelled'); }
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
+// CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
+// both sides), plus the completion times/vias and the GPS coverage that would instantly re-suggest them.
+// The run itself (start time, trail, notes, history) is untouched - this is the mistake eraser, not a finish.
+function clearAllMarks() {
+  const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0));
+  if (!any) { toast('Nothing marked to clear'); return; }
+  for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set();
+  deselect(); finishChange();
+  toast('All marks cleared');
+}
+$('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
 let undoSnap = null, undoTimer = 0;
 $('resetBtn').addEventListener('click', () => {
