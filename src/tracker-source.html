@@ -83,9 +83,11 @@
   #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(-148px, -72px) scale(1); transition-delay: 60ms; }
   #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(-162px, -12px) scale(1); transition-delay: 20ms; }
   #fanBtns.open .fanItem:nth-of-type(6) { transform: translate(-110px, 38px) scale(1); transition-delay: 0ms; }
-  .sheet { touch-action: none; position: absolute; left: 0; right: 0; bottom: 0; z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: 74dvh; display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: 74dvh; display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
+  .grab, #sheetHead { touch-action: none; }
+  #sheetBody, #pacePad { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform .28s ease, visibility 0s; }
-  .grab { padding: 9px 0 5px; cursor: grab; touch-action: none; flex: none; }
+  .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
   .grabBar { width: 44px; height: 5px; border-radius: 3px; background: #4a5262; margin: 0 auto; }
   .sheet.dragging { transition: none; }
   .sheet.snapping { transition: transform .28s ease, visibility 0s, height .26s cubic-bezier(.25,.8,.3,1), max-height .26s cubic-bezier(.25,.8,.3,1); }
@@ -163,7 +165,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.12</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.13</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -2403,17 +2405,19 @@ function renderList() { // production row design: tap a street's name area to op
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderList(); }));
 function closeSheets() { [$('sheet'), $('pacePanel')].forEach(s => { s.classList.remove('open'); s.classList.remove('full'); s.style.height = ''; s.style.maxHeight = ''; }); }
-// Draggable sheets (Andrew, Beta 1.9 spec, refined 1.10): the WHOLE panel drags, not just the handle line.
-// Three stops: swipe up = fill the screen (FULL), swipe down = back to the standard open height (DEFAULT),
-// swipe down again = closed. While the panel is at DEFAULT the list inside does not scroll (the drag moves
-// the panel); at FULL the inside scrolls with the finger, and a downward drag hands back to the panel once
-// the inside reaches its top. Taps (under the move threshold) pass through to buttons/rows untouched.
+// Draggable sheets (Andrew, Beta 1.9 spec; refined 1.10 flick; refined 1.13 touch zone): the drag/flick touch
+// zone is the panel's EMPTY TOP STRIP - the grab handle plus the title row - a comfortable area with no
+// controls except Close (a flick starting on a button never starts a drag). The content area below is pure
+// scrolling again, so flicks never fight the streets list. Three stops: flick/drag up = fill the screen
+// (FULL), down = back to the standard open height (DEFAULT), down again = closed. Slow drags follow the
+// finger; quick flicks throw the panel to the next stop on release. Taps pass through untouched.
 const SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150;
 function makeSheetDraggable(sheet) {
-  const scroller = sheet.querySelector('#sheetBody, #pacePad');
   let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null, panelMoved = false, samples = [];
   sheet.addEventListener('pointerdown', e => {
     if (dragging) return;
+    if (e.target.closest('button')) return; // buttons keep their taps
+    if (!e.target.closest('.grab, #sheetHead')) return; // drags start only in the empty top strip
     dragging = true; moved = false; panelMoved = false; pid = e.pointerId;
     startY = lastY = e.clientY; startH = sheet.offsetHeight;
     samples = [{ t: performance.now(), y: e.clientY }];
@@ -2429,10 +2433,7 @@ function makeSheetDraggable(sheet) {
       try { sheet.setPointerCapture(pid); } catch (err) {}
     }
     const vh = window.innerHeight;
-    const isFull = sheet.classList.contains('full');
-    if (isFull && scroller && dy > 0 && scroller.scrollTop > 0) { scroller.scrollTop -= dy; return; } // inside scrolls down-list
-    if (isFull && scroller && dy < 0 && scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1) { scroller.scrollTop -= dy; return; } // inside scrolls up-list
-    // otherwise the panel itself follows the finger
+    // the panel follows the finger (the content area below the top strip scrolls natively - drags can't start there)
     const h = Math.max(SHEET_MIN_PX, Math.min(vh * SHEET_FULL_VH, startH + total));
     sheet.style.maxHeight = 'none';
     sheet.style.height = h + 'px';
