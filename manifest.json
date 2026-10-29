@@ -1,0 +1,29 @@
+{
+ "name": "Snow Route 5W Beta",
+ "short_name": "Route 5W Beta",
+ "description": "Route 5W driveway-clearing tracker - 34 streets, Vaughan ON.",
+ "start_url": ".",
+ "scope": ".",
+ "display": "standalone",
+ "background_color": "#14161c",
+ "theme_color": "#14161c",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
