@@ -114,7 +114,7 @@ ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 
 const MIDS = JSON.parse(await ev(`(() => { const out = []; for (let i = 0; i < 3; i++) { const part = STRETCH.Velmar.parts[i]; out.push(part[Math.floor(part.length / 2)]); } return JSON.stringify(out); })()`));
 const tapAt = async (ll) => { await ev(`(() => { map.jumpTo({ center: [${ll[1]}, ${ll[0]}], zoom: 16 }); return true; })()`); await sleep(250); await ev(`map.fire('click', { lngLat: { lat: ${ll[0]}, lng: ${ll[1]} } })`); await sleep(250); };
-const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ n: selSet.length, bar: !$('selBar').classList.contains('hidden'), txt: $('selBarTxt').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
+const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: selSet.map(en => en.idx).join(','), n: selSet.length, bar: !$('selBar').classList.contains('hidden'), txt: $('selBarTxt').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
 
 // ---- M1: three consecutive taps accumulate ----
 await tapAt(MIDS[0]); await tapAt(MIDS[1]); await tapAt(MIDS[2]);
