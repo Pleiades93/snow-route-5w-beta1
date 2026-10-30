@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-7KSd6XQ4j9uJ2pjr5ANcDbqrvlNgWJbezVbXW8JVNbJKPtMV/bBNSRxEH5gLgrL8' https://cdn.jsdelivr.net; style-src-elem 'sha384-zTyHnyOWtZRB2gqBWV8mYa0iYCBukvUAUzoxa3pOyCIDljYBlshNwgAeqsIfNI7i' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-s78yq6Qj7LBcV6H+fHe8Ri8gSdLRVV2zx6SmJyjb0mFQhuxLyysqLNE3AUhxeHXk' https://cdn.jsdelivr.net; style-src-elem 'sha384-g/hE8FL4eCwcauTvE1jEtjB14KXGCnMjJEwyyv4zCqRmsF59fVoXbqYqSRedKb2T' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -18,7 +18,7 @@
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #14161c; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
     --card-op: rgba(26,29,36,.97); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 4px 20px rgba(0,0,0,.45); --shadow-float: 0 4px 14px rgba(0,0,0,.4); }
-  #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
+  #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
   body.night #map { background: #14171d; }
   #hud { position: absolute; top: 0; left: 0; right: 0; z-index: 1000; background: #14161c; box-shadow: 0 1px 12px rgba(0,0,0,.35); color: #fff; padding: calc(10px + var(--sat)) calc(12px + var(--sar)) 12px calc(12px + var(--sal)); }
   #hud .row { display: flex; align-items: center; gap: 8px; }
@@ -37,14 +37,17 @@
   #stats { font-size: 12px; color: #9fb4c8; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 4px; }
   body.storage-bad #warn { display: block; }
-  #info { position: absolute; top: calc(86px + var(--sat)); right: calc(10px + var(--sar)); z-index: 1000; width: 196px; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 12px; --accent: transparent; border-top: 4px solid var(--accent); }
+  /* Selection strip (Beta 1.14, Andrew): part of the header, not a floating card - it grows the top menu
+     only while a street is selected, so Mark completed never floats over the map or fights the buttons. */
+  #info { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px; background: rgba(255,255,255,.06); border-left: 4px solid var(--accent); border-radius: 10px; --accent: transparent; }
   #info.hidden { display: none; }
-  #selName { font-size: 16px; font-weight: 700; }
-  #selStatus { font-size: 12px; color: #b9c6d4; margin: 5px 0 10px; line-height: 1.45; }
-  #selBtn { width: 100%; border: none; border-radius: var(--rad-btn); padding: 10px; font-size: 14px; font-weight: 700; min-height: 42px; background: #1e7a46; color: #fff; }
+  #info .selTxt { flex: 1; min-width: 0; }
+  #selName { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #selStatus { font-size: 11.5px; color: #b9c6d4; margin-top: 1px; line-height: 1.35; }
+  #selBtn { flex: none; border: none; border-radius: var(--rad-btn); padding: 9px 12px; font-size: 13.5px; font-weight: 700; min-height: 40px; background: #1e7a46; color: #fff; }
   #selBtn.notdone { background: #c22f24; }
   #selBtn:disabled { background: #3a4150; color: #8fa0b3; }
-  #selNote { width: 100%; margin-top: 8px; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 600; background: #2b303c; color: #dfe7ef; min-height: 38px; }
+  #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: var(--rad-btn); padding: 0; font-size: 16px; background: #2b303c; color: #dfe7ef; }
   .banner { position: absolute; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(74px + var(--sab)); z-index: 1000; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
@@ -78,12 +81,13 @@
   #fanBtns .fanItem.red { background: #e63a2e; color: #fff; }
   #fanBtns.open { pointer-events: auto; }
   #fanBtns.open .fanItem { opacity: 1; pointer-events: auto; }
-  #fanBtns.open .fanItem:nth-of-type(1) { transform: translate(0, -165px) scale(1); transition-delay: 180ms; }
-  #fanBtns.open .fanItem:nth-of-type(2) { transform: translate(-58px, -155px) scale(1); transition-delay: 140ms; }
-  #fanBtns.open .fanItem:nth-of-type(3) { transform: translate(-110px, -122px) scale(1); transition-delay: 100ms; }
-  #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(-148px, -72px) scale(1); transition-delay: 60ms; }
-  #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(-162px, -12px) scale(1); transition-delay: 20ms; }
-  #fanBtns.open .fanItem:nth-of-type(6) { transform: translate(-110px, 38px) scale(1); transition-delay: 0ms; }
+  /* Menu column (Beta 1.14, Andrew): the items rise straight up from the hamburger in one column
+     (62px steps, 50px items = 12px gaps) and sink back down - no fan arc. Nearest item animates first. */
+  #fanBtns.open .fanItem:nth-of-type(1) { transform: translate(0, -310px) scale(1); transition-delay: 160ms; }
+  #fanBtns.open .fanItem:nth-of-type(2) { transform: translate(0, -248px) scale(1); transition-delay: 120ms; }
+  #fanBtns.open .fanItem:nth-of-type(3) { transform: translate(0, -186px) scale(1); transition-delay: 80ms; }
+  #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(0, -124px) scale(1); transition-delay: 40ms; }
+  #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(0, -62px) scale(1); transition-delay: 0ms; }
   .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: 74dvh; display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
@@ -153,9 +157,6 @@
   #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 1300; background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #map { transition: transform .45s ease-in-out; }
-  body.flipped #map { transform: rotate(180deg); }
-  body.flipped #attrChip { transform: rotate(180deg); }
-  body.flipped #spd { transform: rotate(180deg); }
 </style>
 </head>
 <body>
@@ -166,7 +167,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.13</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.14</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -180,13 +181,12 @@
     <button id="resetBtn" style="display:none">Finish</button>
   </div>
   <div id="bar"><div id="barFill"></div></div>
+  <div id="info" class="hidden">
+    <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>
+    <button id="selNote" title="Note for this street">📝</button>
+    <button id="selBtn" disabled>Mark completed</button>
+  </div>
   <div id="stats"></div>
-</div>
-<div id="info" class="hidden">
-  <div id="selName">No street selected</div>
-  <div id="selStatus">Tap a street on the map</div>
-  <button id="selBtn" disabled>Mark completed</button>
-  <button id="selNote">📝 Note</button>
 </div>
 <div id="suggest" class="banner hidden"><span id="sugText"></span><button id="sugYes">Show street</button><button id="sugNo" class="red">Dismiss</button></div>
 <div id="stale" class="banner hidden"><span id="staleText"></span><button id="staleYes">Finish it</button><button id="staleNo" class="red">Keep going</button></div>
@@ -195,13 +195,12 @@
 <div id="fanWrap">
   <div id="fanBtns">
     <button class="fanItem" id="updBtn" title="Update app"></button>
-    <button class="fanItem" id="flipBtn" title="Flip map"></button>
     <button class="fanItem" id="nightBtn" title="Night mode"></button>
     <button class="fanItem" id="homeBtn" title="Back to route"></button>
     <button class="fanItem" id="gpsBtn" title="My location"></button>
     <button class="fanItem" id="exportBtn" title="Export &amp; backup"></button>
   </div>
-  <button id="gearBtn" title="Settings"></button>
+  <button id="gearBtn" title="Menu"></button>
 </div>
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
@@ -364,7 +363,6 @@ let trail = parseJ(lsGet(LS.trail), []);
 trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
 let coveredIdx = parseJ(lsGet(LS.cov), {});
 if (!coveredIdx || typeof coveredIdx !== 'object' || Array.isArray(coveredIdx)) coveredIdx = {};
-let flipped = lsGet(LS.flip) === '1';
 let pieces = {}, pieceTimes = {};
 function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return doneSet.has(n); return p.every(v => v === 3); }
 (function loadSides() {
@@ -1937,11 +1935,11 @@ function addStack() {
   // under yellow at junctions. The green (completed) family is back
   // where it was before round 21 (Andrew: revert the green part) -
   // band casing and band render above the unfinished centre paint.
-  add(line('t1-casing', 'centres', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28], 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
-  add(line('t1-casingb', 'bands', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
-  add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
-  add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
-  add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1] }, { 'line-cap': 'butt' }));
+  add(line('t1-casing', 'centres', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28], 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casingb', 'bands', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   // --- selection glow (round 16, restored onto the r15 paint at
   // Andrew's direction 2026-10-29): three nested widths in the
   // street's OWN colour under the vibrant redraw; managePulse
@@ -1993,7 +1991,7 @@ function addStack() {
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.2, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 0, 12.6, 1], 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.2, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 0, 12.6, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
@@ -2005,9 +2003,9 @@ function addStack() {
   // (his r37 correction: staggered switches looked broken). Hard
   // floors sit just outside the band (paint 12.5, names 12.6, POI
   // capped 13.3) so fully-faded layers stop drawing / colliding.
-  add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0] } });
-  add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0] } });
-  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': 'Route 5W', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-halo-width': 1.6 } });
+  add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
+  add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
+  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': 'Route 5W', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
   ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-edge', 't1-sel', 't1-selband', 't1-sele', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
   glHideLabels(GLM);
   pushSources();
@@ -2244,7 +2242,6 @@ function geoSideFrame(name, idx, anchorLL) {
   }
   return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
-function flipPt(pt) { if (!flipped) return pt; const c = map.getCanvas(); return { x: c.clientWidth - pt.x, y: c.clientHeight - pt.y }; }
 function clearChips() { $('chips').innerHTML = ''; }
 function showChips() {
   clearChips();
@@ -2273,7 +2270,6 @@ function positionChips() {
     const sgn = side === 0 ? 1 : -1; // side 0 sits on geographic LEFT, side 1 on geographic RIGHT - the same sides the engine paints
     let dx = lx * sgn, dy = ly * sgn;
     let x = base.x + dx * 40, y = base.y + dy * 40;
-    if (flipped) { x = cw - x; y = ch - y; dx = -dx; dy = -dy; }
     x = Math.max(22, Math.min(cw - 22, x)); y = Math.max(22, Math.min(ch - 22, y));
     kids[side].style.left = (x - 20) + 'px'; kids[side].style.top = (y - 20) + 'px';
     const done = !!(pieces[sel.name][sel.idx] & (side ? 2 : 1));
@@ -2287,7 +2283,7 @@ function selectStretch(name, idx, anchor) { sel = { name, idx, anchor }; selStre
 function deselect() { sel = null; selStretch = null; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
 map.on('click', e => {
   if (Date.now() < swallowClickUntil) return;
-  const pt = flipPt(map.project([e.lngLat.lng, e.lngLat.lat]));
+  const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
   const near = nearestStreet(pt);
   if (near.name && near.d <= 16) { const st = nearestStretch(near.name, pt); selectStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }
   else deselect();
@@ -2717,6 +2713,7 @@ function buildSnap() { // production archive shape: items is a street->time map;
   return snap;
 }
 function finishRun() {
+  northUp();
   const snap = buildSnap();
   const archiving = !!(snap && doneSet.size >= 3); // production rule: under 3 streets clears WITHOUT being saved
   const prevHist = history;
@@ -2831,9 +2828,25 @@ function followCam() {
   const c = map.getCanvas(); const p = projLL(dispPos);
   const mx = c.clientWidth * 0.25, my = c.clientHeight * 0.25;
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
-  if (Math.abs(dx) > mx || Math.abs(dy) > my) map.panBy(flipped ? [-dx, -dy] : [dx, dy], { animate: false });
+  if (Math.abs(dx) > mx || Math.abs(dy) > my) map.panBy([dx, dy], { animate: false });
 }
 map.on('dragstart', () => { followPaused = true; });
+map.on('dragend', () => { northUp(); }); // he took the map over: ease back to north-up like a nav app
+// HEADING-UP (Andrew, Beta 1.14 - replaces Flip): while the camera follows during a run, the map rotates
+// so his direction of travel points up - course-up from the GPS course, not the compass and not true
+// north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
+// the map; under ~1 m/s the course is unreliable, so the map just holds its last bearing.
+let smHeading = null;
+function headDelta(a, b) { return ((b - a + 540) % 360) - 180; }
+function updateHeading(hdg, speed) {
+  if (typeof hdg !== 'number' || isNaN(hdg) || !speed || speed < 1) return;
+  if (!runStart || followPaused) return;
+  smHeading = smHeading === null ? hdg : smHeading + headDelta(smHeading, hdg) * 0.35;
+  const cur = map.getBearing();
+  const d = headDelta(cur, smHeading);
+  if (Math.abs(d) > 3) map.easeTo({ bearing: cur + d, duration: 350 });
+}
+function northUp() { smHeading = null; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); }
 function acceptFix(pos) {
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
   if (acc > 65 && lastGood && now - lastGood.at < 10000) return;
@@ -2851,6 +2864,7 @@ function acceptFix(pos) {
   const firstFix = !gpsPos;
   gpsPos = sm;
   glideTo(sm);
+  updateHeading(pos.coords.heading, speed);
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
   if (firstFix && (gpsFromRun || watchId != null)) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); followPaused = false; }
@@ -3074,7 +3088,7 @@ $('updBtn').addEventListener('click', async () => {
 
 // ===== FAN / NIGHT / FLIP / HOME =====
 const ICONS = {
-  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/></svg>',
+  menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   upd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3.5V8h-4.5"/></svg>',
   flip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M7 4L4 7M7 4l3 3M17 20V7M17 20l3-3M17 20l-3-3"/></svg>',
   moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>',
@@ -3083,42 +3097,26 @@ const ICONS = {
   gps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke-linecap="round"/></svg>',
   exp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M12 14l-3.5-3.5M12 14l3.5-3.5M4.5 19.5h15"/></svg>'
 };
-$('gearBtn').innerHTML = ICONS.gear; $('updBtn').innerHTML = ICONS.upd; $('flipBtn').innerHTML = ICONS.flip; $('homeBtn').innerHTML = ICONS.home; $('gpsBtn').innerHTML = ICONS.gps; $('exportBtn').innerHTML = ICONS.exp;
+$('gearBtn').innerHTML = ICONS.menu; $('updBtn').innerHTML = ICONS.upd; $('homeBtn').innerHTML = ICONS.home; $('gpsBtn').innerHTML = ICONS.gps; $('exportBtn').innerHTML = ICONS.exp;
 let fanOpen = false;
 function closeFan() { fanOpen = false; $('fanBtns').classList.remove('open'); $('gearBtn').classList.remove('on'); }
+// Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
+// Close button. Header buttons keep their own toggle behaviour; a tap on a dialog's dimmed backdrop
+// acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
+document.addEventListener('pointerdown', e => {
+  if (fanOpen && !e.target.closest('#fanWrap')) closeFan();
+  const anySheet = $('sheet').classList.contains('open') || $('pacePanel').classList.contains('open');
+  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal')) closeSheets();
+});
+['finModal', 'noteModal', 'xport'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 $('gearBtn').addEventListener('click', () => { if (!tapGuard('gearBtn')) return; fanOpen = !fanOpen; $('fanBtns').classList.toggle('open', fanOpen); $('gearBtn').classList.toggle('on', fanOpen); });
 function applyNight() { document.body.classList.toggle('night', isNight()); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; }
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; lsSet(LS.night, isNight() ? '0' : '1'); applyNight(); setBasemap(); closeFan(); });
 $('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); closeFan(); });
-// flip: CSS rotation + mirrored tap/pan/pinch
-let panPtr = null, pinchD = 0;
-function applyFlip() {
-  document.body.classList.toggle('flipped', flipped);
-  $('flipBtn').classList.toggle('on', flipped);
-  const cont = map.getContainer();
-  if (flipped) {
-    map.dragPan.disable(); map.touchZoomRotate.disable(); map.doubleClickZoom.disable(); map.scrollZoom.disable();
-    cont.addEventListener('pointerdown', flipDown); cont.addEventListener('pointermove', flipMove); cont.addEventListener('pointerup', flipUp); cont.addEventListener('pointercancel', flipUp);
-  } else {
-    map.dragPan.enable(); map.touchZoomRotate.enable(); map.doubleClickZoom.enable(); map.scrollZoom.enable();
-    cont.removeEventListener('pointerdown', flipDown); cont.removeEventListener('pointermove', flipMove); cont.removeEventListener('pointerup', flipUp); cont.removeEventListener('pointercancel', flipUp);
-  }
-  positionChips();
-}
-const flipPts = new Map();
-function flipDown(e) { flipPts.set(e.pointerId, [e.clientX, e.clientY]); panPtr = [e.clientX, e.clientY]; if (flipPts.size === 2) { const p = [...flipPts.values()]; pinchD = Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]); } }
-function flipMove(e) {
-  if (!flipPts.has(e.pointerId)) return;
-  flipPts.set(e.pointerId, [e.clientX, e.clientY]);
-  if (flipPts.size === 2) { const p = [...flipPts.values()]; const d = Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]); if (pinchD > 0 && Math.abs(d - pinchD) > 6) { if (d > pinchD) map.zoomIn(); else map.zoomOut(); pinchD = d; } panPtr = [e.clientX, e.clientY]; return; }
-  if (panPtr) { const dx = e.clientX - panPtr[0], dy = e.clientY - panPtr[1]; if (dx || dy) map.panBy([dx, dy], { animate: false }); panPtr = [e.clientX, e.clientY]; }
-}
-function flipUp(e) { flipPts.delete(e.pointerId); if (!flipPts.size) panPtr = null; pinchD = 0; }
-$('flipBtn').addEventListener('click', () => { if (!tapGuard('flipBtn')) return; flipped = !flipped; lsSet(LS.flip, flipped ? '1' : '0'); applyFlip(); closeFan(); toast(flipped ? 'Map flipped' : 'Map unflipped'); });
-
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => { /* SW is optional */ }); }
-applyNight(); applyFlip(); refreshAll(); checkStale(); syncWake();
+if (window.visualViewport) window.visualViewport.addEventListener('resize', () => { try { map.resize(); } catch (e) { /* map not up yet */ } });
+applyNight(); refreshAll(); checkStale(); syncWake();
 if (runStart) startGps(true);
 map.once('load', () => { fetch(isNight() ? GL_STYLES.day : GL_STYLES.night).catch(() => {}); }); // pre-warm the other style so the first day/night swap is instant
 </script></body></html>
