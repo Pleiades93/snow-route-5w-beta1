@@ -143,12 +143,16 @@ ok('T3 legacy migration keeps only real streets', A.ls === '["Velmar"]');
 // Hardened (Beta 1.15): this read crashed 1.14 attempt 1 - after doRestore's reload the app's state can
 // lag the drive's fixed sleep on a slow runner, and the raw JSON.parse(await ev(...)) idiom dies on the
 // non-string result. Poll until doneSet exists, then read. Assertions unchanged.
-A = {};
-for (let i = 0; i < 40 && A.n === undefined; i++) {
-  const raw = await ev(`(() => { try { return JSON.stringify({ n: doneSet.size, has: doneSet.has('Velmar') }); } catch (e) { return ''; } })()`);
-  if (typeof raw === 'string' && raw) { try { A = JSON.parse(raw); } catch { A = {}; } }
-  if (A.n === undefined) await sleep(250);
+// Diagnostic round (Beta 1.16): the 1.15 wait took the FIRST readable sample, which can be the post-clear
+// page (doneSet empty) before doRestore's reload lands - poll until the condition itself holds, and dump
+// what was actually seen (stored value + last sample + sample count) into the result either way.
+A = {}; let samples = 0;
+for (let i = 0; i < 48 && !(A.n === 1 && A.has); i++) {
+  const raw = await ev(`(() => { try { return JSON.stringify({ n: doneSet.size, has: doneSet.has('Velmar'), ls: localStorage.getItem('snow5w.v2') }); } catch (e) { return ''; } })()`);
+  if (typeof raw === 'string' && raw) { try { A = JSON.parse(raw); samples++; } catch { /* keep waiting */ } }
+  if (!(A.n === 1 && A.has)) await sleep(250);
 }
+R.diagT3 = { samples, last: A };
 ok('T3 after reload doneSet is exactly {Velmar}', A.n === 1 && A.has);
 // T4 ISSUE-02: snapshot read failure aborts honestly, nothing written, no throw
 A = JSON.parse(await ev(`(() => { window.__origGI = Storage.prototype.getItem;

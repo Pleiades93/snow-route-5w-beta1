@@ -155,9 +155,11 @@ await ev(`(() => { $('finYes').click(); return true; })()`);
 // sleep(300) before the Undo tap is replaced by a state wait for the button to actually BE Undo, and the
 // final poll requires the toast in the SAME sample as the restored state, so no sample can pass state
 // while reading a stale toast.
-await pollRead(`(() => JSON.stringify({ label: $('resetBtn').textContent }))()`, v => v.label === 'Undo', 6000);
+const diagUndo = await pollRead(`(() => JSON.stringify({ label: $('resetBtn').textContent }))()`, v => v.label === 'Undo', 6000);
+const diagPre = JSON.parse(await ev(`(() => JSON.stringify({ label: $('resetBtn').textContent, snap: !!undoSnap, h: history.length, done: doneSet.size, modal: $('finModal').classList.contains('hidden') }))()`));
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, toast: $('toast').textContent }))()`, v => v.h === 0 && v.done === 3 && /Finish undone/.test(v.toast));
+R.diagT4 = { labelWait: diagUndo, pre: diagPre, post: A };
 ok('T4 Undo finish restores the run', A.h === 0 && A.done === 3 && /Finish undone/.test(A.toast));
 // T5: finish again, then delete returns to Previous cleans (the bug fix)
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
