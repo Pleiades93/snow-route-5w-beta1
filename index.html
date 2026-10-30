@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-7Bym+WB2TDJ9FjySqwL0eK0/LtNF5WcWSLROeaFHJxHLLalJMtlQGaXkbtS9yAUX' https://cdn.jsdelivr.net; style-src-elem 'sha384-G12sKBCjHcRxKYZh1w/IOwfZwwzsSgbzlgTMTZG3x7zuVwjOrCAUFIypD0QRpDf/' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-omcCDiyWv8CXKWVnEtYKxwMhMcvpz11kUVfcgUTYIB1z1HXOQbYRuEDwzx17X7fM' https://cdn.jsdelivr.net; style-src-elem 'sha384-G12sKBCjHcRxKYZh1w/IOwfZwwzsSgbzlgTMTZG3x7zuVwjOrCAUFIypD0QRpDf/' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2843,7 +2843,7 @@ $('noteYes').addEventListener('click', () => {
 });
 
 // ===== GPS (checklist SS7) =====
-let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
+let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, camTimer = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
 const SAMPLES = {};
 (function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
 for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count
@@ -3027,13 +3027,14 @@ function startGps(fromRun) {
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
   gpsFromRun = !!fromRun; followPaused = false; startCompass();
   watchId = navigator.geolocation.watchPosition(acceptFix, gpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+  clearInterval(camTimer); camTimer = setInterval(followCam, 50); // the camera keeps easing to centre on its own clock (Beta 1.28 fix): when follow only ran inside glide ticks, centring stalled the moment a glide ended and the dot could rest off-centre (drive126 F2 caught it under the Kalman aim-lead)
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { stopGps(true); startGps(gpsFromRun); } }, 15000);
   $('gpsBtn').classList.add('on');
 }
 function stopGps(silent) {
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer);
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer); clearInterval(camTimer);
   $('gpsBtn').classList.remove('on'); $('spd').classList.add('hidden');
 }
 $('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) stopGps(); else startGps(false); });

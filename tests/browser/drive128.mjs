@@ -118,7 +118,7 @@ const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ n: sel
 
 // ---- M1: three consecutive taps accumulate ----
 await tapAt(MIDS[0]); await tapAt(MIDS[1]); await tapAt(MIDS[2]);
-let SSS = await selState();
+let SS = await selState();
 ok('M1 three taps select three sections, the pill shows, and all three highlight | ' + JSON.stringify(SS),
   SS.n === 3 && SS.bar === true && SS.txt === '3 sections selected' && SS.selFeats === 3 && SS.chips === 2);
 
