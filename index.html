@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-omcCDiyWv8CXKWVnEtYKxwMhMcvpz11kUVfcgUTYIB1z1HXOQbYRuEDwzx17X7fM' https://cdn.jsdelivr.net; style-src-elem 'sha384-G12sKBCjHcRxKYZh1w/IOwfZwwzsSgbzlgTMTZG3x7zuVwjOrCAUFIypD0QRpDf/' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-qbqR5seQ4cEDooz8eV8esS/bTNjIVn4NttNqREHcAUykpzVn66FTBYCZE+XSnVSw' https://cdn.jsdelivr.net; style-src-elem 'sha384-eYDMN3e2Assj6oUMwbcT85+r3Xcm2dK3kLlemwlzhKBpgPt8HB5lJAUoA29EF0CD' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -16,10 +16,10 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #14161c; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
-  /* MENU ANIMATION BASELINE (Andrew, 2026-10-30): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. */
-  :root { --anim-dur: 280ms; --ease-open: cubic-bezier(.25,.8,.3,1); --ease-close: cubic-bezier(.7,0,.75,.2); }
+  /* MENU ANIMATION BASELINE (Andrew, 2026-10-30; pace set by Andrew in Beta 1.29): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. The pace is deliberately a touch slow - smooth and fluid beats snappy. */
+  :root { --anim-dur: 420ms; --ease-open: cubic-bezier(.22,.9,.28,1); --ease-close: cubic-bezier(.72,0,.1,.78); }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
-    --card-op: rgba(23,26,32,.86); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 10px 34px rgba(10,14,20,.28); --shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(29,32,39,.78); --blur: blur(18px) saturate(1.6); } /* Beta 1.22 modern chrome: frosted glass surfaces, soft deep shadows */
+    --card: rgba(255,255,255,.92); --ink: #1c2534; --ink-dim: rgba(28,37,52,.64); --ink-faint: rgba(28,37,52,.32); --hair: rgba(20,28,44,.13); --chip: rgba(20,30,50,.06); --field: #ffffff; --sec: #47617f; --link: #1f6fd6; --done-nm: #177245; --tm-c: #4d7a5e; --nt-c: #96690f; /* Beta 1.29: menus follow the map - light glass by day (opaque enough that text never washes out on the bright map), a deep blue-black by night */ --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 10px 34px rgba(10,14,20,.28); --shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(10,14,22,.78); /* Beta 1.29: retuned into the same deep blue-black family as --card night (the old slate grey is gone everywhere) */ --blur: blur(18px) saturate(1.6); } /* Beta 1.22 modern chrome: frosted glass surfaces, soft deep shadows */
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
   body.night #map { background: #14171d; }
   #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: transparent; box-shadow: none; color: #fff; padding: calc(7px + var(--sat)) calc(12px + var(--sar)) 8px calc(12px + var(--sal)); } /* Beta 1.22/1.23: no top banner - the map runs full-screen under the floating title */ /* Beta 1.21: slim title-only header; the 70px left inset clears the top-left hamburger */
@@ -29,7 +29,7 @@
   #hud .titleStack { display: flex; flex-direction: column; }
   #hud .ver { font-size: 9px; font-weight: 600; color: #46536a; line-height: 1; margin-top: 2px; letter-spacing: .04em; text-shadow: 0 0 6px rgba(255,255,255,.95); }
   body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
-  #count { margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
+  #count { position: relative; overflow: hidden; margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
   #hud .spacer { margin-left: auto; }
   #hud button { background: #2c7be5; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
@@ -51,13 +51,13 @@
   #selBtn.notdone { background: #c22f24; }
   #selBtn:disabled { background: #3a4150; color: #8fa0b3; }
   #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: var(--rad-btn); padding: 0; font-size: 16px; background: #2b303c; color: #dfe7ef; }
-  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
   .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #2c7be5; color: #fff; white-space: nowrap; }
   .banner button.red { background: #e63a2e; }
   #stale { z-index: 1001; } #bakNudge { z-index: 1002; }
-  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
   #mapNoteNo { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 44px; background: #e63a2e; color: #fff; }
@@ -71,12 +71,12 @@
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
   #spd { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 76px + var(--sab)); z-index: 900; font-size: 13px; font-weight: 700; color: #fff; background: rgba(26,29,36,.85); padding: 5px 9px; border-radius: 8px; }
   #spd.hidden { display: none; }
-  #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; background: rgba(252,252,253,.88); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 6px 4px calc(6px + var(--sab)); box-shadow: 0 -8px 28px rgba(10,14,20,.30); } /* Beta 1.23 (Andrew, from his reference screenshot): the menu lives in a bottom tab bar now - dark frosted, icon + label per action */
+  #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; background: var(--card); /* Beta 1.29 cohesion (Andrew): the bottom bar wears the SAME surface as the Streets/Pace sheets and the Settings pop-up, day and night - one menu family */ -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 6px 4px calc(6px + var(--sab)); box-shadow: 0 -8px 28px rgba(10,14,20,.30); } /* Beta 1.23 (Andrew, from his reference screenshot): the menu lives in a bottom tab bar now - dark frosted, icon + label per action */
   .tabItem { flex: 1; background: none; border: none; color: #2b3038; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 0 2px; cursor: pointer; font-family: inherit; }
   .tabItem svg { width: 24px; height: 24px; }
   .tabLbl { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
   .tabItem.on { color: #1f6fd0; }
-  body.night #tabBar { background: rgba(17,19,24,.88); }
+  /* (the tab bar's night surface comes from --card via body.night - no separate override) */
   body.night .tabItem { color: #dde5ec; }
   body.night .tabItem.on { color: #4da3ff; }
   .tabItem.red { color: #ff6b5e; }
@@ -88,6 +88,9 @@
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
   #startBtn { background: #0a0a0b; color: #d8ff3d; font-size: 21px; } /* Beta 1.23 (Andrew's reference): black circle, volt-yellow word */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
+  #countTxt { position: relative; z-index: 1; }
+  body.night { --card: rgba(7,10,17,.94); --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(140,170,230,.10); --field: #101623; --sec: #9fb4c8; --link: #7db4e8; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.29 night card: near-black with a blue soul, replacing the slate grey Andrew disliked */
   #selBar { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 8px 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.28: the multi-selection action pill - same glass family as the progress pill, parked under the title where nothing else competes */
   body.night #selBar { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #selBar.hidden { display: none; }
@@ -95,12 +98,12 @@
   #selAllBtn { background: #2ecc71; color: #fff; }
   #selClearBtn { background: transparent; color: inherit; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
-  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
-  .grabBar { width: 44px; height: 5px; border-radius: 3px; background: #4a5262; margin: 0 auto; }
+  .grabBar { width: 44px; height: 5px; border-radius: 3px; background: var(--ink-faint); margin: 0 auto; }
   .sheet.dragging { transition: none; }
   .sheet.snapping { transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   #sheetBody { flex: 1 1 auto; min-height: 0; }
@@ -108,60 +111,70 @@
   #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
   #sheetClose { border: none; border-radius: var(--rad-btn); width: 38px; height: 38px; background: #e63a2e; color: #fff; font-size: 16px; font-weight: 800; }
   #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
-  #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: #2b303c; color: #b9c6d4; min-height: 38px; }
+  #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
   #filters button.on { background: #2c7be5; color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
-  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid #333; font-size: 16px; cursor: pointer; min-height: 48px; }
+  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 16px; cursor: pointer; min-height: 48px; }
   .srow .dot { width: 15px; height: 15px; border-radius: 50%; background: #ef476f; flex-shrink: 0; }
   .srow.main .dot { background: #ffc233; }
   .srow.done .dot { background: #06d6a0; }
-  .srow.done .nm { color: #9fd3ae; }
-  .srow .tm { margin-left: auto; font-size: 12px; color: #8fae99; white-space: nowrap; }
+  .srow.done .nm { color: var(--done-nm); }
+  .srow .tm { margin-left: auto; font-size: 12px; color: var(--tm-c); white-space: nowrap; }
   .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
-  .srow .nt { font-size: 12px; color: #c9a86a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
-  .srow .sbtn { margin-left: 2px; width: 42px; height: 42px; flex-shrink: 0; border: 1px solid #444; border-radius: var(--rad-btn); background: #262a33; font-size: 17px; padding: 0; }
-  .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid #333; }
-  .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: #14161a; color: #fff; border: 1px solid #444; border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
-  .noteEd .nhint { font-size: 12px; color: #8fae99; margin-top: 5px; }
+  .srow .nt { font-size: 12px; color: var(--nt-c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
+  .srow .sbtn { margin-left: 2px; width: 42px; height: 42px; flex-shrink: 0; border: 1px solid var(--hair); border-radius: var(--rad-btn); background: var(--chip); color: var(--ink); font-size: 17px; padding: 0; }
+  .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
+  .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
+  .noteEd .nhint { font-size: 12px; color: var(--tm-c); margin-top: 5px; }
   #cleanView { padding: 4px 2px 14px; }
   .cvHead { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
   .cvHead .cvTtl { font-weight: 800; font-size: 16px; flex: 1; }
-  .cvHead button { border: 1px solid #444; background: #262a33; color: #fff; border-radius: var(--rad-btn); min-height: 40px; padding: 0 12px; font-size: 14px; font-weight: 700; }
-  .cvMeta { font-size: 13px; color: #b9c2cc; padding: 0 2px 8px; line-height: 1.5; white-space: pre-wrap; }
-  .cvRow { padding: 10px 4px; border-bottom: 1px solid #333; cursor: pointer; }
+  .cvHead button { border: 1px solid var(--hair); background: var(--chip); color: var(--ink); border-radius: var(--rad-btn); min-height: 40px; padding: 0 12px; font-size: 14px; font-weight: 700; }
+  .cvMeta { font-size: 13px; color: var(--ink-dim); padding: 0 2px 8px; line-height: 1.5; white-space: pre-wrap; }
+  .cvRow { padding: 10px 4px; border-bottom: 1px solid var(--hair); cursor: pointer; }
   .cvRow .cvTop { display: flex; align-items: baseline; gap: 8px; }
   .cvRow .cvNm { font-size: 15px; font-weight: 700; flex: 1; }
-  .cvRow .cvTm { font-size: 12px; color: #8fae99; white-space: nowrap; }
-  .cvRow .cvNt { font-size: 12px; color: #c9a86a; margin-top: 3px; }
-  .cvDet { font-size: 13px; color: #d7dde3; line-height: 1.55; padding: 6px 2px 2px; white-space: pre-wrap; }
-  .cvSec { font-weight: 800; font-size: 13px; color: #9fb4c8; padding: 12px 2px 4px; }
+  .cvRow .cvTm { font-size: 12px; color: var(--tm-c); white-space: nowrap; }
+  .cvRow .cvNt { font-size: 12px; color: var(--nt-c); margin-top: 3px; }
+  .cvDet { font-size: 13px; color: var(--ink); line-height: 1.55; padding: 6px 2px 2px; white-space: pre-wrap; }
+  .cvSec { font-weight: 800; font-size: 13px; color: var(--sec); padding: 12px 2px 4px; }
   .cvDel { width: 100%; margin-top: 14px; min-height: 44px; border: 1px solid #7a3a3a; background: #4a2323; color: #fff; border-radius: var(--rad-btn); font-size: 14px; font-weight: 700; }
   .cvDel.armed { background: #8c2f2f; }
-  .psec { font-weight: 800; font-size: 13px; color: #9fb4c8; padding: 12px 2px 4px; }
-  .prow { display: flex; justify-content: space-between; gap: 8px; padding: 7px 2px; font-size: 13.5px; border-bottom: 1px solid #2b303c; }
+  .psec { font-weight: 800; font-size: 13px; color: var(--sec); padding: 12px 2px 4px; }
+  .prow { display: flex; justify-content: space-between; gap: 8px; padding: 7px 2px; font-size: 13.5px; border-bottom: 1px solid var(--hair); }
   .prow.histRow { cursor: pointer; }
-  .prow.histRow span:last-child { color: #7db4e8; }
-  #pacePad { flex: 1 1 auto; min-height: 0; padding: 4px 14px 14px; font-size: 14px; line-height: 1.65; color: #dfe7ef; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  #pacePad b { color: #fff; }
+  .prow.histRow span:last-child { color: var(--link); }
+  #pacePad { flex: 1 1 auto; min-height: 0; padding: 4px 14px 14px; font-size: 14px; line-height: 1.65; color: var(--ink); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #pacePad b { color: var(--ink); }
   #pacePad button { border: none; border-radius: var(--rad-btn); padding: 10px 14px; font-size: 14px; font-weight: 700; min-height: 42px; background: #1e7a46; color: #fff; margin-top: 10px; }
   #pacePad button.red { background: #e63a2e; }
   .modal { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; height: var(--vvh, 100dvh); z-index: 1200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 22px; }
   .modal.hidden { display: none; }
-  .modal .card { background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
+  .modal:not(.hidden) { animation: menuFade var(--anim-dur) var(--ease-open); }
+  .modal:not(.hidden) .card { animation: menuRise var(--anim-dur) var(--ease-open); }
+  .banner:not(.hidden), #mapNote:not(.hidden), #selBar:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
+  @keyframes menuFade { from { opacity: 0; } }
+  @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+  .modal .card { background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
   .modal .card h3 { font-size: 16px; margin-bottom: 8px; }
-  .modal .card p { font-size: 13px; color: #b9c6d4; line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
+  .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
   .modal .row { display: flex; gap: 8px; }
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
   #finYes { background: #c22f24; color: #fff; } #finNo { background: #e63a2e; color: #fff; }
   #noteYes { background: #2c7be5; color: #fff; } #noteNo { background: #e63a2e; color: #fff; }
-  #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid #3a4150; background: #1b1f27; color: #eef2f6; font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
+  #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
   #xport .card { max-width: 380px; }
-  #xText { width: 100%; min-height: 110px; border-radius: var(--rad-btn); border: 1px solid #3a4150; background: #1b1f27; color: #eef2f6; font-size: 12px; padding: 9px; margin-bottom: 10px; font-family: ui-monospace, monospace; }
+  #xText { width: 100%; min-height: 110px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 12px; padding: 9px; margin-bottom: 10px; font-family: ui-monospace, monospace; }
   #xport .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  #xport .grid button { border: none; border-radius: var(--rad-btn); padding: 10px 6px; font-size: 13px; font-weight: 700; min-height: 42px; background: #2b303c; color: #dfe7ef; }
+  #xport .grid button { border: none; border-radius: var(--rad-btn); padding: 10px 6px; font-size: 13px; font-weight: 700; min-height: 42px; background: var(--chip); color: var(--ink); }
   #xport .grid button.red { background: #e63a2e; color: #fff; }
-  #xPreStat, #xSum { font-size: 12px; color: #8fa0b3; margin-top: 9px; line-height: 1.5; }
-  #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 1300; background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: 86vw; text-align: center; }
+  #xPreStat, #xSum { font-size: 12px; color: var(--ink-dim); margin-top: 9px; line-height: 1.5; }
+  #setMenu { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 84px + var(--sab)); z-index: 1150; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border: 1px solid var(--hair); border-radius: 16px; box-shadow: var(--shadow-card); padding: 6px; display: flex; flex-direction: column; gap: 2px; min-width: 184px; opacity: 0; visibility: hidden; transform: translateY(10px); transform-origin: bottom right; transition: opacity var(--anim-dur) var(--ease-close), transform var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); }
+  #setMenu.open { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open), visibility 0s; }
+  .setRow { display: flex; align-items: center; gap: 11px; border: none; background: transparent; color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 700; padding: 10px 12px; border-radius: 11px; min-height: 46px; text-align: left; cursor: pointer; }
+  .setRow:active { background: var(--chip); }
+  .setRow .tabIco svg { width: 21px; height: 21px; display: block; }
+  #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 1300; background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #map { transition: transform .45s ease-in-out; }
 </style>
@@ -175,7 +188,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.28</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.29</div></div>
   </div>
   <div id="info" class="hidden">
     <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>
@@ -193,19 +206,22 @@
   <div id="runSlot">
     <button id="startBtn" class="runBtn">Start</button>
     <button id="resetBtn" class="runBtn" style="display:none">Finish</button>
-    <div id="count">0 of 34 · 0%</div>
+    <div id="count"><span id="countFill"></span><span id="countTxt">0 of 34 · 0%</span></div>
     <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
   </div>
   <button id="paceBtn" class="dockBtn" title="Pace"></button>
 </div>
-<nav id="tabBar">
-  <button class="tabItem" id="updBtn"><span class="tabIco"></span><span class="tabLbl">Update</span></button>
+<nav id="tabBar"> <!-- Beta 1.29 layout (Andrew): Locate, Night/Day, Home dead centre, Clear, and a Settings gear at the far right; Update and Backup moved into the Settings pop-up -->
+  <button class="tabItem" id="gpsBtn"><span class="tabIco"></span><span class="tabLbl">Locate</span></button>
   <button class="tabItem" id="nightBtn"><span class="tabIco"></span><span class="tabLbl">Night</span></button>
   <button class="tabItem" id="homeBtn"><span class="tabIco"></span><span class="tabLbl">Home</span></button>
-  <button class="tabItem" id="gpsBtn"><span class="tabIco"></span><span class="tabLbl">Locate</span></button>
-  <button class="tabItem" id="exportBtn"><span class="tabIco"></span><span class="tabLbl">Backup</span></button>
   <button class="tabItem" id="clearBtn"><span class="tabIco"></span><span class="tabLbl">Clear</span></button>
+  <button class="tabItem" id="setBtn"><span class="tabIco"></span><span class="tabLbl">Settings</span></button>
 </nav>
+<div id="setMenu">
+  <button class="setRow" id="updBtn"><span class="tabIco"></span><span class="tabLbl">Update</span></button>
+  <button class="setRow" id="exportBtn"><span class="tabIco"></span><span class="tabLbl">Backup</span></button>
+</div>
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
   <div id="sheetHead"><div id="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
@@ -2392,7 +2408,7 @@ $('selNote').addEventListener('click', () => { if (!sel || !tapGuard('selNote'))
 function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
   const pct = Math.round(workDoneM() / totalWorkM() * 100);
-  $('count').textContent = n + ' of 34 · ' + pct + '%';
+  $('countTxt').textContent = n + ' of 34 · ' + pct + '%'; $('countFill').style.width = (workDoneM() / totalWorkM() * 100) + '%'; // the meter fills with the same work fraction the % is computed from
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = (runStart && doneSet.size === 0) ? '' : 'none';
@@ -2592,7 +2608,7 @@ function renderPace() {
       html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of 34 streets ›</span></div>';
       any++;
     }
-    if (!any) html += '<div style="font-size:13px;color:#8fa0b3;padding:4px 2px">No cleans saved yet — when you finish a run and tap Finish, it lands here with its total time.</div>';
+    if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet — when you finish a run and tap Finish, it lands here with its total time.</div>';
   }
   $('pacePad').innerHTML = html;
   const c = $('paceCancel'); if (c) c.addEventListener('click', () => { cancelStart(); closeSheets(); });
@@ -3221,10 +3237,14 @@ const ICONS = { // Pack D "iOS Filled" (Andrew's pick, Beta 1.28): solid silhoue
   sun: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="4.4" fill="currentColor" stroke="none"/><path fill="currentColor" stroke="none" d="M10.75 6.20 L11.22 2.60 L12.78 2.60 L13.25 6.20 ZM15.22 7.01 L18.10 4.80 L19.20 5.90 L16.99 8.78 ZM17.80 10.75 L21.40 11.22 L21.40 12.78 L17.80 13.25 ZM16.99 15.22 L19.20 18.10 L18.10 19.20 L15.22 16.99 ZM13.25 17.80 L12.78 21.40 L11.22 21.40 L10.75 17.80 ZM8.78 16.99 L5.90 19.20 L4.80 18.10 L7.01 15.22 ZM6.20 13.25 L2.60 12.78 L2.60 11.22 L6.20 10.75 ZM7.01 8.78 L4.80 5.90 L5.90 4.80 L8.78 7.01 Z"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 3.4 2.6 11.8h2.8V21h13.2v-9.2h2.8zM10.2 21v-6h3.6v6z"/></svg>',
   gps: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M12 2.6 19.6 20.6 12 17l-7.6 3.6z"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M8.98 4.70 L9.66 1.87 L14.34 1.87 L15.02 4.70 L15.02 4.70 L17.51 3.18 L20.82 6.49 L19.30 8.98 L19.30 8.98 L22.13 9.66 L22.13 14.34 L19.30 15.02 L19.30 15.02 L20.82 17.51 L17.51 20.82 L15.02 19.30 L15.02 19.30 L14.34 22.13 L9.66 22.13 L8.98 19.30 L8.98 19.30 L6.49 20.82 L3.18 17.51 L4.70 15.02 L4.70 15.02 L1.87 14.34 L1.87 9.66 L4.70 8.98 L4.70 8.98 L3.18 6.49 L6.49 3.18 L8.98 4.70 ZM12 8.70 a3.30 3.30 0 1 0 0.001 0 Z"/></svg>', /* Pack D language, drawn for the Settings tab (Beta 1.29) */
   exp: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M11 3h2v9.2l2.4-2.4 1.5 1.5L12 16.2l-4.9-4.9 1.5-1.5L11 12.2z"/><path fill="currentColor" stroke="none" d="M4.4 15.6h3.4v2.6h8.4v-2.6h3.4V21H4.4z"/></svg>'
 };
 $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace;
 ['updBtn', 'homeBtn', 'gpsBtn', 'exportBtn', 'clearBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ updBtn: 'upd', homeBtn: 'home', gpsBtn: 'gps', exportBtn: 'exp', clearBtn: 'clear' }[id]]; });
+$('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
+$('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; $('setMenu').classList.toggle('open'); }); // the Settings pop-up (Beta 1.29): rises from the bar on the shared menu motion; picking a row closes it
+['updBtn', 'exportBtn'].forEach(id => $(id).addEventListener('click', () => $('setMenu').classList.remove('open')));
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
 // Close button. Header buttons keep their own toggle behaviour; a tap on a dialog's dimmed backdrop
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
@@ -3234,6 +3254,7 @@ document.addEventListener('pointerdown', e => {
   // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
   if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) $('suggest').classList.add('hidden');
   if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) $('stale').classList.add('hidden');
+  if ($('setMenu').classList.contains('open') && !e.target.closest('#setMenu') && !e.target.closest('#setBtn')) $('setMenu').classList.remove('open'); // the Settings pop-up is a menu too: a tap anywhere else puts it away
 });
 ['finModal', 'noteModal', 'xport'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 function applyNight() { document.body.classList.toggle('night', isNight()); $('nightBtn').querySelector('.tabIco').innerHTML = isNight() ? ICONS.sun : ICONS.moon; $('nightBtn').querySelector('.tabLbl').textContent = isNight() ? 'Day' : 'Night'; } // the tab names where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun) - icon and label flip together

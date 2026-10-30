@@ -139,6 +139,26 @@ ok('S3 header slab is transparent (map full-screen at the top)', S22.hudBg === '
 ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-strip job), dock clear above it | ' + JSON.stringify(S22),
   S22.strip.x === 0 && S22.strip.w === S22.vw && Math.abs(S22.strip.bottom - S22.vh) <= 1 && S22.startB <= S22.strip.top + 1 && S22.atBottom === 'tabBar' && S22.atStart === 'startBtn');
 
+// T (Beta 1.29, Andrew): menus are ONE family - the Streets/Pace sheets, the bottom
+// bar and the Settings pop-up share a surface in each theme; day is light glass with
+// dark text (never white-on-white over the bright map), night is a deep blue-black.
+const T1 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
+  sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, paceBg: surf($('pacePanel')),
+  barBg: surf($('tabBar')), menuBg: surf($('setMenu')), fillW: $('countFill').offsetWidth,
+  order: [...document.querySelectorAll('#tabBar .tabItem')].map(b => b.id) }); })()`));
+ok('T1 day menus share one light surface with dark text (bar = sheets = settings pop-up) | ' + JSON.stringify(T1),
+  T1.sheetBg === 'rgba(255, 255, 255, 0.92)' && T1.sheetCol === 'rgb(28, 37, 52)' && T1.paceBg === T1.sheetBg && T1.barBg === T1.sheetBg && T1.menuBg === T1.sheetBg);
+ok('T2 tab order: Locate, Night, Home dead centre, Clear, Settings | ' + JSON.stringify(T1.order),
+  JSON.stringify(T1.order) === JSON.stringify(['gpsBtn', 'nightBtn', 'homeBtn', 'clearBtn', 'setBtn']));
+ok('T3 the meter starts empty | fillW ' + T1.fillW, T1.fillW === 0);
+await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
+const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'),
+  rows: [...document.querySelectorAll('#setMenu .setRow')].map(b => ({ id: b.id, lbl: b.querySelector('.tabLbl').textContent, svg: !!b.querySelector('svg') })) }))()`));
+ok('T3 Settings rises with Update and Backup inside (Pack D icons + labels) | ' + JSON.stringify(T3b),
+  T3b.open === true && T3b.rows.length === 2 && T3b.rows[0].id === 'updBtn' && T3b.rows[1].id === 'exportBtn' && T3b.rows.every(r => r.svg && r.lbl.length > 0));
+await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
+ok('T3 Settings closes on a second tap', await ev(`$('setMenu').classList.contains('open')`) === false);
+
 // S6/S7 (Beta 1.24): after Start, Cancel must float ABOVE the circle - clear of the
 // tab bar and tappable; and the chrome icons must compute to bright colours on the
 // dark glass (a duplicated dark colour value once rendered them invisible).
@@ -147,7 +167,7 @@ await sleep(700);
 const S6 = JSON.parse(await ev(`(() => { const c = $('cancelStartBtn'); const cr = c.getBoundingClientRect(); const tr = $('tabBar').getBoundingClientRect();
   const hit = document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2);
   return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id, nightLbl: $('nightBtn').querySelector('.tabLbl').textContent,
-    listCol: getComputedStyle($('streetsBtn')).color, paceCol: getComputedStyle($('paceBtn')).color, tabCol: getComputedStyle($('updBtn')).color }); })()`));
+    listCol: getComputedStyle($('streetsBtn')).color, paceCol: getComputedStyle($('paceBtn')).color, tabCol: getComputedStyle($('homeBtn')).color }); })()`));
 ok('S6 Cancel start floats above the circle, clear of the tab bar, and takes the tap | ' + JSON.stringify(S6),
   S6.disp !== 'none' && S6.cancel.b <= S6.tabTop - 40 && S6.hit === 'cancelStartBtn');
 ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' + JSON.stringify(S6),
@@ -156,11 +176,16 @@ await ev(`(() => { $('nightBtn').click(); return true; })()`);
 await sleep(600);
 ok('S7 day mode: the theme tab offers Night - it names where it takes you, not where you are (Beta 1.28) | label ' + S6.nightLbl, S6.nightLbl === 'Night');
 const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), nightLbl: $('nightBtn').querySelector('.tabLbl').textContent,
-  listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('updBtn')).color,
+  listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('homeBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
-  S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(17, 19, 24, 0.88)' && S7.countCol === 'rgb(238, 244, 238)');
+  S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(7, 10, 17, 0.94)' && S7.countCol === 'rgb(238, 244, 238)');
 ok('S7 night mode: the theme tab now offers Day, label and state in agreement | label ' + S7.nightLbl, S7.nightLbl === 'Day');
+const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
+  sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')), menuBg: surf($('setMenu')) }); })()`));
+ok('T4 night menus share the deep blue-black (bar = sheets = pop-up), text bright | ' + JSON.stringify(T4),
+  T4.sheetBg === 'rgba(7, 10, 17, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
+
 await ev(`(() => { $('cancelStartBtn').click(); return true; })()`);
 await sleep(400);
 
@@ -168,6 +193,11 @@ await ev(`(() => { markDone('Woolacott', 'tap'); return true; })()`);
 await sleep(400);
 const C2 = await ev(`$('count').textContent`);
 ok('S5 count climbs in the new format after a street is done | ' + C2, /^1 of 34 · \d+%$/.test(C2));
+await sleep(600);
+const T5 = JSON.parse(await ev(`(() => JSON.stringify({ ratio: $('countFill').offsetWidth / $('count').offsetWidth, want: workDoneM() / totalWorkM(), txt: $('countTxt').textContent, count: $('count').textContent }))()`));
+ok('T5 the pill meter fills with the same work fraction the % reports | ' + JSON.stringify(T5),
+  Math.abs(T5.ratio - T5.want) < 0.04 && T5.want > 0 && T5.txt === T5.count);
+
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));
