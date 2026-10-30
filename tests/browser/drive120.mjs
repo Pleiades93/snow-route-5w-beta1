@@ -122,10 +122,17 @@ const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.n
 
 ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, v => v, 30000));
 
-// V1: header buttons - in bounds, no overlaps, no horizontal overflow (default state)
-let rects = JSON.parse(await ev(`JSON.stringify(${RECTS('#hud button')})`));
-ok('V1 header buttons all inside the viewport | rects ' + JSON.stringify(rects), rects.length >= 4 && rects.every(inView)); // 4 visible at boot by design: Finish and Cancel-start are display:none until relevant
-ok('V1 header buttons do not overlap each other', noOverlap(rects));
+// V1 (Beta 1.21 layout): the dock - List | round run button | Pace on one level,
+// centred and symmetrical; the gear alone at the top left; the header is title-only.
+const dockGeom = async () => JSON.parse(await ev(`(() => { const r = (id) => { const b = $(id).getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, cx: b.x + b.width / 2, cy: b.y + b.height / 2 }; };
+  return JSON.stringify({ list: r('listBtn'), pace: r('paceBtn'), start: r('startBtn'), gear: r('gearBtn'), vw: window.innerWidth }); })()`));
+let D = await dockGeom();
+let rects = [D.list, D.pace, D.start];
+ok('V1 dock buttons all inside the viewport | dock ' + JSON.stringify(D), rects.every(inView));
+ok('V1 dock buttons do not overlap each other', noOverlap(rects));
+ok('V1 run button is centred and List/Pace are symmetrical around it | dock ' + JSON.stringify(D),
+  Math.abs(D.start.cx - D.vw / 2) <= 2 && Math.abs((D.start.cx - D.list.cx) - (D.pace.cx - D.start.cx)) <= 2 && Math.abs(D.list.cy - D.start.cy) <= 2 && Math.abs(D.pace.cy - D.start.cy) <= 2);
+ok('V1 gear sits alone at the top left | gear ' + JSON.stringify(D.gear), D.gear.x >= 8 && D.gear.x < D.vw / 2 && D.gear.y >= 0 && D.gear.y < 120);
 A = await J(`({ sw: $('hud').scrollWidth, cw: $('hud').clientWidth })`);
 ok('V1 header content does not overflow horizontally', A.sw <= A.cw + 1);
 
@@ -136,6 +143,8 @@ await sleep(700);
 rects = JSON.parse(await ev(`JSON.stringify(${RECTS('#hud button')})`));
 ok('V2 with selection strip: header buttons inside the viewport', rects.every(inView));
 ok('V2 with selection strip: header buttons do not overlap', noOverlap(rects));
+D = await dockGeom();
+ok('V2 dock stays centred with a street selected | dock ' + JSON.stringify(D), Math.abs(D.start.cx - D.vw / 2) <= 2 && [D.list, D.pace, D.start].every(inView));
 
 // V3: side chips are 40px, in bounds, and do not overlap each other
 const chips = JSON.parse(await ev(`JSON.stringify(${RECTS('.sideChip .chipBtn')})`));
@@ -153,7 +162,7 @@ ok('V3b edge-anchored chips keep their separation | chips ' + JSON.stringify(chi
 await ev(`(() => { deselect(); $('gearBtn').click(); return true; })()`);
 await sleep(800);
 const fan = JSON.parse(await ev(`JSON.stringify(${RECTS('#fanBtns .fanItem')})`));
-ok('V4 fan shows five items', fan.length === 5);
+ok('V4 fan shows six items', fan.length === 6);
 ok('V4 fan items are 50px and inside the viewport | fan ' + JSON.stringify(fan), fan.every(f => Math.abs(f.w - 50) <= 2 && Math.abs(f.h - 50) <= 2 && inView(f)));
 const sorted = [...fan].sort((a, b) => a.y - b.y);
 ok('V4 fan items have clear vertical gaps (no overlap)', sorted.every((f, i) => i === 0 || sorted[i - 1].b <= f.y - 6));
@@ -175,8 +184,8 @@ await sleep(500);
 await ev(`(() => { $('nightBtn').click(); return true; })()`);
 await sleep(900);
 A = await J(`({ night: document.body.classList.contains('night') })`);
-rects = JSON.parse(await ev(`JSON.stringify(${RECTS('#hud button')})`));
-ok('V6 night: header buttons inside the viewport, no overlaps', A.night === true && rects.every(inView) && noOverlap(rects));
+D = await dockGeom();
+ok('V6 night: dock centred, inside the viewport, no overlaps | dock ' + JSON.stringify(D), A.night === true && [D.list, D.pace, D.start].every(inView) && noOverlap([D.list, D.pace, D.start]) && Math.abs(D.start.cx - D.vw / 2) <= 2);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));

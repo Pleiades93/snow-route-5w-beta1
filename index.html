@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-fdll8QJuuLkZrimqvWFfaQ11af8zgWbexvvFfWfVkPc+d/2qz9fuHzMaKHGBJwUe' https://cdn.jsdelivr.net; style-src-elem 'sha384-Jg7qIyYkdxchO87baKS3xdS8heNkXvetkVw3bMtbTnnOvWjVC1xh8q5VRAF0VvAj' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-KlSeuJyTastdhqChoq1oKBHviwf0JIA/hSVWbkBvah8I6G5pYRDsGdcm+FczkAHQ' https://cdn.jsdelivr.net; style-src-elem 'sha384-CmdgcKxvGJHfkLsfAWWxrb73k+kicm+DIVkNs+vBiKQbzV52bydV+uIgtTAfCsvf' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -22,20 +22,18 @@
     --card-op: rgba(26,29,36,.97); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 4px 20px rgba(0,0,0,.45); --shadow-float: 0 4px 14px rgba(0,0,0,.4); }
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
   body.night #map { background: #14171d; }
-  #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: #14161c; box-shadow: 0 1px 12px rgba(0,0,0,.35); color: #fff; padding: calc(10px + var(--sat)) calc(12px + var(--sar)) 12px calc(12px + var(--sal)); }
+  #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: #14161c; box-shadow: 0 1px 12px rgba(0,0,0,.35); color: #fff; padding: calc(7px + var(--sat)) calc(12px + var(--sar)) 8px calc(70px + var(--sal)); } /* Beta 1.21: slim title-only header; the 70px left inset clears the top-left hamburger */
   #hud .row { display: flex; align-items: center; gap: 8px; }
-  #hud .title { font-weight: 700; font-size: 17px; white-space: nowrap; }
+  #hud .title { font-weight: 700; font-size: 15px; white-space: nowrap; }
   #hud .titleStack { display: flex; flex-direction: column; }
   #hud .ver { font-size: 9px; font-weight: 600; color: #8fa0b3; line-height: 1; margin-top: 2px; letter-spacing: .04em; }
-  #hud .count { font-size: 14px; color: #cfe8d8; white-space: nowrap; }
+  #count { position: absolute; left: 3px; right: 3px; bottom: 9px; text-align: center; font-size: 9.5px; font-weight: 600; line-height: 1.25; color: #eaf6ee; pointer-events: none; } /* the progress line inside the round run button (Beta 1.21) */
   #hud .spacer { margin-left: auto; }
   #hud button { background: #2c7be5; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
-  #hud #resetBtn { background: #c22f24; font-weight: 800; }
-  #hud #resetBtn.armed { background: #8c1f16; }
-  #hud #resetBtn.undoing { background: #1e7a46; }
-  #bar { height: 4px; background: #2a2e37; border-radius: 2px; margin-top: 8px; overflow: hidden; }
-  #barFill { height: 100%; width: 0%; background: #2ecc71; transition: width .3s; }
+  #resetBtn { background: #c22f24; font-weight: 800; }
+  #resetBtn.armed { background: #8c1f16; }
+  #resetBtn.undoing { background: #1e7a46; }
   #stats { font-size: 12px; color: #9fb4c8; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 4px; }
   body.storage-bad #warn { display: block; }
@@ -50,13 +48,13 @@
   #selBtn.notdone { background: #c22f24; }
   #selBtn:disabled { background: #3a4150; color: #8fa0b3; }
   #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: var(--rad-btn); padding: 0; font-size: 16px; background: #2b303c; color: #dfe7ef; }
-  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 74px + var(--sab)); z-index: 1000; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 112px + var(--sab)); z-index: 1000; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
   .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #2c7be5; color: #fff; white-space: nowrap; }
   .banner button.red { background: #e63a2e; }
   #stale { z-index: 1001; } #bakNudge { z-index: 1002; }
-  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 78px + var(--sab)); z-index: 1003; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 116px + var(--sab)); z-index: 1003; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
   #mapNoteNo { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 44px; background: #e63a2e; color: #fff; }
@@ -70,27 +68,36 @@
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
   #spd { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 30px + var(--sab)); z-index: 900; font-size: 13px; font-weight: 700; color: #fff; background: rgba(26,29,36,.85); padding: 5px 9px; border-radius: 8px; }
   #spd.hidden { display: none; }
-  #fanWrap { position: fixed; right: calc(12px + var(--sar)); bottom: calc(var(--vvb, 0px) + 14px + var(--sab)); z-index: 1000; width: 46px; height: 46px; }
+  #fanWrap { position: fixed; left: calc(12px + var(--sal)); top: calc(var(--vvt, 0px) + 7px + var(--sat)); z-index: 1001; width: 46px; height: 46px; } /* Beta 1.21: hamburger moves to the top left */
   #gearBtn { width: 46px; height: 46px; border: none; border-radius: 12px; cursor: pointer; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
   body.night #gearBtn { background: #22262e; color: #f2f4f8; }
   #gearBtn.on { background: #2c7be5; color: #fff; }
   #gearBtn svg { width: 25px; height: 25px; }
-  #fanBtns { position: absolute; right: 0; bottom: 0; width: 46px; height: 46px; pointer-events: none; }
-  #fanBtns .fanItem { position: absolute; right: -2px; bottom: -2px; width: 50px; height: 50px; border-radius: 50%; border: none; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; cursor: pointer; transform: scale(.4); opacity: 0; transition: transform var(--anim-dur) var(--ease-close), opacity var(--anim-dur) var(--ease-close); pointer-events: none; }
-  #fanBtns .fanItem:nth-of-type(1) { transition-delay: 0ms; } #fanBtns .fanItem:nth-of-type(2) { transition-delay: 40ms; } #fanBtns .fanItem:nth-of-type(3) { transition-delay: 80ms; } #fanBtns .fanItem:nth-of-type(4) { transition-delay: 120ms; } #fanBtns .fanItem:nth-of-type(5) { transition-delay: 160ms; } /* closing stagger = the mirror of opening: farthest item leaves first */
+  #fanBtns { position: absolute; left: 0; top: 0; width: 46px; height: 46px; pointer-events: none; }
+  #fanBtns .fanItem { position: absolute; left: -2px; top: -2px; width: 50px; height: 50px; border-radius: 50%; border: none; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; cursor: pointer; transform: scale(.4); opacity: 0; transition: transform var(--anim-dur) var(--ease-close), opacity var(--anim-dur) var(--ease-close); pointer-events: none; }
+  #fanBtns .fanItem:nth-of-type(1) { transition-delay: 0ms; } #fanBtns .fanItem:nth-of-type(2) { transition-delay: 40ms; } #fanBtns .fanItem:nth-of-type(3) { transition-delay: 80ms; } #fanBtns .fanItem:nth-of-type(4) { transition-delay: 120ms; } #fanBtns .fanItem:nth-of-type(5) { transition-delay: 160ms; } #fanBtns .fanItem:nth-of-type(6) { transition-delay: 200ms; } /* closing stagger = the mirror of opening: farthest item leaves first */
   body.night #fanBtns .fanItem { background: #22262e; color: #f2f4f8; }
   #fanBtns .fanItem svg { width: 25px; height: 25px; }
   #fanBtns .fanItem.on { background: #7b2ff7; color: #fff; }
   #fanBtns .fanItem.red { background: #e63a2e; color: #fff; }
   #fanBtns.open { pointer-events: auto; }
   #fanBtns.open .fanItem { opacity: 1; pointer-events: auto; transition-timing-function: var(--ease-open); }
-  /* Menu column (Beta 1.14, Andrew): the items rise straight up from the hamburger in one column
-     (62px steps, 50px items = 12px gaps) and sink back down - no fan arc. Nearest item animates first. */
-  #fanBtns.open .fanItem:nth-of-type(1) { transform: translate(0, -310px) scale(1); transition-delay: 160ms; }
-  #fanBtns.open .fanItem:nth-of-type(2) { transform: translate(0, -248px) scale(1); transition-delay: 120ms; }
-  #fanBtns.open .fanItem:nth-of-type(3) { transform: translate(0, -186px) scale(1); transition-delay: 80ms; }
-  #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(0, -124px) scale(1); transition-delay: 40ms; }
-  #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(0, -62px) scale(1); transition-delay: 0ms; }
+  /* Menu column (Beta 1.14, Andrew; direction flipped Beta 1.21 with the top-left move): the items
+     drop straight down from the hamburger in one column (62px steps, 50px items = 12px gaps).
+     Nearest item animates first. */
+  #fanBtns.open .fanItem:nth-of-type(1) { transform: translate(0, 372px) scale(1); transition-delay: 200ms; }
+  #fanBtns.open .fanItem:nth-of-type(2) { transform: translate(0, 310px) scale(1); transition-delay: 160ms; }
+  #fanBtns.open .fanItem:nth-of-type(3) { transform: translate(0, 248px) scale(1); transition-delay: 120ms; }
+  #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(0, 186px) scale(1); transition-delay: 80ms; }
+  #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(0, 124px) scale(1); transition-delay: 40ms; }
+  #fanBtns.open .fanItem:nth-of-type(6) { transform: translate(0, 62px) scale(1); transition-delay: 0ms; }
+  #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 14px + var(--sab)); z-index: 1000; display: flex; align-items: center; gap: 18px; } /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
+  .dockBtn { width: 56px; height: 56px; border-radius: 50%; border: none; background: #fff; color: #22262e; box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  body.night .dockBtn { background: #22262e; color: #f2f4f8; }
+  #runSlot { position: relative; width: 88px; height: 88px; flex: none; }
+  .runBtn { position: absolute; inset: 0; width: 88px; height: 88px; border-radius: 50%; border: none; color: #fff; box-shadow: var(--shadow-float); font-size: 14.5px; font-weight: 800; line-height: 1.15; cursor: pointer; padding: 0 8px 14px; }
+  #startBtn { background: #2c7be5; }
+  #cancelStartBtn { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; }
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
@@ -170,20 +177,8 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.20</div></div>
-    <div class="spacer"></div>
-    <div class="count" id="count">0 of 34 completed · 0%</div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.21</div></div>
   </div>
-  <div class="row" style="margin-top:8px">
-    <button id="listBtn">List</button>
-    <button id="paceBtn">Pace</button>
-    <button id="clearBtn" class="ghost">Clear</button>
-    <div class="spacer"></div>
-    <button id="startBtn">▶ Start clean</button>
-    <button id="cancelStartBtn" class="ghost" style="display:none;background:#e63a2e">Cancel start</button>
-    <button id="resetBtn" style="display:none">Finish</button>
-  </div>
-  <div id="bar"><div id="barFill"></div></div>
   <div id="info" class="hidden">
     <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>
     <button id="selNote" title="Note for this street">📝</button>
@@ -202,8 +197,19 @@
     <button class="fanItem" id="homeBtn" title="Back to route"></button>
     <button class="fanItem" id="gpsBtn" title="My location"></button>
     <button class="fanItem" id="exportBtn" title="Export &amp; backup"></button>
+    <button class="fanItem" id="clearBtn" title="Clear marks"></button>
   </div>
   <button id="gearBtn" title="Menu"></button>
+</div>
+<div id="dock">
+  <button id="listBtn" class="dockBtn">List</button>
+  <div id="runSlot">
+    <button id="startBtn" class="runBtn">▶ Start clean</button>
+    <button id="resetBtn" class="runBtn" style="display:none">Finish</button>
+    <div id="count">0 of 34 completed · 0%</div>
+    <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
+  </div>
+  <button id="paceBtn" class="dockBtn">Pace</button>
 </div>
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
@@ -2350,7 +2356,6 @@ function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
   const pct = Math.round(workDoneM() / totalWorkM() * 100);
   $('count').textContent = n + ' of 34 completed · ' + pct + '%';
-  $('barFill').style.width = pct + '%';
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = (runStart && doneSet.size === 0) ? '' : 'none';
@@ -3106,6 +3111,7 @@ $('updBtn').addEventListener('click', async () => {
 
 // ===== FAN / NIGHT / FLIP / HOME =====
 const ICONS = {
+  clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 20h11"/><path d="M5.6 15.8l7-7a1.8 1.8 0 0 1 2.5 0l2.2 2.2a1.8 1.8 0 0 1 0 2.5l-4.6 4.6H9.2l-3.6-2.3z"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   upd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3.5V8h-4.5"/></svg>',
   flip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M7 4L4 7M7 4l3 3M17 20V7M17 20l3-3M17 20l-3-3"/></svg>',
@@ -3115,7 +3121,7 @@ const ICONS = {
   gps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke-linecap="round"/></svg>',
   exp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M12 14l-3.5-3.5M12 14l3.5-3.5M4.5 19.5h15"/></svg>'
 };
-$('gearBtn').innerHTML = ICONS.menu; $('updBtn').innerHTML = ICONS.upd; $('homeBtn').innerHTML = ICONS.home; $('gpsBtn').innerHTML = ICONS.gps; $('exportBtn').innerHTML = ICONS.exp;
+$('gearBtn').innerHTML = ICONS.menu; $('updBtn').innerHTML = ICONS.upd; $('homeBtn').innerHTML = ICONS.home; $('gpsBtn').innerHTML = ICONS.gps; $('exportBtn').innerHTML = ICONS.exp; $('clearBtn').innerHTML = ICONS.clear;
 let fanOpen = false;
 function closeFan() { fanOpen = false; $('fanBtns').classList.remove('open'); $('gearBtn').classList.remove('on'); }
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
