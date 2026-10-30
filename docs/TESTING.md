@@ -84,6 +84,12 @@ Coverage:
   reported honestly; invalid nested history sanitized; current-format
   backup round-trip; a failed history write stops Finish with the run
   intact; a partial multi-key save reloads to a consistent state.
+- `drive120` — visual geometry (Stage 2): header controls in-bounds and
+  non-overlapping in the default and street-selected states; the 40px side
+  chips in-bounds with full separation, including with the stretch point
+  pushed against the screen edge; the open menu column's 50px items in-bounds
+  with clear gaps; the open list sheet fits the viewport; the closed sheet is
+  fully hidden. Measurements only — no pixel comparison.
 - `drive119` — true disconnected operation: online boot under worker
   control with the map style cached and one side seeded; the browser is
   killed and relaunched on the same profile with the network emulated
