@@ -154,6 +154,7 @@ await mark3();
 await ev(`(() => { window.__t4log = []; for (const k of ['finishRun', 'doUndo']) { const o = window[k]; if (typeof o === 'function') window[k] = function () { window.__t4log.push(k); return o.apply(this, arguments); }; } const tg = window.tapGuard; if (typeof tg === 'function') window.tapGuard = function (k) { const r = tg(k); window.__t4log.push('guard:' + k + '=' + r); return r; }; return true; })()`);
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
 await pollRead(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden') }))()`, v => v.open === true, 4000); // the pop-up must actually be open before Yes is tapped
+await sleep(600); // outlast the app's 400ms double-tap guard: T3's Yes tap can be <400ms old on a fast runner (proven by the step trace in run #25: guard:finYes=false) - a human cannot re-tap that fast, a test can
 await ev(`(() => { $('finYes').click(); return true; })()`);
 // Hardened (Beta 1.15): T4 flaked once on a slow runner (1.14 attempt 2) even self-contained - the fixed
 // sleep(300) before the Undo tap is replaced by a state wait for the button to actually BE Undo, and the
@@ -172,6 +173,7 @@ ok('T4 Undo finish restores the run | diag ' + JSON.stringify(R.diagT4), A.h ===
 // sleeps raced the app's real double-tap guards (T5's resetBtn tap can land inside the 400ms guard
 // window of T4's Undo tap on the same button and be silently eaten, stranding the whole chain).
 const step = async (tapExpr, effectExpr, pred) => { await ev(tapExpr); return await pollRead(effectExpr, pred, 6000); };
+await sleep(600); // same guard window: T4's Undo tap on this very button can be <400ms old here
 await step(`(() => { $('resetBtn').click(); return true; })()`, `(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden') }))()`, v => v.open === true);
 await step(`(() => { $('finYes').click(); return true; })()`, `(() => JSON.stringify({ label: $('resetBtn').textContent, h: history.length }))()`, v => v.label === 'Undo' && v.h === 1);
 await step(`(() => { openPace(); return true; })()`, `(() => JSON.stringify({ vis: !$('pacePanel').classList.contains('hidden') }))()`, v => v.vis === true);
