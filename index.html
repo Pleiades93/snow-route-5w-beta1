@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-6i+0yq2TQJR9ntxyiOPoWN6ECw1NQ512BZc+ErSAS8iFU7e1MOS+MB5cpzK+nrKx' https://cdn.jsdelivr.net; style-src-elem 'sha384-g/hE8FL4eCwcauTvE1jEtjB14KXGCnMjJEwyyv4zCqRmsF59fVoXbqYqSRedKb2T' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-DrNof8u2QJg3NCUpftSJXP2+zU1p/N/8otZJpNtceYyyxosUa7mV9Ve5PVxh+GZj' https://cdn.jsdelivr.net; style-src-elem 'sha384-rbAMNg7ZNcu7S+nWBgajXCr6odwQQ3bz8MUg65pFQVDQDrGwutbcrSQvDGO3Mem2' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -20,7 +20,7 @@
     --card-op: rgba(26,29,36,.97); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 4px 20px rgba(0,0,0,.45); --shadow-float: 0 4px 14px rgba(0,0,0,.4); }
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
   body.night #map { background: #14171d; }
-  #hud { position: absolute; top: 0; left: 0; right: 0; z-index: 1000; background: #14161c; box-shadow: 0 1px 12px rgba(0,0,0,.35); color: #fff; padding: calc(10px + var(--sat)) calc(12px + var(--sar)) 12px calc(12px + var(--sal)); }
+  #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: #14161c; box-shadow: 0 1px 12px rgba(0,0,0,.35); color: #fff; padding: calc(10px + var(--sat)) calc(12px + var(--sar)) 12px calc(12px + var(--sal)); }
   #hud .row { display: flex; align-items: center; gap: 8px; }
   #hud .title { font-weight: 700; font-size: 17px; white-space: nowrap; }
   #hud .titleStack { display: flex; flex-direction: column; }
@@ -48,13 +48,13 @@
   #selBtn.notdone { background: #c22f24; }
   #selBtn:disabled { background: #3a4150; color: #8fa0b3; }
   #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: var(--rad-btn); padding: 0; font-size: 16px; background: #2b303c; color: #dfe7ef; }
-  .banner { position: absolute; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(74px + var(--sab)); z-index: 1000; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 74px + var(--sab)); z-index: 1000; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
   .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #2c7be5; color: #fff; white-space: nowrap; }
   .banner button.red { background: #e63a2e; }
   #stale { z-index: 1001; } #bakNudge { z-index: 1002; }
-  #mapNote { position: absolute; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(78px + var(--sab)); z-index: 1003; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 78px + var(--sab)); z-index: 1003; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
   #mapNoteNo { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 44px; background: #e63a2e; color: #fff; }
@@ -64,11 +64,11 @@
   body.night .sideChip .chipBtn { background: #22262e; color: #f2f4f8; }
   .sideChip .chipBtn svg { width: 22px; height: 22px; flex: none; }
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
-  #attrChip { position: absolute; left: calc(10px + var(--sal)); bottom: calc(4px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; }
+  #attrChip { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 4px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; }
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
-  #spd { position: absolute; left: calc(10px + var(--sal)); bottom: calc(30px + var(--sab)); z-index: 900; font-size: 13px; font-weight: 700; color: #fff; background: rgba(26,29,36,.85); padding: 5px 9px; border-radius: 8px; }
+  #spd { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 30px + var(--sab)); z-index: 900; font-size: 13px; font-weight: 700; color: #fff; background: rgba(26,29,36,.85); padding: 5px 9px; border-radius: 8px; }
   #spd.hidden { display: none; }
-  #fanWrap { position: absolute; right: calc(12px + var(--sar)); bottom: calc(14px + var(--sab)); z-index: 1000; width: 46px; height: 46px; }
+  #fanWrap { position: fixed; right: calc(12px + var(--sar)); bottom: calc(var(--vvb, 0px) + 14px + var(--sab)); z-index: 1000; width: 46px; height: 46px; }
   #gearBtn { width: 46px; height: 46px; border: none; border-radius: 12px; cursor: pointer; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
   body.night #gearBtn { background: #22262e; color: #f2f4f8; }
   #gearBtn.on { background: #2c7be5; color: #fff; }
@@ -88,7 +88,7 @@
   #fanBtns.open .fanItem:nth-of-type(3) { transform: translate(0, -186px) scale(1); transition-delay: 80ms; }
   #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(0, -124px) scale(1); transition-delay: 40ms; }
   #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(0, -62px) scale(1); transition-delay: 0ms; }
-  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: 74dvh; display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform .28s ease, visibility 0s; }
@@ -114,7 +114,7 @@
   .srow .nt { font-size: 12px; color: #c9a86a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
   .srow .sbtn { margin-left: 2px; width: 42px; height: 42px; flex-shrink: 0; border: 1px solid #444; border-radius: var(--rad-btn); background: #262a33; font-size: 17px; padding: 0; }
   .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid #333; }
-  .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: #14161a; color: #fff; border: 1px solid #444; border-radius: var(--rad-btn); padding: 9px; font-size: 15px; font-family: inherit; }
+  .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: #14161a; color: #fff; border: 1px solid #444; border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
   .noteEd .nhint { font-size: 12px; color: #8fae99; margin-top: 5px; }
   #cleanView { padding: 4px 2px 14px; }
   .cvHead { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
@@ -138,7 +138,7 @@
   #pacePad b { color: #fff; }
   #pacePad button { border: none; border-radius: var(--rad-btn); padding: 10px 14px; font-size: 14px; font-weight: 700; min-height: 42px; background: #1e7a46; color: #fff; margin-top: 10px; }
   #pacePad button.red { background: #e63a2e; }
-  .modal { position: absolute; inset: 0; z-index: 1200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 22px; }
+  .modal { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; height: var(--vvh, 100dvh); z-index: 1200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 22px; }
   .modal.hidden { display: none; }
   .modal .card { background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
   .modal .card h3 { font-size: 16px; margin-bottom: 8px; }
@@ -147,7 +147,7 @@
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
   #finYes { background: #c22f24; color: #fff; } #finNo { background: #e63a2e; color: #fff; }
   #noteYes { background: #2c7be5; color: #fff; } #noteNo { background: #e63a2e; color: #fff; }
-  #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid #3a4150; background: #1b1f27; color: #eef2f6; font-size: 14px; padding: 9px; margin-bottom: 12px; font-family: inherit; }
+  #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid #3a4150; background: #1b1f27; color: #eef2f6; font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
   #xport .card { max-width: 380px; }
   #xText { width: 100%; min-height: 110px; border-radius: var(--rad-btn); border: 1px solid #3a4150; background: #1b1f27; color: #eef2f6; font-size: 12px; padding: 9px; margin-bottom: 10px; font-family: ui-monospace, monospace; }
   #xport .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -167,7 +167,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.17</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.18</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -232,6 +232,7 @@ const REFERENCE = {"Village Green": [[[43.8212744, -79.5644439], [43.821466, -79
 // ===== FRESH APP CORE (Beta 1 rebuild) — state, storage, geometry =====
 const $ = id => document.getElementById(id);
 const MLAT = 111320, MLNG = 80386;
+const vvHeight = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight); // visible-screen height (shrinks when the phone keyboard opens)
 const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
 const MAIN = new Set(['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark']);
 const SPOT = { 'Columbus': [1, 0.47], 'Mellings': [1, 0.55], 'Valeria': [1, 0.45], 'Santa Barbara': [3, 0.40], 'Kingsnorth': [0, 0.57], 'Bell Harbour': [0, 0.45], 'Romeo': [-1, 0.40], 'Astona': [-1, 0.60], 'Bourbon': [-1, 0.55], 'Fifth': [-1, 0.55] };
@@ -2434,7 +2435,7 @@ function makeSheetDraggable(sheet) {
       sheet.classList.add('dragging'); sheet.classList.remove('snapping');
       try { sheet.setPointerCapture(pid); } catch (err) {}
     }
-    const vh = window.innerHeight;
+    const vh = vvHeight();
     // the panel follows the finger (the content area below the top strip scrolls natively - drags can't start there)
     const h = Math.max(SHEET_MIN_PX, Math.min(vh * SHEET_FULL_VH, startH + total));
     sheet.style.maxHeight = 'none';
@@ -2453,7 +2454,7 @@ function makeSheetDraggable(sheet) {
     const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); };
     document.addEventListener('click', swallow, true);
     setTimeout(() => document.removeEventListener('click', swallow, true), 350);
-    const vh = window.innerHeight, h = sheet.offsetHeight, defH = vh * 0.74;
+    const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * 0.74;
     // FLICK (Andrew, Beta 1.11 - the Waze gesture): a fast short swipe throws the panel to its next stop
     // instead of following the finger the whole way. Velocity from the last ~120ms of movement, px/ms,
     // positive = upward. Only when the panel itself moved (a flick that scrolled the list stays a scroll).
@@ -3152,7 +3153,27 @@ if ('serviceWorker' in navigator) {
     } catch (e) { window.__warm = 'error:' + (e && e.message || e); }
   }).catch(() => { window.__warm = 'no-worker'; });
 }
-if (window.visualViewport) window.visualViewport.addEventListener('resize', () => { try { map.resize(); } catch (e) { /* map not up yet */ } });
+// Beta 1.18 (Andrew's phone report): the on-screen keyboard shrinks the VISIBLE screen
+// (visualViewport) and iOS pans the page to the focused note box, stranding the header
+// and menus off-screen - and it does not pan back. Track the visible screen in CSS vars
+// (--vvt top offset, --vvh height, --vvb hidden strip below) that the chrome is anchored
+// to, and cancel any leftover page pan once no text field is focused.
+function syncViewport() {
+  try {
+    const vv = window.visualViewport; if (!vv) return;
+    const de = document.documentElement;
+    de.style.setProperty('--vvt', vv.offsetTop + 'px');
+    de.style.setProperty('--vvh', vv.height + 'px');
+    de.style.setProperty('--vvb', Math.max(0, window.innerHeight - vv.offsetTop - vv.height) + 'px');
+    const ae = document.activeElement;
+    if ((!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
+    if (typeof map !== 'undefined' && map) map.resize();
+  } catch (e) { /* map/viewport not up yet */ }
+}
+if (window.visualViewport) { window.visualViewport.addEventListener('resize', syncViewport); window.visualViewport.addEventListener('scroll', syncViewport); }
+window.addEventListener('resize', syncViewport);
+document.addEventListener('focusout', () => setTimeout(syncViewport, 60));
+syncViewport();
 applyNight(); refreshAll(); checkStale(); syncWake();
 if (runStart) startGps(true);
 map.once('load', () => { fetch(isNight() ? GL_STYLES.day : GL_STYLES.night).catch(() => {}); }); // pre-warm the other style so the first day/night swap is instant
