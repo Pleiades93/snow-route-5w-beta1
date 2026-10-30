@@ -208,7 +208,8 @@ ok('T8 round-trip restores the flag note', A.flag === true);
 ok('T8 round-trip restores the history entry', A.h === 1);
 
 // T9 (suite 11): a failed history write stops the finish - the run stays intact
-await ev(`(() => { const base = Date.now() - 3600000; runStart = base - 300000; saveStart();
+await ev(`(() => { doneSet = new Set(); doneTimes = {}; doneVia = {}; history = []; // clean slate: T8's restored street otherwise lingers in doneSet and the count reads 4, not 3
+  const base = Date.now() - 3600000; runStart = base - 300000; saveStart();
   [['Velmar', 0], ['Mellings', 720000], ['Astona', 1500000]].forEach(([n, off]) => { doneSet.add(n); doneTimes[n] = new Date(base + off).toISOString(); doneVia[n] = 'tap'; });
   refreshAll();
   window.__origSI2 = Storage.prototype.setItem;
