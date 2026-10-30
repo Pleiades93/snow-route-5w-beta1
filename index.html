@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yld++SRn1dZaP6Es5dwVTPp4HSmLUEAfa8nl0Id8pyNSgKA36z1RV/RWxeCGplh6' https://cdn.jsdelivr.net; style-src-elem 'sha384-g/hE8FL4eCwcauTvE1jEtjB14KXGCnMjJEwyyv4zCqRmsF59fVoXbqYqSRedKb2T' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-jrMVbpGzHBZ5HKa9jwQrFhzOOCucT9VpJviiuGTHpDf/Z72ANi+dmRR40kHKEO+R' https://cdn.jsdelivr.net; style-src-elem 'sha384-g/hE8FL4eCwcauTvE1jEtjB14KXGCnMjJEwyyv4zCqRmsF59fVoXbqYqSRedKb2T' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -167,7 +167,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.16</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.17</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -3057,7 +3057,7 @@ $('xPre').addEventListener('click', async () => {
       urls.add(GL_STYLES[key]);
       const spr = Array.isArray(stj.sprite) ? stj.sprite[0].url : stj.sprite;
       if (spr) { urls.add(spr + '.json'); urls.add(spr + '.png'); if (/versatiles/.test(spr)) { urls.add(spr + '@2x.json'); urls.add(spr + '@2x.png'); } }
-      if (stj.glyphs) for (let a = 0; a <= 255; a++) urls.add(stj.glyphs.replace('{fontstack}', 'Noto Sans Regular').replace('{range}', a * 256 + '-' + (a * 256 + 255)));
+      if (stj.glyphs) { const stack = key === 'day' ? 'noto_sans_regular' : 'Noto Sans Regular'; for (let a = 0; a <= 255; a++) urls.add(stj.glyphs.replace('{fontstack}', stack).replace('{range}', a * 256 + '-' + (a * 256 + 255))); } // the stack GL actually requests per style (Stage 2, audit G-5)
       const ex = { w: routeBox.w - 0.005, s: routeBox.s - 0.0036, e: routeBox.e + 0.005, n: routeBox.n + 0.0036 };
       for (const srcName of Object.keys(stj.sources || {})) {
         const src = stj.sources[srcName];
@@ -3067,8 +3067,10 @@ $('xPre').addEventListener('click', async () => {
       }
     }
     const list = [...urls];
-    let saved = 0, done = 0;
-    for (const u of list) { try { const r = await fetch(u, { mode: 'cors' }); if (r.ok) saved++; } catch (e) { /* count only successes */ } done++; if (done % 200 === 0) st.textContent = 'Downloading… ' + done + '/' + list.length; }
+    let done = 0;
+    for (const u of list) { try { await fetch(u, { mode: 'cors' }); } catch (e) { /* failures simply never confirm below */ } done++; if (done % 200 === 0) st.textContent = 'Downloading… ' + done + '/' + list.length; }
+    let saved = 0;
+    for (const u of list) { try { if (await caches.match(u)) saved++; } catch (e) {} } // Stage 2 (audit G-5): report only resources CONFIRMED in the offline cache
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length }));
     st.textContent = 'Route maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)';
     toast('Route maps: ' + saved + '/' + list.length);
@@ -3124,7 +3126,20 @@ function applyNight() { document.body.classList.toggle('night', isNight()); $('n
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; lsSet(LS.night, isNight() ? '0' : '1'); applyNight(); setBasemap(); closeFan(); });
 $('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); closeFan(); });
 // ===== SERVICE WORKER + BOOT =====
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => { /* SW is optional */ }); }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => { /* SW is optional */ });
+  // Stage 2 (audit G-6): the first-ever boot is not worker-controlled, so the map's own style
+  // fetches cache nothing and the map cannot load offline until some later visit. Once the
+  // worker is ready this page IS controlled - warm both style files through it if they are
+  // missing, so a first install becomes offline-ready on its first boot.
+  navigator.serviceWorker.ready.then(async () => {
+    try {
+      if (await caches.match(GL_STYLES.day)) return;
+      await fetch(GL_STYLES.day).catch(() => {});
+      await fetch(GL_STYLES.night).catch(() => {});
+    } catch (e) { /* warming is best-effort */ }
+  }).catch(() => {});
+}
 if (window.visualViewport) window.visualViewport.addEventListener('resize', () => { try { map.resize(); } catch (e) { /* map not up yet */ } });
 applyNight(); refreshAll(); checkStale(); syncWake();
 if (runStart) startGps(true);
