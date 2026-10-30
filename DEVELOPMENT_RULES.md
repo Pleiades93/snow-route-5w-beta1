@@ -79,6 +79,15 @@ and the deterministic browser drives (`tests/browser/run.mjs`).
 
 ## 6. Honesty rules
 
+- **Verification evidence is commit-bound** (set 2026-10-30, Andrew). Every
+  test result is associated with the exact commit that was tested; a result
+  is never transferred from one commit to another. After merging a change,
+  verify the exact resulting commit on the target branch. Every verification
+  record carries: the commit SHA, the CI run identifier, the executed test
+  suites, the check counts, any failures, and the final outcome. Historical
+  reports stay intact, but are labelled historical evidence for their own
+  state only — e.g. the Beta 1.16 remediation battery (152/152 across 12
+  drives) proves that state, never a later one.
 - Never claim a test passed, a fix works, or a state was verified without the
   tool result that proves it.
 - Distinguish confirmed defects, validation gaps, and unverified risks in every
