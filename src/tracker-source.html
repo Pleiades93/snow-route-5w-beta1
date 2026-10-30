@@ -18,14 +18,16 @@
   /* MENU ANIMATION BASELINE (Andrew, 2026-10-30): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. */
   :root { --anim-dur: 280ms; --ease-open: cubic-bezier(.25,.8,.3,1); --ease-close: cubic-bezier(.7,0,.75,.2); }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
-    --card-op: rgba(26,29,36,.97); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 4px 20px rgba(0,0,0,.45); --shadow-float: 0 4px 14px rgba(0,0,0,.4); }
+    --card-op: rgba(23,26,32,.86); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 10px 34px rgba(10,14,20,.28); --shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(29,32,39,.78); --blur: blur(18px) saturate(1.6); } /* Beta 1.22 modern chrome: frosted glass surfaces, soft deep shadows */
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
   body.night #map { background: #14171d; }
-  #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: #14161c; box-shadow: 0 1px 12px rgba(0,0,0,.35); color: #fff; padding: calc(7px + var(--sat)) calc(12px + var(--sar)) 8px calc(70px + var(--sal)); } /* Beta 1.21: slim title-only header; the 70px left inset clears the top-left hamburger */
+  #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: transparent; box-shadow: none; color: #fff; padding: calc(7px + var(--sat)) calc(12px + var(--sar)) 8px calc(70px + var(--sal)); } /* Beta 1.22: no top banner - the map runs full-screen under the floating title, same as the bottom */ /* Beta 1.21: slim title-only header; the 70px left inset clears the top-left hamburger */
   #hud .row { display: flex; align-items: center; gap: 8px; }
-  #hud .title { font-weight: 700; font-size: 15px; white-space: nowrap; }
+  #hud .title { font-weight: 700; font-size: 15px; white-space: nowrap; color: #14161c; text-shadow: 0 0 7px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.95); }
+  body.night #hud .title { color: #f2f4f8; text-shadow: 0 0 7px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.85); }
   #hud .titleStack { display: flex; flex-direction: column; }
-  #hud .ver { font-size: 9px; font-weight: 600; color: #8fa0b3; line-height: 1; margin-top: 2px; letter-spacing: .04em; }
+  #hud .ver { font-size: 9px; font-weight: 600; color: #46536a; line-height: 1; margin-top: 2px; letter-spacing: .04em; text-shadow: 0 0 6px rgba(255,255,255,.95); }
+  body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
   #count { position: absolute; left: 3px; right: 3px; bottom: 9px; text-align: center; font-size: 9.5px; font-weight: 600; line-height: 1.25; color: #eaf6ee; pointer-events: none; } /* the progress line inside the round run button (Beta 1.21) */
   #hud .spacer { margin-left: auto; }
   #hud button { background: #2c7be5; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
@@ -33,12 +35,13 @@
   #resetBtn { background: #c22f24; font-weight: 800; }
   #resetBtn.armed { background: #8c1f16; }
   #resetBtn.undoing { background: #1e7a46; }
-  #stats { font-size: 12px; color: #9fb4c8; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 4px; }
+  #stats { font-size: 12px; font-weight: 600; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
+  body.night #stats { color: #9fb4c8; text-shadow: 0 0 6px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.85); }
+  #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 5px 4px; border-radius: 9px; margin-bottom: 6px; }
   body.storage-bad #warn { display: block; }
   /* Selection strip (Beta 1.14, Andrew): part of the header, not a floating card - it grows the top menu
      only while a street is selected, so Mark completed never floats over the map or fights the buttons. */
-  #info { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px; background: rgba(255,255,255,.06); border-left: 4px solid var(--accent); border-radius: 10px; --accent: transparent; }
+  #info { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px; background: rgba(20,22,28,.88); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); border-left: 4px solid var(--accent); border-radius: 14px; --accent: transparent; box-shadow: var(--shadow-card); } /* floats as its own card now that the header slab is gone */
   #info.hidden { display: none; }
   #info .selTxt { flex: 1; min-width: 0; }
   #selName { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -47,20 +50,20 @@
   #selBtn.notdone { background: #c22f24; }
   #selBtn:disabled { background: #3a4150; color: #8fa0b3; }
   #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: var(--rad-btn); padding: 0; font-size: 16px; background: #2b303c; color: #dfe7ef; }
-  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 112px + var(--sab)); z-index: 1000; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 112px + var(--sab)); z-index: 1000; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
   .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #2c7be5; color: #fff; white-space: nowrap; }
   .banner button.red { background: #e63a2e; }
   #stale { z-index: 1001; } #bakNudge { z-index: 1002; }
-  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 116px + var(--sab)); z-index: 1003; background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 116px + var(--sab)); z-index: 1003; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
   #mapNoteNo { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 44px; background: #e63a2e; color: #fff; }
   #chips { position: absolute; inset: 0; z-index: 950; pointer-events: none; }
   .sideChip { position: absolute; width: 40px; height: 40px; pointer-events: auto; }
-  .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
-  body.night .sideChip .chipBtn { background: #22262e; color: #f2f4f8; }
+  .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
+  body.night .sideChip .chipBtn { background: var(--glass-night); color: #f2f4f8; }
   .sideChip .chipBtn svg { width: 22px; height: 22px; flex: none; }
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
   #attrChip { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 4px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; }
@@ -68,14 +71,14 @@
   #spd { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 30px + var(--sab)); z-index: 900; font-size: 13px; font-weight: 700; color: #fff; background: rgba(26,29,36,.85); padding: 5px 9px; border-radius: 8px; }
   #spd.hidden { display: none; }
   #fanWrap { position: fixed; left: calc(12px + var(--sal)); top: calc(var(--vvt, 0px) + 7px + var(--sat)); z-index: 1001; width: 46px; height: 46px; } /* Beta 1.21: hamburger moves to the top left */
-  #gearBtn { width: 46px; height: 46px; border: none; border-radius: 12px; cursor: pointer; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
-  body.night #gearBtn { background: #22262e; color: #f2f4f8; }
+  #gearBtn { width: 46px; height: 46px; border: none; border-radius: 14px; cursor: pointer; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
+  body.night #gearBtn { background: var(--glass-night); color: #f2f4f8; }
   #gearBtn.on { background: #2c7be5; color: #fff; }
   #gearBtn svg { width: 25px; height: 25px; }
   #fanBtns { position: absolute; left: 0; top: 0; width: 46px; height: 46px; pointer-events: none; }
-  #fanBtns .fanItem { position: absolute; left: -2px; top: -2px; width: 50px; height: 50px; border-radius: 50%; border: none; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; cursor: pointer; transform: scale(.4); opacity: 0; transition: transform var(--anim-dur) var(--ease-close), opacity var(--anim-dur) var(--ease-close); pointer-events: none; }
+  #fanBtns .fanItem { position: absolute; left: -2px; top: -2px; width: 50px; height: 50px; border-radius: 50%; border: none; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; cursor: pointer; transform: scale(.4); opacity: 0; transition: transform var(--anim-dur) var(--ease-close), opacity var(--anim-dur) var(--ease-close); pointer-events: none; }
   #fanBtns .fanItem:nth-of-type(1) { transition-delay: 0ms; } #fanBtns .fanItem:nth-of-type(2) { transition-delay: 40ms; } #fanBtns .fanItem:nth-of-type(3) { transition-delay: 80ms; } #fanBtns .fanItem:nth-of-type(4) { transition-delay: 120ms; } #fanBtns .fanItem:nth-of-type(5) { transition-delay: 160ms; } #fanBtns .fanItem:nth-of-type(6) { transition-delay: 200ms; } /* closing stagger = the mirror of opening: farthest item leaves first */
-  body.night #fanBtns .fanItem { background: #22262e; color: #f2f4f8; }
+  body.night #fanBtns .fanItem { background: var(--glass-night); color: #f2f4f8; }
   #fanBtns .fanItem svg { width: 25px; height: 25px; }
   #fanBtns .fanItem.on { background: #7b2ff7; color: #fff; }
   #fanBtns .fanItem.red { background: #e63a2e; color: #fff; }
@@ -90,14 +93,15 @@
   #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(0, 186px) scale(1); transition-delay: 80ms; }
   #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(0, 124px) scale(1); transition-delay: 40ms; }
   #fanBtns.open .fanItem:nth-of-type(6) { transform: translate(0, 62px) scale(1); transition-delay: 0ms; }
+  #deadStrip { position: fixed; left: 0; right: 0; bottom: 0; height: calc(14px + var(--sab)); z-index: 999; touch-action: none; } /* Beta 1.22 (Andrew): the strip under the dock buttons is dead for map gestures, so an iPhone swipe-up to leave the app does not drag the map; buttons and menus above it work as normal */
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 14px + var(--sab)); z-index: 1000; display: flex; align-items: center; gap: 18px; } /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
-  .dockBtn { width: 56px; height: 56px; border-radius: 50%; border: none; background: #fff; color: #22262e; box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-  body.night .dockBtn { background: #22262e; color: #f2f4f8; }
+  .dockBtn { width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; }
   #runSlot { position: relative; width: 88px; height: 88px; flex: none; }
   .runBtn { position: absolute; inset: 0; width: 88px; height: 88px; border-radius: 50%; border: none; color: #fff; box-shadow: var(--shadow-float); font-size: 14.5px; font-weight: 800; line-height: 1.15; cursor: pointer; padding: 0 8px 14px; }
-  #startBtn { background: #2c7be5; }
+  #startBtn { background: #34c759; font-size: 17px; } /* iOS system green (Andrew, Beta 1.22) */
   #cancelStartBtn { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; }
-  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
@@ -149,7 +153,7 @@
   #pacePad button.red { background: #e63a2e; }
   .modal { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; height: var(--vvh, 100dvh); z-index: 1200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 22px; }
   .modal.hidden { display: none; }
-  .modal .card { background: var(--card-op); color: #eef2f6; border-radius: var(--rad-card); box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
+  .modal .card { background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
   .modal .card h3 { font-size: 16px; margin-bottom: 8px; }
   .modal .card p { font-size: 13px; color: #b9c6d4; line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
   .modal .row { display: flex; gap: 8px; }
@@ -176,7 +180,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.21</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.22</div></div>
   </div>
   <div id="info" class="hidden">
     <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>
@@ -200,12 +204,13 @@
   </div>
   <button id="gearBtn" title="Menu"></button>
 </div>
+<div id="deadStrip"></div>
 <div id="dock">
   <button id="listBtn" class="dockBtn">List</button>
   <div id="runSlot">
-    <button id="startBtn" class="runBtn">▶ Start clean</button>
+    <button id="startBtn" class="runBtn">Start</button>
     <button id="resetBtn" class="runBtn" style="display:none">Finish</button>
-    <div id="count">0 of 34 completed · 0%</div>
+    <div id="count">0 of 34 · 0%</div>
     <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
   </div>
   <button id="paceBtn" class="dockBtn">Pace</button>
@@ -2354,7 +2359,7 @@ $('selNote').addEventListener('click', () => { if (!sel || !tapGuard('selNote'))
 function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
   const pct = Math.round(workDoneM() / totalWorkM() * 100);
-  $('count').textContent = n + ' of 34 completed · ' + pct + '%';
+  $('count').textContent = n + ' of 34 · ' + pct + '%';
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = (runStart && doneSet.size === 0) ? '' : 'none';
