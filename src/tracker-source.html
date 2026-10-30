@@ -28,7 +28,7 @@
   #hud .titleStack { display: flex; flex-direction: column; }
   #hud .ver { font-size: 9px; font-weight: 600; color: #46536a; line-height: 1; margin-top: 2px; letter-spacing: .04em; text-shadow: 0 0 6px rgba(255,255,255,.95); }
   body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
-  #count { margin-top: 9px; background: var(--glass-night); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef4ee; padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
+  #count { margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
   #hud .spacer { margin-left: auto; }
   #hud button { background: #2c7be5; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
@@ -62,27 +62,32 @@
   #mapNoteNo { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 44px; background: #e63a2e; color: #fff; }
   #chips { position: absolute; inset: 0; z-index: 950; pointer-events: none; }
   .sideChip { position: absolute; width: 40px; height: 40px; pointer-events: auto; }
-  .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; background: var(--glass-night); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #f2f4f8; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
-  body.night .sideChip .chipBtn { background: var(--glass-night); color: #f2f4f8; } /* dark glass in both themes (Beta 1.23) */
+  .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
+  body.night .sideChip .chipBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   .sideChip .chipBtn svg { width: 22px; height: 22px; flex: none; }
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
   #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 68px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; }
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
   #spd { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 76px + var(--sab)); z-index: 900; font-size: 13px; font-weight: 700; color: #fff; background: rgba(26,29,36,.85); padding: 5px 9px; border-radius: 8px; }
   #spd.hidden { display: none; }
-  #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; background: rgba(17,19,24,.88); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 6px 4px calc(6px + var(--sab)); box-shadow: 0 -8px 28px rgba(10,14,20,.30); } /* Beta 1.23 (Andrew, from his reference screenshot): the menu lives in a bottom tab bar now - dark frosted, icon + label per action */
-  .tabItem { flex: 1; background: none; border: none; color: #a7b0bc; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 0 2px; cursor: pointer; font-family: inherit; }
+  #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; background: rgba(252,252,253,.88); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 6px 4px calc(6px + var(--sab)); box-shadow: 0 -8px 28px rgba(10,14,20,.30); } /* Beta 1.23 (Andrew, from his reference screenshot): the menu lives in a bottom tab bar now - dark frosted, icon + label per action */
+  .tabItem { flex: 1; background: none; border: none; color: #2b3038; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 0 2px; cursor: pointer; font-family: inherit; }
   .tabItem svg { width: 24px; height: 24px; }
   .tabLbl { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
-  .tabItem.on { color: #4da3ff; }
+  .tabItem.on { color: #1f6fd0; }
+  body.night #tabBar { background: rgba(17,19,24,.88); }
+  body.night .tabItem { color: #dde5ec; }
+  body.night .tabItem.on { color: #4da3ff; }
   .tabItem.red { color: #ff6b5e; }
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 74px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; } /* flex-start + the dock buttons' 24px top margin centres them on the big circle, not on the taller slot (Beta 1.23 fix - drive120 V1 measured a 29px offset) */ /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
-  .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; border: none; background: var(--glass-night); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #f2f4f8; color: #22262e; box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .dockBtn svg { width: 27px; height: 27px; }
+  body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
   #startBtn { background: #0a0a0b; color: #d8ff3d; font-size: 21px; } /* Beta 1.23 (Andrew's reference): black circle, volt-yellow word */
-  #cancelStartBtn { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; }
+  body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
@@ -162,7 +167,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.23</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.24</div></div>
   </div>
   <div id="info" class="hidden">
     <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>

@@ -139,6 +139,29 @@ ok('S3 header slab is transparent (map full-screen at the top)', S22.hudBg === '
 ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-strip job), dock clear above it | ' + JSON.stringify(S22),
   S22.strip.x === 0 && S22.strip.w === S22.vw && Math.abs(S22.strip.bottom - S22.vh) <= 1 && S22.startB <= S22.strip.top + 1 && S22.atBottom === 'tabBar' && S22.atStart === 'startBtn');
 
+// S6/S7 (Beta 1.24): after Start, Cancel must float ABOVE the circle - clear of the
+// tab bar and tappable; and the chrome icons must compute to bright colours on the
+// dark glass (a duplicated dark colour value once rendered them invisible).
+await ev(`(() => { $('startBtn').click(); return true; })()`);
+await sleep(700);
+const S6 = JSON.parse(await ev(`(() => { const c = $('cancelStartBtn'); const cr = c.getBoundingClientRect(); const tr = $('tabBar').getBoundingClientRect();
+  const hit = document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2);
+  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id,
+    listCol: getComputedStyle($('listBtn')).color, paceCol: getComputedStyle($('paceBtn')).color, tabCol: getComputedStyle($('updBtn')).color }); })()`));
+ok('S6 Cancel start floats above the circle, clear of the tab bar, and takes the tap | ' + JSON.stringify(S6),
+  S6.disp !== 'none' && S6.cancel.b <= S6.tabTop - 40 && S6.hit === 'cancelStartBtn');
+ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' + JSON.stringify(S6),
+  S6.listCol === 'rgb(34, 38, 46)' && S6.paceCol === 'rgb(34, 38, 46)' && S6.tabCol === 'rgb(43, 48, 56)');
+await ev(`(() => { $('nightBtn').click(); return true; })()`);
+await sleep(600);
+const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'),
+  listCol: getComputedStyle($('listBtn')).color, tabCol: getComputedStyle($('updBtn')).color,
+  barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
+ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
+  S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(17, 19, 24, 0.88)' && S7.countCol === 'rgb(238, 244, 238)');
+await ev(`(() => { $('cancelStartBtn').click(); return true; })()`);
+await sleep(400);
+
 await ev(`(() => { markDone('Woolacott', 'tap'); return true; })()`);
 await sleep(400);
 const C2 = await ev(`$('count').textContent`);
