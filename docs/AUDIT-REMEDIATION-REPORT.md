@@ -155,3 +155,32 @@ Re-verified at report time, unchanged from before the remediation:
 - Service-worker cache prefixes remain disjoint between production (`snow5w-`) and beta
   (`snow5wbeta1-`); neither app's cleanup can delete the other's caches (string-verified).
 - Production itself was never modified: its repository head remains b7de38b / app 641da54.
+
+
+---
+
+## Addendum — Stage 2 of the v1.0 development plan (Beta 1.17, October 29, 2026)
+
+Two items left open by this report were closed under the development plan's
+branch-and-battery process (branch `stage2/known-items`, battery 168/168):
+
+- **G-5 — FIXED.** Preload's saved count is now cache-confirmed: after the
+  fetch pass, every URL is verified with `caches.match` and only confirmed
+  residents count. Glyph warming also uses the font stack each style actually
+  requests (day: `noto_sans_regular`; night: `Noto Sans Regular`).
+- **G-6 — FIXED.** The app self-warms on its first boot: once the worker
+  controls the page, both map styles are fetched through it, so the map
+  loads offline from the first install. drive119's first session now runs
+  with NO manual controlled reload and asserts the cached style — the
+  regression is covered permanently. One subtlety the work exposed: waiting
+  for the worker's "ready" signal alone was not enough — a fetch sent before
+  the page is actually controlled bypasses the worker (measured: HTTP 200
+  responses, empty cache). The warm-up waits for control explicitly.
+- **drive120 added** (visual geometry): its first runs caught a real defect
+  this report's scope did not cover — with a stretch point near the screen
+  edge, the two side-marking chips were clamped independently and overlapped
+  (measured 21.6px apart, 40px buttons). The layout now clamps the anchor
+  point before offsetting; an edge regression case is in the battery.
+- **G-2 and G-4 — no change, by decision recorded in the Stage 2 report:**
+  both were documented designs with verified mitigations in §2/§3 of this
+  report; nothing in the Stage 2 evidence weakened those mitigations.

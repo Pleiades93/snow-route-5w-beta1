@@ -76,9 +76,10 @@ with cache fallback; map styles network-first into the tiles cache
 Activate deletes only `snow5wbeta1-` caches — disjoint from production's
 `snow5w-` prefix, so the two apps can share an origin safely. An in-app
 preload ("Download route maps") warms styles, sprites, glyphs and tiles to
-zoom 14 over the route box. Known caveat: the first-ever boot is not
-worker-controlled, so its map fetches cache nothing (see the remediation
-report, G-6).
+zoom 14 over the route box. Since Beta 1.17 (Stage 2), the first-ever boot
+also self-warms: once the worker controls the page, the app fetches both map
+styles through it, so the map works offline from the first install —
+drive119's first session proves it without any manual reload.
 
 ## Testing
 
