@@ -17,8 +17,9 @@ turn every discovered bug into a permanent regression test.
 5. **Implement the smallest appropriate change** — no unrelated refactoring in the
    same change. Visual changes must not alter backend behaviour; backend changes
    must not unexpectedly alter the interface.
-6. **Test** — run the applicable automated tests (see §3). A test counts as passed
-   only if it was actually executed and its result observed.
+6. **Test** — run the applicable automated tests (see §3, including the test
+   tiers). A test counts as passed only if it was actually executed and its
+   result observed.
 7. **Review the diff** — re-read the complete diff before merging; check for
    accidental edits, stale text, and claims the code does not enforce.
 8. **Document** — update the docs the change makes stale, in the same change.
@@ -40,6 +41,18 @@ CI (`.github/workflows/checks.yml`) runs on every push to any branch:
 and the deterministic browser drives (`tests/browser/run.mjs`).
 
 - A change merges only with a green battery.
+- **Test tiers (set 2026-10-30, Andrew).** Iteration and the merge gate are
+  priced differently, so tinkering stays fast without weakening the gate:
+  - *Tinkering iterations on a branch:* quick checks only — the build check,
+    syntax checks, and the drives that cover the surface the change touches.
+    Small tweaks may batch into one branch and one run. A full-battery
+    read-back is not required per iteration.
+  - *Data-critical changes* — storage keys or formats, backup/restore,
+    GPS/coverage logic, finish/history, the service worker: the full battery
+    runs on the branch before merge, every time, no exceptions.
+  - *The merge gate never moves:* the branch's final commit must have a green
+    full battery, and the exact merge commit is verified on `main` afterwards
+    (the commit-bound evidence rule, §6).
 - **Never weaken or delete a test assertion to obtain a pass.** When a test fails,
   establish whether the defect is in the app or in the test (state dumps, step
   traces, reproduction), fix the defective side, and say which it was. The
