@@ -141,6 +141,16 @@ const probe = async () => { const raw = await ev(`(() => { try {
 } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`);
   return typeof raw === 'string' ? JSON.parse(raw) : { __err: 'non-string evaluate result' }; };
 
+const BISECT = JSON.parse(await ev(`(() => { const steps = {};
+  const run = (name, fn) => { try { fn(); steps[name] = 'ok'; } catch (e) { steps[name] = String(e && e.message || e).slice(0, 140); } };
+  run('pickFont', () => pickFontFromStyle());
+  run('glpInit', () => window.GLP.init(map));
+  run('ref', () => addReferenceLayers());
+  run('gps', () => addGpsLayers());
+  run('trail', () => addTrailLayers());
+  return JSON.stringify(steps); })()`));
+ok('G0c onStyleReady step bisect | ' + JSON.stringify(BISECT), Object.values(BISECT).every(v => v === 'ok'));
+
 const PRE = JSON.parse(await ev(`(() => JSON.stringify({
   centres: !!map.getSource('centres'), ref: !!map.getSource('ref'), gps: !!map.getSource('gps'), trail: !!map.getSource('trail'),
   refLine: !!map.getLayer('ref-line'), trailLine: !!map.getLayer('trail-line') }))()`));
