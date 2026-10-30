@@ -168,22 +168,28 @@ R.diagT4 = { labelWait: diagUndo, pre: diagPre, post: A };
 // (The first diagnostic round put it in the result block, which the runner parses but never echoes.)
 ok('T4 Undo finish restores the run | diag ' + JSON.stringify(R.diagT4), A.h === 0 && A.done === 3 && /Finish undone/.test(A.toast));
 // T5: finish again, then delete returns to Previous cleans (the bug fix)
-await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
-await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(400);
-await ev(`(() => { openPace(); return true; })()`); await sleep(300);
-await ev(`(() => { $('histHead').click(); return true; })()`); await sleep(300);
-await ev(`(() => { document.querySelector('.histRow').click(); return true; })()`); await sleep(400);
+// Hardened (audit round 3): every tap waits for its observable EFFECT before the next tap - the fixed
+// sleeps raced the app's real double-tap guards (T5's resetBtn tap can land inside the 400ms guard
+// window of T4's Undo tap on the same button and be silently eaten, stranding the whole chain).
+const step = async (tapExpr, effectExpr, pred) => { await ev(tapExpr); return await pollRead(effectExpr, pred, 6000); };
+await step(`(() => { $('resetBtn').click(); return true; })()`, `(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden') }))()`, v => v.open === true);
+await step(`(() => { $('finYes').click(); return true; })()`, `(() => JSON.stringify({ label: $('resetBtn').textContent, h: history.length }))()`, v => v.label === 'Undo' && v.h === 1);
+await step(`(() => { openPace(); return true; })()`, `(() => JSON.stringify({ vis: !$('pacePanel').classList.contains('hidden') }))()`, v => v.vis === true);
+await step(`(() => { $('histHead').click(); return true; })()`, `(() => JSON.stringify({ rows: document.querySelectorAll('.histRow').length }))()`, v => v.rows >= 1);
+await step(`(() => { document.querySelector('.histRow').click(); return true; })()`, `(() => JSON.stringify({ cvOpen: !$('cleanView').classList.contains('hidden') }))()`, v => v.cvOpen === true);
 A = JSON.parse(await ev(`(() => JSON.stringify({ cvOpen: !$('cleanView').classList.contains('hidden') }))()`));
 ok('T5 clean detail opened from Previous cleans', A.cvOpen);
-await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); await sleep(300);
-await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); await sleep(500);
-A = JSON.parse(await ev(`(() => JSON.stringify({ h: history.length, sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), cvHidden: $('cleanView').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`));
+await step(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`, `(() => JSON.stringify({ armed: $('cleanView').querySelector('.cvDel').classList.contains('armed') }))()`, v => v.armed === true);
+A = await pollRead(`(() => JSON.stringify({ h: history.length, sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), cvHidden: $('cleanView').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`, v => v.h === 0, 6000);
+await ev(`(() => { if (history.length) { $('cleanView').querySelector('.cvDel').click(); } return true; })()`); // second (confirm) tap, only if the armed tap did not already delete
+A = await pollRead(`(() => JSON.stringify({ h: history.length, sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), cvHidden: $('cleanView').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`, v => v.h === 0 && !v.sheetOpen && v.paceVis && v.cvHidden, 6000);
 ok('T5 clean deleted', A.h === 0);
 ok('T5 after delete: Previous cleans showing, NOT the Streets list', !A.sheetOpen && A.paceVis && A.cvHidden);
 // T6: Back also returns to Previous cleans
 await mark3();
-await ev(`(() => { performReset(); openClean(0); return true; })()`); await sleep(400);
-await ev(`(() => { $('cleanView').querySelector('.cvBack').click(); return true; })()`); await sleep(400);
+await ev(`(() => { performReset(); openClean(0); return true; })()`);
+await pollRead(`(() => JSON.stringify({ cvOpen: !$('cleanView').classList.contains('hidden') }))()`, v => v.cvOpen === true, 6000);
+await step(`(() => { $('cleanView').querySelector('.cvBack').click(); return true; })()`, `(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`, v => !v.sheetOpen && v.paceVis && v.histRows === 1);
 A = JSON.parse(await ev(`(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`));
 ok('T6 Back returns to Previous cleans too', !A.sheetOpen && A.paceVis && A.histRows === 1);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));

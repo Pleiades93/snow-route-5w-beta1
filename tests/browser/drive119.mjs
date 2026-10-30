@@ -130,6 +130,8 @@ let b = await launch(false);
 okS('S1 app boots online', await waitBoot(b.ev));
 okS('S1 worker registered, activated and controlling', await until(async () => await b.ev(`(async () => { const r = await navigator.serviceWorker.getRegistration(); return !!(r && r.active && r.active.state === 'activated' && navigator.serviceWorker.controller); })()`), 30000));
 okS('S1 map activates online (style fetched)', await until(async () => await b.ev(`typeof glOk !== 'undefined' && glOk === true`), 30000));
+await b.ev(`location.reload(); true`); // second load is worker-controlled (the first-ever boot is not: its fetches bypass the worker)
+okS('S1 app reboots online under worker control', await waitBoot(b.ev));
 okS('S1 day style is cached (styles route to the tiles cache by design)', await until(async () => await b.ev(`(async () => { const c = await caches.open('${TILECACHE}'); return !!(await c.match('https://tiles.versatiles.org/styles/colorful/style.json')); })()`), 25000));
 const seed = JSON.parse(await b.ev(`(() => { const n = STREETNAMES.find(x => STRETCH[x].parts.length === 1); togglePiece(n, 0, 0); return JSON.stringify({ n, v: pieces[n][0], stored: (JSON.parse(localStorage.getItem(LS.sides))).p[n][0] }); })()`));
 ok('S1 seeded side marked and stored', seed.v === 1 && seed.stored === 1);
