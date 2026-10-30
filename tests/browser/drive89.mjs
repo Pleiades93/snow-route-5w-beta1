@@ -180,8 +180,7 @@ await step(`(() => { document.querySelector('.histRow').click(); return true; })
 A = JSON.parse(await ev(`(() => JSON.stringify({ cvOpen: !$('cleanView').classList.contains('hidden') }))()`));
 ok('T5 clean detail opened from Previous cleans', A.cvOpen);
 await step(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`, `(() => JSON.stringify({ armed: $('cleanView').querySelector('.cvDel').classList.contains('armed') }))()`, v => v.armed === true);
-A = await pollRead(`(() => JSON.stringify({ h: history.length, sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), cvHidden: $('cleanView').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`, v => v.h === 0, 6000);
-await ev(`(() => { if (history.length) { $('cleanView').querySelector('.cvDel').click(); } return true; })()`); // second (confirm) tap, only if the armed tap did not already delete
+await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); // confirm tap IMMEDIATELY: the arm expires after 5s, so no poll may sit between the two taps
 A = await pollRead(`(() => JSON.stringify({ h: history.length, sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), cvHidden: $('cleanView').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`, v => v.h === 0 && !v.sheetOpen && v.paceVis && v.cvHidden, 6000);
 ok('T5 clean deleted', A.h === 0);
 ok('T5 after delete: Previous cleans showing, NOT the Streets list', !A.sheetOpen && A.paceVis && A.cvHidden);
