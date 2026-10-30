@@ -141,7 +141,7 @@ try {
   ok('A5 marking still works on the dead map', await ev(`pieces.Velmar[0] === 1`));
   let R1 = await rects();
   ok('A6 layout (day): notice fully in viewport', R1.note && R1.note.x >= 0 && R1.note.y >= 0 && R1.note.r <= R1.vw && R1.note.btm <= R1.vh);
-  ok('A7 layout (day): notice does not overlap the gear button', !overlaps(R1.note, R1.gear));
+  ok('A7 layout (day): notice does not overlap the gear button | note ' + JSON.stringify(R1.note) + ' gear ' + JSON.stringify(R1.gear), !overlaps(R1.note, R1.gear));
   ok('A8 layout (day): dismiss button is a full-size tap target', await ev(`document.getElementById('mapNoteNo').getBoundingClientRect().height >= 44`));
 
   // Phase C: recovery - tiles come back, notice clears itself (no dismiss).
@@ -169,7 +169,7 @@ try {
   ok('D3 notice appears in night theme', await ev(`isNight() === true`) && await until(noteVisible, 18000));
   let R2 = await rects();
   ok('D4 layout (night): notice fully in viewport', R2.note && R2.note.h > 40 && R2.note.x >= 0 && R2.note.y >= 0 && R2.note.r <= R2.vw && R2.note.btm <= R2.vh);
-  ok('D5 layout (night): notice does not overlap the gear button', !overlaps(R2.note, R2.gear));
+  ok('D5 layout (night): notice does not overlap the gear button | note ' + JSON.stringify(R2.note) + ' gear ' + JSON.stringify(R2.gear), !overlaps(R2.note, R2.gear));
   await ev(`document.getElementById('mapNoteNo').click(); true`); await sleep(300);
   ok('D6 night dismiss works', !(await noteVisible()));
 } catch (e) {

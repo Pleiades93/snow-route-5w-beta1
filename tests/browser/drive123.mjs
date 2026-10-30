@@ -131,29 +131,29 @@ ok('A1 shared tokens exist (280ms; mirrored curve pair) | ' + JSON.stringify(TOK
   TOK.dur === '280ms' && TOK.open === 'cubic-bezier(.25,.8,.3,1)' && TOK.close === 'cubic-bezier(.7,0,.75,.2)');
 
 const sheetT = async () => JSON.parse(await ev(`(() => { const cs = getComputedStyle($('sheet')); return JSON.stringify({
-  dur: cs.transitionDuration.split(',')[0].trim(), fn: cs.transitionTimingFunction.split('),')[0].trim() + ')', props: cs.transitionProperty }); })()`));
+  dur: cs.transitionDuration.split(',')[0].trim(), fn: (cs.transitionTimingFunction.match(/cubic-bezier\([^)]*\)/) || [''])[0].replace(/\s+/g, ''), props: cs.transitionProperty }); })()`));
 const closed = await sheetT();
 ok('A2 closed sheet animates on the close curve at the shared duration, height included | ' + JSON.stringify(closed),
-  closed.dur === '0.28s' && closed.fn === 'cubic-bezier(0.7, 0, 0.75, 0.2)' && closed.props.includes('transform') && closed.props.includes('height') && closed.props.includes('max-height'));
+  closed.dur === '0.28s' && closed.fn === 'cubic-bezier(0.7,0,0.75,0.2)' && closed.props.includes('transform') && closed.props.includes('height') && closed.props.includes('max-height'));
 await ev(`(() => { $('listBtn').click(); return true; })()`);
 await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
 const opened = await sheetT();
 ok('A2 open sheet animates on the open curve at the same duration | ' + JSON.stringify(opened),
-  opened.dur === '0.28s' && opened.fn === 'cubic-bezier(0.25, 0.8, 0.3, 1)');
+  opened.dur === '0.28s' && opened.fn === 'cubic-bezier(0.25,0.8,0.3,1)');
 
 const fanT = async () => JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('#fanBtns .fanItem')].map(el => { const cs = getComputedStyle(el); return {
-  delay: cs.transitionDelay.split(',')[0].trim(), dur: cs.transitionDuration.split(',')[0].trim(), fn: cs.transitionTimingFunction.split('),')[0].trim() + ')' }; }))`));
+  delay: cs.transitionDelay.split(',')[0].trim(), dur: cs.transitionDuration.split(',')[0].trim(), fn: (cs.transitionTimingFunction.match(/cubic-bezier\([^)]*\)/) || [''])[0].replace(/\s+/g, '') }; }))`));
 await ev(`(() => { closeSheets(); return true; })()`);
 await sleep(500);
 const fanClosed = await fanT();
 ok('A3 fan closing: shared duration, close curve, mirrored stagger (far item first) | ' + JSON.stringify(fanClosed),
-  fanClosed.length === 5 && fanClosed.every(f => f.dur === '0.28s' && f.fn === 'cubic-bezier(0.7, 0, 0.75, 0.2)') &&
+  fanClosed.length === 5 && fanClosed.every(f => f.dur === '0.28s' && f.fn === 'cubic-bezier(0.7,0,0.75,0.2)') &&
   JSON.stringify(fanClosed.map(f => f.delay)) === '["0s","0.04s","0.08s","0.12s","0.16s"]');
 await ev(`(() => { $('gearBtn').click(); return true; })()`);
 await poll120(`$('fanBtns').classList.contains('open')`, v => v, 5000);
 const fanOpen = await fanT();
 ok('A3 fan opening: same duration, open curve, stagger nearest-first | ' + JSON.stringify(fanOpen),
-  fanOpen.length === 5 && fanOpen.every(f => f.dur === '0.28s' && f.fn === 'cubic-bezier(0.25, 0.8, 0.3, 1)') &&
+  fanOpen.length === 5 && fanOpen.every(f => f.dur === '0.28s' && f.fn === 'cubic-bezier(0.25,0.8,0.3,1)') &&
   JSON.stringify(fanOpen.map(f => f.delay)) === '["0.16s","0.12s","0.08s","0.04s","0s"]');
 await sleep(800);
 const fanSettled = JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('#fanBtns .fanItem')].map(el => parseFloat(getComputedStyle(el).opacity)))`));

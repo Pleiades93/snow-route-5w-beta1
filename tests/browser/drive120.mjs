@@ -154,7 +154,7 @@ await ev(`(() => { deselect(); $('gearBtn').click(); return true; })()`);
 await sleep(800);
 const fan = JSON.parse(await ev(`JSON.stringify(${RECTS('#fanBtns .fanItem')})`));
 ok('V4 fan shows five items', fan.length === 5);
-ok('V4 fan items are 50px and inside the viewport', fan.every(f => Math.abs(f.w - 50) <= 2 && Math.abs(f.h - 50) <= 2 && inView(f)));
+ok('V4 fan items are 50px and inside the viewport | fan ' + JSON.stringify(fan), fan.every(f => Math.abs(f.w - 50) <= 2 && Math.abs(f.h - 50) <= 2 && inView(f)));
 const sorted = [...fan].sort((a, b) => a.y - b.y);
 ok('V4 fan items have clear vertical gaps (no overlap)', sorted.every((f, i) => i === 0 || sorted[i - 1].b <= f.y - 6));
 
