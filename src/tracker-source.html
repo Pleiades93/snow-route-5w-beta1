@@ -87,6 +87,12 @@
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
   #startBtn { background: #0a0a0b; color: #d8ff3d; font-size: 21px; } /* Beta 1.23 (Andrew's reference): black circle, volt-yellow word */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #selBar { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 8px 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.28: the multi-selection action pill - same glass family as the progress pill, parked under the title where nothing else competes */
+  body.night #selBar { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #selBar.hidden { display: none; }
+  #selBar button { border: 0; border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  #selAllBtn { background: #2ecc71; color: #fff; }
+  #selClearBtn { background: transparent; color: inherit; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
@@ -162,6 +168,7 @@
 <body>
 <div id="map"></div>
 <div id="chips"></div>
+<div id="selBar" class="hidden"><span id="selBarTxt"></span><button id="selAllBtn">Mark both sides</button><button id="selClearBtn">Clear</button></div>
 <div id="attrChip">© VersaTiles © OpenStreetMap contributors © CARTO</div>
 <div id="spd" class="hidden"></div>
 <div id="hud">
@@ -1795,22 +1802,26 @@ function buildFamilies() {
   const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
   return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN) };
 }
-function buildSel(which) {   // the selected sector's side lines (vibrant)
+function currentSelList() { // every selected stretch (Beta 1.28): the app's selSet when multi-selecting, else the single anchor - read live at build time, like the original builders read the app global sel
+  return (typeof selSet !== 'undefined' && Array.isArray(selSet) && selSet.length) ? selSet : (sel ? [sel] : []);
+}
+function buildSel(which) {   // the selected sectors' side lines (vibrant)
   const feats = [];
-  if (sel) {
-    const g = GEO[sel.name], ab = g.cuts[sel.idx], bits = pieces[sel.name][sel.idx];
-    if (which === 'e' && bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) edgeRunSlices(sel.name, side, idx => idx === sel.idx).forEach(sl => feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })); });
+  if (which === 'e') for (const it of currentSelList()) {
+    const bits = pieces[it.name][it.idx];
+    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) edgeRunSlices(it.name, side, idx => idx === it.idx).forEach(sl => feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })); });
   }
   return { type: 'FeatureCollection', features: feats };
 }
 const EMPTYFC = { type: 'FeatureCollection', features: [] };
-function selectedGeom() {   // the selected stretch's painted slice: stitched points, edge-clipped at its junctions
-  if (!sel) return null;
-  const g = GEO[sel.name], ab = g.cuts[sel.idx], bits = pieces[sel.name][sel.idx];
+function selectedGeom(it) {   // a selected stretch's painted slice: stitched points, edge-clipped at its junctions
+  const s0 = it || sel;
+  if (!s0) return null;
+  const g = GEO[s0.name], ab = g.cuts[s0.idx], bits = pieces[s0.name][s0.idx];
   const half = bits === 3 ? BAND_HALF : SURF_HALF;
   let pts = g.stitched.slice(ab[0], ab[1] + 1);
-  pts = clipEndAtJunction(sel.name, ab[0], pts, true, half);
-  pts = clipEndAtJunction(sel.name, ab[1], pts, false, half);
+  pts = clipEndAtJunction(s0.name, ab[0], pts, true, half);
+  pts = clipEndAtJunction(s0.name, ab[1], pts, false, half);
   return { pts, bits, half };
 }
 function buildSelC() {   // the selected sector's core: a vibrant BAND when complete, a vibrant core otherwise
@@ -1818,11 +1829,14 @@ function buildSelC() {   // the selected sector's core: a vibrant BAND when comp
   // global selection - colOf(sel.name) read undefined and every
   // selected pending stretch rendered RED, yellow streets included.
   // Andrew caught it live, 2026-10-29.)
-  let selFC = EMPTYFC, selBandFC = EMPTYFC;
-  const sg = selectedGeom();
-  if (sg && sg.bits !== 3) selFC = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { col: colOf(sel.name, sg.bits) }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } }] };
-  if (sg && sg.bits === 3) selBandFC = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { col: GREEN }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } }] };
-  return { sel: selFC, selBand: selBandFC };
+  const selFeats = [], bandFeats = [];
+  for (const it of currentSelList()) {
+    const sg = selectedGeom(it);
+    if (!sg) continue;
+    if (sg.bits !== 3) selFeats.push({ type: 'Feature', properties: { col: colOf(it.name, sg.bits) }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } });
+    else bandFeats.push({ type: 'Feature', properties: { col: GREEN }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } });
+  }
+  return { sel: selFeats.length ? { type: 'FeatureCollection', features: selFeats } : EMPTYFC, selBand: bandFeats.length ? { type: 'FeatureCollection', features: bandFeats } : EMPTYFC };
 }
 const HIT = { type: 'FeatureCollection', features: names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } }))) };
 let CUR = null;
@@ -2180,6 +2194,7 @@ function addReferenceLayers() {
 function addGpsLayers() {
   if (map.getSource('gps')) return;
   map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({ id: 'gps-cone', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'cone'], paint: { 'fill-color': '#1a8cff', 'fill-opacity': 0.3 } }); // Beta 1.28: the facing beam, painted under the accuracy ring and the dot
   map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#1a8cff', 'fill-opacity': 0.12 } });
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#1a8cff', 'line-width': 1.5, 'line-opacity': 0.5 } });
   map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9, 'circle-color': '#1a8cff', 'circle-stroke-width': 3, 'circle-stroke-color': '#ffffff' } });
@@ -2227,6 +2242,7 @@ function setBasemap() {
 
 // ===== SELECTION + CHIPS =====
 let sel = null; // {name, idx, anchor:[lat,lng]}
+let selSet = []; // [{name, idx, anchor}] - EVERY stretch currently selected (Beta 1.28 multi-select, Andrew); sel/selStretch stay the ANCHOR entry (last tapped) that positions the chips
 let selStretch = null; // {name, idx} — the paint engine reads this global in syncSel()
 let swallowClickUntil = 0;
 function projLL(p) { return map.project([p[1], p[0]]); }
@@ -2249,17 +2265,17 @@ function geoSideFrame(name, idx, anchorLL) {
   return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
 function clearChips() { $('chips').innerHTML = ''; }
+function groupSideDone(side) { const bit = side ? 2 : 1; return selSet.length > 0 && selSet.every(en => !!(pieces[en.name][en.idx] & bit)); } // a side reads done only when EVERY selected stretch has it
 function showChips() {
   clearChips();
   if (!sel) return;
   const wrap = $('chips');
-  const val = pieces[sel.name][sel.idx];
   [0, 1].forEach(side => {
     const d = document.createElement('div');
-    d.className = 'sideChip' + ((val & (side ? 2 : 1)) ? ' done' : '');
+    d.className = 'sideChip' + (groupSideDone(side) ? ' done' : '');
     d.dataset.side = side;
     d.innerHTML = '<button class="chipBtn" aria-label="mark side"></button>';
-    d.querySelector('.chipBtn').addEventListener('click', ev => { ev.stopPropagation(); if (!tapGuard('chip' + side)) return; togglePiece(sel.name, sel.idx, side); });
+    d.querySelector('.chipBtn').addEventListener('click', ev => { ev.stopPropagation(); if (!tapGuard('chip' + side)) return; togglePieceGroup(side); });
     wrap.appendChild(d);
   });
   positionChips();
@@ -2282,36 +2298,62 @@ function positionChips() {
     let x = base.x + dx * 40, y = base.y + dy * 40;
     x = Math.max(22, Math.min(cw - 22, x)); y = Math.max(22, Math.min(ch - 22, y));
     kids[side].style.left = (x - 20) + 'px'; kids[side].style.top = (y - 20) + 'px';
-    const done = !!(pieces[sel.name][sel.idx] & (side ? 2 : 1));
+    const done = groupSideDone(side);
     kids[side].querySelector('.chipBtn').innerHTML = done
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg)"><path d="M4 12 H19 M13 5.5 L19.5 12 L13 18.5"/></svg>';
   });
 }
 map.on('move', positionChips);
-function selectStretch(name, idx, anchor) { sel = { name, idx, anchor }; selStretch = { name, idx }; if (window.GLP) window.GLP.syncSel(); showChips(); renderPanel(); }
-function deselect() { sel = null; selStretch = null; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
+function refreshSelUI() { if (window.GLP) window.GLP.syncSel(); showChips(); updateSelBar(); renderPanel(); }
+function updateSelBar() { const bar = $('selBar'); if (selSet.length >= 2) { bar.classList.remove('hidden'); $('selBarTxt').textContent = selSet.length + ' sections selected'; } else bar.classList.add('hidden'); }
+function selectStretch(name, idx, anchor) { selSet = [{ name, idx, anchor }]; sel = { name, idx, anchor }; selStretch = { name, idx }; refreshSelUI(); } // a fresh single selection (streets list, drives)
+function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tapping a selected stretch removes just it; the anchor follows the last remaining selection
+  const i = selSet.findIndex(en => en.name === name && en.idx === idx);
+  if (i >= 0) selSet.splice(i, 1); else selSet.push({ name, idx, anchor });
+  if (!selSet.length) { deselect(); return; }
+  const top = selSet[selSet.length - 1];
+  sel = { name: top.name, idx: top.idx, anchor: top.anchor }; selStretch = { name: top.name, idx: top.idx };
+  refreshSelUI();
+}
+function deselect() { sel = null; selStretch = null; selSet = []; clearChips(); updateSelBar(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
 map.on('click', e => {
   if (Date.now() < swallowClickUntil) return;
   const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
   const near = nearestStreet(pt);
-  if (near.name && near.d <= 16) { const st = nearestStretch(near.name, pt); selectStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }
+  if (near.name && near.d <= 16) { const st = nearestStretch(near.name, pt); tapStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }
   else deselect();
 });
 
 // ===== MARKING (one finish path) =====
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); saveAll(); syncWake(); }
-function togglePiece(name, idx, side) {
+function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
   const bit = side ? 2 : 1; const was = pieces[name][idx];
-  const now = was ^ bit;
+  const now = on ? (was | bit) : (was & ~bit);
+  if (now === was) return null;
   pieces[name][idx] = now;
   if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
-  pieceTimes[name][idx][side] = (now & bit) ? new Date().toISOString() : null;
-  if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; }
+  pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
+  if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; return name; }
   if (!streetComplete(name) && doneSet.has(name)) { doneSet.delete(name); delete doneTimes[name]; delete doneVia[name]; }
-  showChips(); finishChange();
-  if ((now & bit) && streetComplete(name)) toast('✓ ' + name + ' · ' + fmtClock(new Date()));
+  return null;
 }
+function togglePiece(name, idx, side) {
+  const bit = side ? 2 : 1;
+  const doneName = applyPiece(name, idx, side, !(pieces[name][idx] & bit));
+  showChips(); finishChange();
+  if (doneName) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
+}
+function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere
+  if (!selSet.length) return;
+  const on = !groupSideDone(side);
+  const completed = [];
+  for (const en of selSet) { const c = applyPiece(en.name, en.idx, side, on); if (c && !completed.includes(c)) completed.push(c); }
+  showChips(); finishChange();
+  completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
+}
+$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); finishChange(); completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
+$('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
 function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
   if (typeof undoSnap !== 'undefined' && undoSnap) { undoSnap = null; clearTimeout(undoTimer); const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing'); }
   pieces[name] = STRETCH[name].parts.map(() => 3);
@@ -2800,7 +2842,7 @@ $('noteYes').addEventListener('click', () => {
 });
 
 // ===== GPS (checklist SS7) =====
-let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, fixWin = [], lastFixAt = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
+let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, camTimer = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
 const SAMPLES = {};
 (function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
 for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count
@@ -2808,6 +2850,13 @@ let suggested = new Set();
 function pushGps() {
   const src = map.getSource('gps'); if (!src) return;
   const feats = [];
+  if (dispPos && watchId != null && facingDeg != null) { // the facing beam (Beta 1.28): a soft wedge from the dot along the facing direction, Apple Maps style
+    const R = 46, half = 33 * Math.PI / 180, h = facingDeg * Math.PI / 180;
+    const cone = [[dispPos[1], dispPos[0]]];
+    for (let a = -half; a <= half + 0.001; a += half / 4) { const b = h + a; cone.push([dispPos[1] + (R * Math.sin(b)) / MLNG, dispPos[0] + (R * Math.cos(b)) / MLAT]); }
+    cone.push([dispPos[1], dispPos[0]]);
+    feats.push({ type: 'Feature', properties: { k: 'cone' }, geometry: { type: 'Polygon', coordinates: [cone] } });
+  }
   if (dispPos) {
     feats.push({ type: 'Feature', properties: { k: 'dot' }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
     if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispPos[1] + (R * Math.sin(th)) / MLNG, dispPos[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
@@ -2832,7 +2881,8 @@ function glideTo(target) {
   const t0 = performance.now(); clearInterval(glideTimer);
   glideTimer = setInterval(() => {
     const t = Math.min(1, (performance.now() - t0) / dur);
-    dispPos = [from[0] + (target[0] - from[0]) * t, from[1] + (target[1] - from[1]) * t];
+    const e = t * t * (3 - 2 * t); // smoothstep: the glide eases in and out instead of starting/stopping dead (Beta 1.28) - linear segments meeting at each fix were half the visible jaggedness
+    dispPos = [from[0] + (target[0] - from[0]) * e, from[1] + (target[1] - from[1]) * e];
     pushGps(); followCam();
     if (t >= 1) clearInterval(glideTimer);
   }, 40);
@@ -2861,25 +2911,79 @@ function updateHeading(hdg, speed) {
   if (Math.abs(d) > 3) map.easeTo({ bearing: cur + d, duration: 350 });
 }
 function northUp() { smHeading = null; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); }
+// ===== POSITION FILTER (Beta 1.28, Andrew: the dot jitters at slow speed) =====
+// A Kalman filter [the estimator navigation apps use: it carries a position AND a
+// velocity, and weighs each new fix by its stated accuracy against how well the fix
+// fits the motion so far] replaces the 3-fix weighted average. The average let every
+// noisy fix drag the dot metres sideways - worst at driveway speeds, where raw GPS
+// wander is bigger than the real movement. The filter discounts wander (at low speed
+// the estimate barely creeps) and trusts steady motion (at speed it tracks fully).
+// Worked per-axis in local metres around the first fix's origin. The hard gates in
+// acceptFix (finite/on-Earth, accuracy) still run BEFORE a fix reaches the filter.
+let kf = null; // {ox, oy, at, x:{p,v,a,b,c}, y:{...}} - a/b/c are the axis covariance terms
+const KF_Q = 0.5; // process noise: how much real acceleration to expect between fixes
+function kfAxis(z, ax, dt, R) {
+  ax.p += ax.v * dt; // predict: coast on the estimated velocity
+  const a = ax.a + 2 * dt * ax.b + dt * dt * ax.c + KF_Q * dt ** 4 / 4;
+  const b = ax.b + dt * ax.c + KF_Q * dt ** 3 / 2;
+  const c = ax.c + KF_Q * dt * dt;
+  const y = z - ax.p, S = a + R, K0 = a / S, K1 = b / S; // gain: high when the motion model is unsure or the fix is precise
+  ax.p += K0 * y; ax.v += K1 * y;
+  ax.a = (1 - K0) * a; ax.b = (1 - K0) * b; ax.c = c - K1 * b;
+}
+function kfUpdate(ll, acc, now) {
+  const zx = ll[1] * MLNG, zy = ll[0] * MLAT, R = Math.max(acc, 5) ** 2;
+  if (kf) {
+    const dt0 = (now - kf.at) / 1000;
+    if (dt0 > 10 || Math.hypot(zx - kf.ox - kf.x.p, zy - kf.oy - kf.y.p) > 75) kf = null; // reacquisition: a long silence or a far jump voids the motion model
+  }
+  if (!kf) { kf = { ox: zx, oy: zy, at: now, x: { p: 0, v: 0, a: R, b: 0, c: 4 }, y: { p: 0, v: 0, a: R, b: 0, c: 4 } }; return { est: ll.slice(), aim: ll.slice() }; }
+  const dt = Math.min(Math.max((now - kf.at) / 1000, 0.05), 5); kf.at = now;
+  kfAxis(zx - kf.ox, kf.x, dt, R); kfAxis(zy - kf.oy, kf.y, dt, R);
+  const est = [(kf.oy + kf.y.p) / MLAT, (kf.ox + kf.x.p) / MLNG];
+  // gentle lookahead: the glide aims a fraction of a second along the estimated velocity
+  // (capped at 3 m), so the dot keeps flowing between fixes instead of bursting once a second
+  const lx = Math.max(-3, Math.min(3, kf.x.v * 0.45)), ly = Math.max(-3, Math.min(3, kf.y.v * 0.45));
+  return { est, aim: [(kf.oy + kf.y.p + ly) / MLAT, (kf.ox + kf.x.p + lx) / MLNG] };
+}
+// ===== FACING (Beta 1.28, Andrew: the Apple Maps light beam on the dot) =====
+// One funnel for every facing source, smoothed around the circle so the beam never
+// snaps. Sources: the GPS course while moving (truest inside a steel vehicle), the
+// device compass while still. On iOS the compass needs a permission granted from a
+// tap, so it is requested from startGps - a genuine user gesture.
+let facingDeg = null, lastCourseAt = 0, compassOn = false;
+function setFacing(deg, w) {
+  if (typeof deg !== 'number' || isNaN(deg)) return;
+  const before = facingDeg;
+  facingDeg = facingDeg === null ? deg : ((facingDeg + headDelta(facingDeg, deg) * (w || 0.3)) % 360 + 360) % 360;
+  if (watchId != null && dispPos && (before === null || Math.abs(headDelta(before, facingDeg)) > 1.5)) pushGps();
+}
+function startCompass() {
+  if (compassOn) return;
+  const onOri = e => {
+    let deg = null;
+    if (typeof e.webkitCompassHeading === 'number') deg = e.webkitCompassHeading; // iOS: degrees clockwise from north, ready to use
+    else if (e.absolute && typeof e.alpha === 'number') deg = (360 - e.alpha) % 360;
+    if (deg === null || Date.now() - lastCourseAt < 3000) return; // while the course is fresh it outranks the compass
+    setFacing(deg, 0.25);
+  };
+  const listen = () => { compassOn = true; window.addEventListener('deviceorientationabsolute', onOri, true); window.addEventListener('deviceorientation', onOri, true); };
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') listen(); }).catch(() => {});
+  else listen();
+}
 function acceptFix(pos) {
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
   if (!Number.isFinite(ll[0]) || !Number.isFinite(ll[1]) || Math.abs(ll[0]) > 90 || Math.abs(ll[1]) > 180) return; // audit G1: never let a non-finite or off-Earth fix reach the smoothing, trail or coverage math
   if (acc > 65 && lastGood && now - lastGood.at < 10000) return;
   if (acc <= 65) lastGood = { ll, at: now };
   const speed = pos.coords.speed;
-  if (lastFixAt && dispPos) {
-    const step = havM(dispPos, ll); const dt = (now - lastFixAt) / 1000;
-    const dead = Math.max(4, acc / 2);
-    if ((!speed || speed < 1) && step < dead) { lastFixAt = now; return; }
-  }
   lastFixAt = now; gpsAccM = acc;
-  fixWin.push({ ll, at: now }); fixWin = fixWin.slice(-3);
-  const W = [0.2, 0.3, 0.5].slice(-fixWin.length); const ws = W.reduce((a, b) => a + b, 0);
-  const sm = [0, 0]; fixWin.forEach((f, i) => { sm[0] += f.ll[0] * W[i] / ws; sm[1] += f.ll[1] * W[i] / ws; });
+  const { est: sm, aim } = kfUpdate(ll, acc, now); // the filter subsumes the old deadband: sub-noise moves barely shift the estimate, so no fix needs swallowing
   const firstFix = !gpsPos;
   gpsPos = sm;
-  glideTo(sm);
+  glideTo(aim);
   updateHeading(pos.coords.heading, speed);
+  if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
   if (firstFix && (gpsFromRun || watchId != null)) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); followPaused = false; }
@@ -2920,15 +3024,16 @@ function gpsError(e) {
 function startGps(fromRun) {
   if (watchId != null) { if (fromRun) gpsFromRun = true; return; }
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
-  gpsFromRun = !!fromRun; followPaused = false;
+  gpsFromRun = !!fromRun; followPaused = false; startCompass();
   watchId = navigator.geolocation.watchPosition(acceptFix, gpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+  clearInterval(camTimer); camTimer = setInterval(followCam, 50); // the camera keeps easing to centre on its own clock (Beta 1.28 fix): when follow only ran inside glide ticks, centring stalled the moment a glide ended and the dot could rest off-centre (drive126 F2 caught it under the Kalman aim-lead)
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { stopGps(true); startGps(gpsFromRun); } }, 15000);
   $('gpsBtn').classList.add('on');
 }
 function stopGps(silent) {
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer);
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer); clearInterval(camTimer);
   $('gpsBtn').classList.remove('on'); $('spd').classList.add('hidden');
 }
 $('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) stopGps(); else startGps(false); });
@@ -3104,18 +3209,18 @@ $('updBtn').addEventListener('click', async () => {
 });
 
 // ===== FAN / NIGHT / FLIP / HOME =====
-const ICONS = {
-  streets: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5.2 20.2C6.8 14.5 8.6 8.8 9.9 4.2"/><path d="M18.8 20.2C17.2 14.5 15.4 8.8 14.1 4.2"/><path d="M12 18.9v-2.5M12 14.9v-1.9M12 11.7v-1.4M12 9.3v-1"/></svg>', /* the Streets icon: a road in perspective (refined Beta 1.25) */
-  pace: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4.3 15.6A8.2 8.2 0 1 1 19.7 15.6"/><path d="M4.3 15.6L5.9 15M4.6 9.3L6.1 10.1M9.2 5.1L9.8 6.7M15.5 5.4L14.7 6.9M19.7 10L18.1 10.6"/><path d="M12 12.8L15.2 8.2"/><circle cx="12" cy="12.8" r="1.35" fill="currentColor" stroke="none"/></svg>', /* the Pace icon: an instrument gauge with ticks + needle (refined Beta 1.25) */
-  clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 20h11"/><path d="M5.6 15.8l7-7a1.8 1.8 0 0 1 2.5 0l2.2 2.2a1.8 1.8 0 0 1 0 2.5l-4.6 4.6H9.2l-3.6-2.3z"/></svg>',
+const ICONS = { // Pack D "iOS Filled" (Andrew's pick, Beta 1.28): solid silhouettes throughout - no line-work, so every glyph stays crisp at tab size; the sun is drawn fresh in the same language
+  streets: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M9.6 3.4h4.8L19.6 20.6H4.4zM11.1 16.9h1.8l.5 2.6h-2.8zM11.4 12.4h1.2l.4 2h-2zM11.7 8.6h.6l.3 1.6h-1.2z"/></svg>',
+  pace: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M10.4 2.4h3.2v2.2h-3.2zM12 6a7.6 7.6 0 1 1 0 15.2A7.6 7.6 0 0 1 12 6zm-.9 3.4v5l1 .8 3-3.4-1.2-1-2 2.2z"/></svg>',
+  clear: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M13.9 4.3a2.3 2.3 0 0 1 3.2 0l2.6 2.6a2.3 2.3 0 0 1 0 3.2l-5.6 5.6H8.6L4.3 12.6a2.3 2.3 0 0 1 0-3.2z"/><path fill="currentColor" stroke="none" d="M4.5 18.6h15v2.1h-15z"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
-  upd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3.5V8h-4.5"/></svg>',
+  upd: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M19.9 12a7.9 7.9 0 1 1-2.3-5.7l-1.7 1.8A5.7 5.7 0 1 0 17.7 12z"/><path fill="currentColor" stroke="none" d="M21.4 2.8v5.6h-5.6z"/></svg>',
   flip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M7 4L4 7M7 4l3 3M17 20V7M17 20l3-3M17 20l-3-3"/></svg>',
-  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>',
-  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>',
-  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4l8 7.2M6 9.8V20h12V9.8"/></svg>',
-  gps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke-linecap="round"/></svg>',
-  exp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M12 14l-3.5-3.5M12 14l3.5-3.5M4.5 19.5h15"/></svg>'
+  moon: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M20.4 13.8A8.8 8.8 0 1 1 10.2 3.6a7.2 7.2 0 0 0 10.2 10.2z"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="4.4" fill="currentColor" stroke="none"/><path fill="currentColor" stroke="none" d="M10.75 6.20 L11.22 2.60 L12.78 2.60 L13.25 6.20 ZM15.22 7.01 L18.10 4.80 L19.20 5.90 L16.99 8.78 ZM17.80 10.75 L21.40 11.22 L21.40 12.78 L17.80 13.25 ZM16.99 15.22 L19.20 18.10 L18.10 19.20 L15.22 16.99 ZM13.25 17.80 L12.78 21.40 L11.22 21.40 L10.75 17.80 ZM8.78 16.99 L5.90 19.20 L4.80 18.10 L7.01 15.22 ZM6.20 13.25 L2.60 12.78 L2.60 11.22 L6.20 10.75 ZM7.01 8.78 L4.80 5.90 L5.90 4.80 L8.78 7.01 Z"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 3.4 2.6 11.8h2.8V21h13.2v-9.2h2.8zM10.2 21v-6h3.6v6z"/></svg>',
+  gps: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M12 2.6 19.6 20.6 12 17l-7.6 3.6z"/></svg>',
+  exp: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M11 3h2v9.2l2.4-2.4 1.5 1.5L12 16.2l-4.9-4.9 1.5-1.5L11 12.2z"/><path fill="currentColor" stroke="none" d="M4.4 15.6h3.4v2.6h8.4v-2.6h3.4V21H4.4z"/></svg>'
 };
 $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace;
 ['updBtn', 'homeBtn', 'gpsBtn', 'exportBtn', 'clearBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ updBtn: 'upd', homeBtn: 'home', gpsBtn: 'gps', exportBtn: 'exp', clearBtn: 'clear' }[id]]; });
@@ -3130,7 +3235,7 @@ document.addEventListener('pointerdown', e => {
   if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) $('stale').classList.add('hidden');
 });
 ['finModal', 'noteModal', 'xport'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
-function applyNight() { document.body.classList.toggle('night', isNight()); $('nightBtn').querySelector('.tabIco').innerHTML = isNight() ? ICONS.sun : ICONS.moon; }
+function applyNight() { document.body.classList.toggle('night', isNight()); $('nightBtn').querySelector('.tabIco').innerHTML = isNight() ? ICONS.sun : ICONS.moon; $('nightBtn').querySelector('.tabLbl').textContent = isNight() ? 'Day' : 'Night'; } // the tab names where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun) - icon and label flip together
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; lsSet(LS.night, isNight() ? '0' : '1'); applyNight(); setBasemap(); });
 $('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); });
 // ===== SERVICE WORKER + BOOT =====
