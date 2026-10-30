@@ -141,7 +141,7 @@ const firstFn = (raw) => { const seg = String(raw).split('),')[0]; return (seg.e
 const closed = await sheetT(); closed.fn = firstFn(closed.raw);
 ok('A2 closed sheet animates on the close curve at the shared duration, height included | ' + JSON.stringify(closed),
   closed.dur === '0.28s' && closed.fn === 'cubic-bezier(0.7,0,0.75,0.2)' && closed.props.includes('transform') && closed.props.includes('height') && closed.props.includes('max-height'));
-await ev(`(() => { $('listBtn').click(); return true; })()`);
+await ev(`(() => { $('streetsBtn').click(); return true; })()`);
 await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
 const opened = await sheetT(); opened.fn = firstFn(opened.raw);
 ok('A2 open sheet animates on the open curve at the same duration | ' + JSON.stringify(opened),

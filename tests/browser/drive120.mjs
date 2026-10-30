@@ -125,7 +125,7 @@ ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // V1 (Beta 1.21 layout): the dock - List | round run button | Pace on one level,
 // centred and symmetrical; the gear alone at the top left; the header is title-only.
 const dockGeom = async () => JSON.parse(await ev(`(() => { const r = (id) => { const b = $(id).getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, cx: b.x + b.width / 2, cy: b.y + b.height / 2 }; };
-  return JSON.stringify({ list: r('listBtn'), pace: r('paceBtn'), start: r('startBtn'), tabs: [...document.querySelectorAll('#tabBar .tabItem')].map(e => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, lbl: e.querySelector('.tabLbl').textContent, svg: !!e.querySelector('svg') }; }), vw: window.innerWidth }); })()`));
+  return JSON.stringify({ list: r('streetsBtn'), pace: r('paceBtn'), start: r('startBtn'), tabs: [...document.querySelectorAll('#tabBar .tabItem')].map(e => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, lbl: e.querySelector('.tabLbl').textContent, svg: !!e.querySelector('svg') }; }), vw: window.innerWidth }); })()`));
 let D = await dockGeom();
 let rects = [D.list, D.pace, D.start];
 ok('V1 dock buttons all inside the viewport | dock ' + JSON.stringify(D), rects.every(inView));
@@ -165,7 +165,7 @@ ok('V4 tab items are equal width, inside the viewport, no overlaps | tabs ' + JS
   tabs.every(inView) && noOverlap(tabs) && Math.max(...tabs.map(t => t.w)) - Math.min(...tabs.map(t => t.w)) <= 3);
 
 // V5: sheets - open sheet fits the viewport; closed sheet is truly invisible
-await ev(`(() => { $('listBtn').click(); return true; })()`); // the List button toggles the sheet itself; there is no openList() function
+await ev(`(() => { $('streetsBtn').click(); return true; })()`); // the List button toggles the sheet itself; there is no openList() function
 await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
 await sleep(600);
 A = await J(`(() => { const r = $('sheet').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; })()`);

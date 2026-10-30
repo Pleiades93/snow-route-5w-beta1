@@ -167,7 +167,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.24</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.25</div></div>
   </div>
   <div id="info" class="hidden">
     <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>
@@ -181,7 +181,7 @@
 <div id="bakNudge" class="banner hidden"><span id="bakText"></span><button id="bakSave">Save backup</button><button id="bakLater" class="red">Later</button></div>
 <div id="mapNote" class="hidden"><span>Maps can't load — streets, GPS and marking still work. Check your connection.</span><button id="mapNoteNo">Dismiss</button></div>
 <div id="dock">
-  <button id="listBtn" class="dockBtn" title="List"></button>
+  <button id="streetsBtn" class="dockBtn" title="Streets"></button>
   <div id="runSlot">
     <button id="startBtn" class="runBtn">Start</button>
     <button id="resetBtn" class="runBtn" style="display:none">Finish</button>
@@ -2293,7 +2293,7 @@ map.on('click', e => {
 });
 
 // ===== MARKING (one finish path) =====
-function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderList(); saveAll(); syncWake(); }
+function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); saveAll(); syncWake(); }
 function togglePiece(name, idx, side) {
   const bit = side ? 2 : 1; const was = pieces[name][idx];
   const now = was ^ bit;
@@ -2352,7 +2352,7 @@ function updateCount() {
 // ===== LIST SHEET =====
 let listFilter = 'all';
 let noteOpenFor = null, noteSaveTimer = 0;
-function renderList() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
+function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
   const openEd = el.querySelector('.noteEd textarea');
   const draft = openEd ? openEd.value : null; // an in-progress note survives re-renders
@@ -2380,7 +2380,7 @@ function renderList() { // production row design: tap a street's name area to op
     });
     d.addEventListener('click', () => {
       noteOpenFor = noteOpenFor === n ? null : n;
-      renderList();
+      renderStreets();
       const ta = el.querySelector('.noteEd textarea');
       if (ta) ta.focus();
     });
@@ -2402,7 +2402,7 @@ function renderList() { // production row design: tap a street's name area to op
     }
   });
 }
-document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderList(); }));
+document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
 function closeSheets() { [$('sheet'), $('pacePanel')].forEach(s => { s.classList.remove('open'); s.classList.remove('full'); s.style.height = ''; s.style.maxHeight = ''; }); }
 // Draggable sheets (Andrew, Beta 1.9 spec; refined 1.10 flick; refined 1.13 touch zone): the drag/flick touch
 // zone is the panel's EMPTY TOP STRIP - the grab handle plus the title row - a comfortable area with no
@@ -2479,11 +2479,11 @@ function makeSheetDraggable(sheet) {
 }
 makeSheetDraggable($('sheet'));
 makeSheetDraggable($('pacePanel'));
-$('listBtn').addEventListener('click', () => { if (!tapGuard('listBtn')) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { renderList(); $('sheet').classList.add('open'); } });
+$('streetsBtn').addEventListener('click', () => { if (!tapGuard('streetsBtn')) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { renderStreets(); $('sheet').classList.add('open'); } });
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
 $('paceBtn').addEventListener('click', () => { if (!tapGuard('paceBtn')) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
-function refreshAll() { updateCount(); renderPanel(); renderList(); }
+function refreshAll() { updateCount(); renderPanel(); renderStreets(); }
 
 // ===== PACE (one source) =====
 function refRun() { // newest qualifying clean wins (history is chronological, so search from the end)
@@ -2645,7 +2645,7 @@ function closeClean() {
   if (cv) cv.classList.add('hidden');
   const f = $('filters'); if (f) f.style.display = '';
   const sl = $('streetList'); if (sl) sl.style.display = '';
-  renderList();
+  renderStreets();
 }
 
 // ===== RUN LIFECYCLE =====
@@ -2789,7 +2789,7 @@ $('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
   setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderList(); toast('Note saved');
+  $('noteModal').classList.add('hidden'); renderStreets(); toast('Note saved');
 });
 
 // ===== GPS (checklist SS7) =====
@@ -3098,8 +3098,8 @@ $('updBtn').addEventListener('click', async () => {
 
 // ===== FAN / NIGHT / FLIP / HOME =====
 const ICONS = {
-  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6.5 20.5L10 3.5M17.5 20.5L14 3.5"/><path d="M12 18.5v-1.8M12 14v-1.8M12 9.5V7.7"/></svg>', /* placeholder: a road seen in perspective (Andrew chooses the final List icon) */
-  pace: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 16a8.5 8.5 0 1 1 16 0"/><path d="M12 16l4.2-5.2"/><circle cx="12" cy="16" r="1.5" fill="currentColor" stroke="none"/></svg>', /* placeholder: a gauge dial (Andrew chooses the final Pace icon) */
+  streets: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.2 20.2C6.8 14.5 8.6 8.8 9.9 4.2"/><path d="M18.8 20.2C17.2 14.5 15.4 8.8 14.1 4.2"/><path d="M12 18.9v-2.5M12 14.9v-1.9M12 11.7v-1.4M12 9.3v-1"/></svg>', /* the Streets icon: a road in perspective (refined Beta 1.25) */
+  pace: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4.3 15.6A8.2 8.2 0 1 1 19.7 15.6"/><path d="M4.3 15.6L5.9 15M4.6 9.3L6.1 10.1M9.2 5.1L9.8 6.7M15.5 5.4L14.7 6.9M19.7 10L18.1 10.6"/><path d="M12 12.8L15.2 8.2"/><circle cx="12" cy="12.8" r="1.7" fill="currentColor" stroke="none"/></svg>', /* the Pace icon: an instrument gauge with ticks + needle (refined Beta 1.25) */
   clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 20h11"/><path d="M5.6 15.8l7-7a1.8 1.8 0 0 1 2.5 0l2.2 2.2a1.8 1.8 0 0 1 0 2.5l-4.6 4.6H9.2l-3.6-2.3z"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   upd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3.5V8h-4.5"/></svg>',
@@ -3110,7 +3110,7 @@ const ICONS = {
   gps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke-linecap="round"/></svg>',
   exp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M12 14l-3.5-3.5M12 14l3.5-3.5M4.5 19.5h15"/></svg>'
 };
-$('listBtn').innerHTML = ICONS.list; $('paceBtn').innerHTML = ICONS.pace;
+$('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace;
 ['updBtn', 'homeBtn', 'gpsBtn', 'exportBtn', 'clearBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ updBtn: 'upd', homeBtn: 'home', gpsBtn: 'gps', exportBtn: 'exp', clearBtn: 'clear' }[id]]; });
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
 // Close button. Header buttons keep their own toggle behaviour; a tap on a dialog's dimmed backdrop

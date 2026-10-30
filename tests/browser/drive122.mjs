@@ -130,7 +130,7 @@ ok('K1 header, sheet, modal and menu button are fixed-anchored | ' + JSON.string
   anchoring.hud === 'fixed' && anchoring.sheet === 'fixed' && anchoring.modal === 'fixed' && anchoring.fan === 'fixed');
 
 // ---- K2: both note editors are at the no-auto-zoom text size -----------------
-await ev(`(() => { $('listBtn').click(); return true; })()`);
+await ev(`(() => { $('streetsBtn').click(); return true; })()`);
 await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
 await sleep(500);
 await ev(`(() => { const r = document.querySelector('#streetList .srow'); if (r) r.click(); return true; })()`);
