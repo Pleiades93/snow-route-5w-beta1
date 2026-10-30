@@ -127,8 +127,9 @@ ok('G0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // what it actually renders at the fix point, before and after the two events
 // that rebuild layers: marking (engine sync) and a basemap swap (restack).
 const FIX = JSON.parse(await ev(`(() => { const p = SAMPLES.Velmar[10]; return JSON.stringify({ lat: p[0], lng: p[1] }); })()`));
-await ev(`(() => { acceptFix({ coords: { latitude: ${'${FIX.lat}'}, longitude: ${'${FIX.lng}'}, accuracy: 10, speed: 0, heading: null }, timestamp: Date.now() }); return true; })()`);
-await poll120(`dispPos && Math.abs(dispPos[0] - ${'${FIX.lat}'}) < 0.0002 && Math.abs(dispPos[1] - ${'${FIX.lng}'}) < 0.0002`, v => v, 8000);
+await ev('(() => { acceptFix({ coords: { latitude: ' + FIX.lat + ', longitude: ' + FIX.lng + ', accuracy: 10, speed: 0, heading: null }, timestamp: Date.now() }); return true; })()');
+const dispOk = await poll120('dispPos && Math.abs(dispPos[0] - ' + FIX.lat + ') < 0.0002 && Math.abs(dispPos[1] - ' + FIX.lng + ') < 0.0002', v => v, 8000);
+if (!dispOk) { R.checks.push(['SETUP dispPos reached the fed fix', false]); console.log(JSON.stringify(R, null, 1)); proc.kill('SIGKILL'); process.exit(0); }
 await sleep(600);
 
 const probe = async () => { const raw = await ev(`(() => { try {
