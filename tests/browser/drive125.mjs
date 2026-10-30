@@ -146,7 +146,7 @@ await ev(`(() => { $('startBtn').click(); return true; })()`);
 await sleep(700);
 const S6 = JSON.parse(await ev(`(() => { const c = $('cancelStartBtn'); const cr = c.getBoundingClientRect(); const tr = $('tabBar').getBoundingClientRect();
   const hit = document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2);
-  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id,
+  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id, nightLbl: $('nightBtn').querySelector('.tabLbl').textContent,
     listCol: getComputedStyle($('streetsBtn')).color, paceCol: getComputedStyle($('paceBtn')).color, tabCol: getComputedStyle($('updBtn')).color }); })()`));
 ok('S6 Cancel start floats above the circle, clear of the tab bar, and takes the tap | ' + JSON.stringify(S6),
   S6.disp !== 'none' && S6.cancel.b <= S6.tabTop - 40 && S6.hit === 'cancelStartBtn');
@@ -154,11 +154,13 @@ ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' +
   S6.listCol === 'rgb(34, 38, 46)' && S6.paceCol === 'rgb(34, 38, 46)' && S6.tabCol === 'rgb(43, 48, 56)');
 await ev(`(() => { $('nightBtn').click(); return true; })()`);
 await sleep(600);
-const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'),
+ok('S7 day mode: the theme tab offers Night - it names where it takes you, not where you are (Beta 1.28) | label ' + S6.nightLbl, S6.nightLbl === 'Night');
+const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), nightLbl: $('nightBtn').querySelector('.tabLbl').textContent,
   listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('updBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
   S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(17, 19, 24, 0.88)' && S7.countCol === 'rgb(238, 244, 238)');
+ok('S7 night mode: the theme tab now offers Day, label and state in agreement | label ' + S7.nightLbl, S7.nightLbl === 'Day');
 await ev(`(() => { $('cancelStartBtn').click(); return true; })()`);
 await sleep(400);
 

@@ -87,6 +87,12 @@
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
   #startBtn { background: #0a0a0b; color: #d8ff3d; font-size: 21px; } /* Beta 1.23 (Andrew's reference): black circle, volt-yellow word */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #selBar { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 8px 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.28: the multi-selection action pill - same glass family as the progress pill, parked under the title where nothing else competes */
+  body.night #selBar { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #selBar.hidden { display: none; }
+  #selBar button { border: 0; border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  #selAllBtn { background: #2ecc71; color: #fff; }
+  #selClearBtn { background: transparent; color: inherit; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
@@ -162,6 +168,7 @@
 <body>
 <div id="map"></div>
 <div id="chips"></div>
+<div id="selBar" class="hidden"><span id="selBarTxt"></span><button id="selAllBtn">Mark both sides</button><button id="selClearBtn">Clear</button></div>
 <div id="attrChip">© VersaTiles © OpenStreetMap contributors © CARTO</div>
 <div id="spd" class="hidden"></div>
 <div id="hud">
@@ -1795,22 +1802,26 @@ function buildFamilies() {
   const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
   return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN) };
 }
-function buildSel(which) {   // the selected sector's side lines (vibrant)
+function currentSelList() { // every selected stretch (Beta 1.28): the app's selSet when multi-selecting, else the single anchor - read live at build time, like the original builders read the app global sel
+  return (typeof selSet !== 'undefined' && Array.isArray(selSet) && selSet.length) ? selSet : (sel ? [sel] : []);
+}
+function buildSel(which) {   // the selected sectors' side lines (vibrant)
   const feats = [];
-  if (sel) {
-    const g = GEO[sel.name], ab = g.cuts[sel.idx], bits = pieces[sel.name][sel.idx];
-    if (which === 'e' && bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) edgeRunSlices(sel.name, side, idx => idx === sel.idx).forEach(sl => feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })); });
+  if (which === 'e') for (const it of currentSelList()) {
+    const bits = pieces[it.name][it.idx];
+    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) edgeRunSlices(it.name, side, idx => idx === it.idx).forEach(sl => feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })); });
   }
   return { type: 'FeatureCollection', features: feats };
 }
 const EMPTYFC = { type: 'FeatureCollection', features: [] };
-function selectedGeom() {   // the selected stretch's painted slice: stitched points, edge-clipped at its junctions
-  if (!sel) return null;
-  const g = GEO[sel.name], ab = g.cuts[sel.idx], bits = pieces[sel.name][sel.idx];
+function selectedGeom(it) {   // a selected stretch's painted slice: stitched points, edge-clipped at its junctions
+  const s0 = it || sel;
+  if (!s0) return null;
+  const g = GEO[s0.name], ab = g.cuts[s0.idx], bits = pieces[s0.name][s0.idx];
   const half = bits === 3 ? BAND_HALF : SURF_HALF;
   let pts = g.stitched.slice(ab[0], ab[1] + 1);
-  pts = clipEndAtJunction(sel.name, ab[0], pts, true, half);
-  pts = clipEndAtJunction(sel.name, ab[1], pts, false, half);
+  pts = clipEndAtJunction(s0.name, ab[0], pts, true, half);
+  pts = clipEndAtJunction(s0.name, ab[1], pts, false, half);
   return { pts, bits, half };
 }
 function buildSelC() {   // the selected sector's core: a vibrant BAND when complete, a vibrant core otherwise
@@ -1818,11 +1829,14 @@ function buildSelC() {   // the selected sector's core: a vibrant BAND when comp
   // global selection - colOf(sel.name) read undefined and every
   // selected pending stretch rendered RED, yellow streets included.
   // Andrew caught it live, 2026-10-29.)
-  let selFC = EMPTYFC, selBandFC = EMPTYFC;
-  const sg = selectedGeom();
-  if (sg && sg.bits !== 3) selFC = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { col: colOf(sel.name, sg.bits) }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } }] };
-  if (sg && sg.bits === 3) selBandFC = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { col: GREEN }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } }] };
-  return { sel: selFC, selBand: selBandFC };
+  const selFeats = [], bandFeats = [];
+  for (const it of currentSelList()) {
+    const sg = selectedGeom(it);
+    if (!sg) continue;
+    if (sg.bits !== 3) selFeats.push({ type: 'Feature', properties: { col: colOf(it.name, sg.bits) }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } });
+    else bandFeats.push({ type: 'Feature', properties: { col: GREEN }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } });
+  }
+  return { sel: selFeats.length ? { type: 'FeatureCollection', features: selFeats } : EMPTYFC, selBand: bandFeats.length ? { type: 'FeatureCollection', features: bandFeats } : EMPTYFC };
 }
 const HIT = { type: 'FeatureCollection', features: names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } }))) };
 let CUR = null;
@@ -2227,6 +2241,7 @@ function setBasemap() {
 
 // ===== SELECTION + CHIPS =====
 let sel = null; // {name, idx, anchor:[lat,lng]}
+let selSet = []; // [{name, idx, anchor}] - EVERY stretch currently selected (Beta 1.28 multi-select, Andrew); sel/selStretch stay the ANCHOR entry (last tapped) that positions the chips
 let selStretch = null; // {name, idx} — the paint engine reads this global in syncSel()
 let swallowClickUntil = 0;
 function projLL(p) { return map.project([p[1], p[0]]); }
@@ -2249,17 +2264,17 @@ function geoSideFrame(name, idx, anchorLL) {
   return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
 function clearChips() { $('chips').innerHTML = ''; }
+function groupSideDone(side) { const bit = side ? 2 : 1; return selSet.length > 0 && selSet.every(en => !!(pieces[en.name][en.idx] & bit)); } // a side reads done only when EVERY selected stretch has it
 function showChips() {
   clearChips();
   if (!sel) return;
   const wrap = $('chips');
-  const val = pieces[sel.name][sel.idx];
   [0, 1].forEach(side => {
     const d = document.createElement('div');
-    d.className = 'sideChip' + ((val & (side ? 2 : 1)) ? ' done' : '');
+    d.className = 'sideChip' + (groupSideDone(side) ? ' done' : '');
     d.dataset.side = side;
     d.innerHTML = '<button class="chipBtn" aria-label="mark side"></button>';
-    d.querySelector('.chipBtn').addEventListener('click', ev => { ev.stopPropagation(); if (!tapGuard('chip' + side)) return; togglePiece(sel.name, sel.idx, side); });
+    d.querySelector('.chipBtn').addEventListener('click', ev => { ev.stopPropagation(); if (!tapGuard('chip' + side)) return; togglePieceGroup(side); });
     wrap.appendChild(d);
   });
   positionChips();
@@ -2282,36 +2297,62 @@ function positionChips() {
     let x = base.x + dx * 40, y = base.y + dy * 40;
     x = Math.max(22, Math.min(cw - 22, x)); y = Math.max(22, Math.min(ch - 22, y));
     kids[side].style.left = (x - 20) + 'px'; kids[side].style.top = (y - 20) + 'px';
-    const done = !!(pieces[sel.name][sel.idx] & (side ? 2 : 1));
+    const done = groupSideDone(side);
     kids[side].querySelector('.chipBtn').innerHTML = done
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg)"><path d="M4 12 H19 M13 5.5 L19.5 12 L13 18.5"/></svg>';
   });
 }
 map.on('move', positionChips);
-function selectStretch(name, idx, anchor) { sel = { name, idx, anchor }; selStretch = { name, idx }; if (window.GLP) window.GLP.syncSel(); showChips(); renderPanel(); }
-function deselect() { sel = null; selStretch = null; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
+function refreshSelUI() { if (window.GLP) window.GLP.syncSel(); showChips(); updateSelBar(); renderPanel(); }
+function updateSelBar() { const bar = $('selBar'); if (selSet.length >= 2) { bar.classList.remove('hidden'); $('selBarTxt').textContent = selSet.length + ' sections selected'; } else bar.classList.add('hidden'); }
+function selectStretch(name, idx, anchor) { selSet = [{ name, idx, anchor }]; sel = { name, idx, anchor }; selStretch = { name, idx }; refreshSelUI(); } // a fresh single selection (streets list, drives)
+function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tapping a selected stretch removes just it; the anchor follows the last remaining selection
+  const i = selSet.findIndex(en => en.name === name && en.idx === idx);
+  if (i >= 0) selSet.splice(i, 1); else selSet.push({ name, idx, anchor });
+  if (!selSet.length) { deselect(); return; }
+  const top = selSet[selSet.length - 1];
+  sel = { name: top.name, idx: top.idx, anchor: top.anchor }; selStretch = { name: top.name, idx: top.idx };
+  refreshSelUI();
+}
+function deselect() { sel = null; selStretch = null; selSet = []; clearChips(); updateSelBar(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
 map.on('click', e => {
   if (Date.now() < swallowClickUntil) return;
   const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
   const near = nearestStreet(pt);
-  if (near.name && near.d <= 16) { const st = nearestStretch(near.name, pt); selectStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }
+  if (near.name && near.d <= 16) { const st = nearestStretch(near.name, pt); tapStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }
   else deselect();
 });
 
 // ===== MARKING (one finish path) =====
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); saveAll(); syncWake(); }
-function togglePiece(name, idx, side) {
+function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
   const bit = side ? 2 : 1; const was = pieces[name][idx];
-  const now = was ^ bit;
+  const now = on ? (was | bit) : (was & ~bit);
+  if (now === was) return null;
   pieces[name][idx] = now;
   if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
-  pieceTimes[name][idx][side] = (now & bit) ? new Date().toISOString() : null;
-  if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; }
+  pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
+  if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; return name; }
   if (!streetComplete(name) && doneSet.has(name)) { doneSet.delete(name); delete doneTimes[name]; delete doneVia[name]; }
-  showChips(); finishChange();
-  if ((now & bit) && streetComplete(name)) toast('✓ ' + name + ' · ' + fmtClock(new Date()));
+  return null;
 }
+function togglePiece(name, idx, side) {
+  const bit = side ? 2 : 1;
+  const doneName = applyPiece(name, idx, side, !(pieces[name][idx] & bit));
+  showChips(); finishChange();
+  if (doneName) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
+}
+function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere
+  if (!selSet.length) return;
+  const on = !groupSideDone(side);
+  const completed = [];
+  for (const en of selSet) { const c = applyPiece(en.name, en.idx, side, on); if (c && !completed.includes(c)) completed.push(c); }
+  showChips(); finishChange();
+  completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
+}
+$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); finishChange(); completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
+$('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
 function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
   if (typeof undoSnap !== 'undefined' && undoSnap) { undoSnap = null; clearTimeout(undoTimer); const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing'); }
   pieces[name] = STRETCH[name].parts.map(() => 3);
@@ -3159,7 +3200,7 @@ document.addEventListener('pointerdown', e => {
   if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) $('stale').classList.add('hidden');
 });
 ['finModal', 'noteModal', 'xport'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
-function applyNight() { document.body.classList.toggle('night', isNight()); $('nightBtn').querySelector('.tabIco').innerHTML = isNight() ? ICONS.sun : ICONS.moon; }
+function applyNight() { document.body.classList.toggle('night', isNight()); $('nightBtn').querySelector('.tabIco').innerHTML = isNight() ? ICONS.sun : ICONS.moon; $('nightBtn').querySelector('.tabLbl').textContent = isNight() ? 'Day' : 'Night'; } // the tab names where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun) - icon and label flip together
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; lsSet(LS.night, isNight() ? '0' : '1'); applyNight(); setBasemap(); });
 $('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); });
 // ===== SERVICE WORKER + BOOT =====

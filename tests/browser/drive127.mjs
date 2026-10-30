@@ -108,6 +108,7 @@ const ok = (name, cond) => R.checks.push([name, !!cond]);
 const ev = async (code) => evaluate(code);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 await sleep(3000);
+const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 20000)) { const v = await ev(expr); if (v === true) return true; await sleep(300); } return false; };
 ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, v => v, 30000));
 
 // deterministic pseudo-noise (metres, [east, north]) - fixed table, no RNG, so a CI
