@@ -144,6 +144,8 @@ await feed(base.lat, base.lng + 0.008);                              // settle t
 const followed = await poll120(`Math.abs(map.getCenter().lng - ` + (base.lng + 0.008) + `) < 0.0025 && !runStart`, v => v, 12000);
 const C1 = JSON.parse(await ev(`JSON.stringify(map.getCenter())`));
 ok('F2 camera follows with location on and NO run started | centre ' + JSON.stringify(C1) + ' target lng ' + (base.lng + 0.008), followed === true);
+const DOT = JSON.parse(await ev(`(() => { const p = projLL(dispPos); const c = map.getCanvas(); return JSON.stringify({ dx: Math.abs(p.x - c.clientWidth / 2), dy: Math.abs(p.y - c.clientHeight / 2), w: c.clientWidth, h: c.clientHeight }); })()`));
+ok('F2 the dot settles kind of in the centre of the screen | dot ' + JSON.stringify(DOT), DOT.dx < DOT.w * 0.12 && DOT.dy < DOT.h * 0.12);
 await ev(`(() => { watchId = null; return true; })()`);
 
 // Night labels: reload into night mode and read the basemap text paint back.

@@ -2840,9 +2840,9 @@ function glideTo(target) {
 function followCam() {
   if (!dispPos || followPaused || watchId == null) return; // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive; the 25% dead-zone + per-glide-tick steps keep it gradual. Trail recording and heading-up stay run-only.
   const c = map.getCanvas(); const p = projLL(dispPos);
-  const mx = c.clientWidth * 0.25, my = c.clientHeight * 0.25;
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
-  if (Math.abs(dx) > mx || Math.abs(dy) > my) map.panBy([dx, dy], { animate: false });
+  if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+  map.panBy([dx * 0.35, dy * 0.35], { animate: false }); // centre-lock (Andrew's clarification): ease a third of the way to centre on every glide tick - a gradual lock that keeps the dot kind of in the centre, never a snap and never a chase view
 }
 map.on('dragstart', () => { followPaused = true; });
 map.on('dragend', () => { if (runStart) northUp(); }); // during a run: ease back to north-up like a nav app. Outside a run (Beta 1.27): a rotation/tilt he deliberately set stays put.

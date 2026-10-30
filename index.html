@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-1mA8wXvdjEyTs6kfmoD5lGzW6qGY+IyJPZkyXQivUqNqumRymP/JsHp8pA4kfK3P' https://cdn.jsdelivr.net; style-src-elem 'sha384-3f9M3FV4shv62mxNkjUvAzOpz1qFwHqlXUOVU0ZKVrYbyqLuOalE7xFZi5WniJ9R' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-EfSuICHhUL8Hs7aBnP6c0bRWlajji85bQIUYF2k66A8ZbpeTA2m4eBvgkf+5eDqK' https://cdn.jsdelivr.net; style-src-elem 'sha384-3f9M3FV4shv62mxNkjUvAzOpz1qFwHqlXUOVU0ZKVrYbyqLuOalE7xFZi5WniJ9R' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2841,9 +2841,9 @@ function glideTo(target) {
 function followCam() {
   if (!dispPos || followPaused || watchId == null) return; // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive; the 25% dead-zone + per-glide-tick steps keep it gradual. Trail recording and heading-up stay run-only.
   const c = map.getCanvas(); const p = projLL(dispPos);
-  const mx = c.clientWidth * 0.25, my = c.clientHeight * 0.25;
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
-  if (Math.abs(dx) > mx || Math.abs(dy) > my) map.panBy([dx, dy], { animate: false });
+  if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+  map.panBy([dx * 0.35, dy * 0.35], { animate: false }); // centre-lock (Andrew's clarification): ease a third of the way to centre on every glide tick - a gradual lock that keeps the dot kind of in the centre, never a snap and never a chase view
 }
 map.on('dragstart', () => { followPaused = true; });
 map.on('dragend', () => { if (runStart) northUp(); }); // during a run: ease back to north-up like a nav app. Outside a run (Beta 1.27): a rotation/tilt he deliberately set stays put.
