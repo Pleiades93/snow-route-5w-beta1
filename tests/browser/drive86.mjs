@@ -140,8 +140,15 @@ await ev(`(() => { $('xText').value = JSON.stringify({ app: 'snow5w-backup', v: 
 await sleep(300);
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snow5w.v2') }))()`));
 ok('T3 legacy migration keeps only real streets', A.ls === '["Velmar"]');
-await sleep(1500);
-A = JSON.parse(await ev(`(() => JSON.stringify({ n: doneSet.size, has: doneSet.has('Velmar') }))()`));
+// Hardened (Beta 1.15): this read crashed 1.14 attempt 1 - after doRestore's reload the app's state can
+// lag the drive's fixed sleep on a slow runner, and the raw JSON.parse(await ev(...)) idiom dies on the
+// non-string result. Poll until doneSet exists, then read. Assertions unchanged.
+A = {};
+for (let i = 0; i < 40 && A.n === undefined; i++) {
+  const raw = await ev(`(() => { try { return JSON.stringify({ n: doneSet.size, has: doneSet.has('Velmar') }); } catch (e) { return ''; } })()`);
+  if (typeof raw === 'string' && raw) { try { A = JSON.parse(raw); } catch { A = {}; } }
+  if (A.n === undefined) await sleep(250);
+}
 ok('T3 after reload doneSet is exactly {Velmar}', A.n === 1 && A.has);
 // T4 ISSUE-02: snapshot read failure aborts honestly, nothing written, no throw
 A = JSON.parse(await ev(`(() => { window.__origGI = Storage.prototype.getItem;

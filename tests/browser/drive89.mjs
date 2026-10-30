@@ -150,9 +150,14 @@ ok('T3 button offers Undo', A.label === 'Undo');
 await ev(`(() => { history = []; saveHistory(); undoSnap = null; const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing'); return true; })()`);
 await mark3();
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
-await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(300);
+await ev(`(() => { $('finYes').click(); return true; })()`);
+// Hardened (Beta 1.15): T4 flaked once on a slow runner (1.14 attempt 2) even self-contained - the fixed
+// sleep(300) before the Undo tap is replaced by a state wait for the button to actually BE Undo, and the
+// final poll requires the toast in the SAME sample as the restored state, so no sample can pass state
+// while reading a stale toast.
+await pollRead(`(() => JSON.stringify({ label: $('resetBtn').textContent }))()`, v => v.label === 'Undo', 6000);
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
-A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, toast: $('toast').textContent }))()`, v => v.h === 0 && v.done === 3);
+A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, toast: $('toast').textContent }))()`, v => v.h === 0 && v.done === 3 && /Finish undone/.test(v.toast));
 ok('T4 Undo finish restores the run', A.h === 0 && A.done === 3 && /Finish undone/.test(A.toast));
 // T5: finish again, then delete returns to Previous cleans (the bug fix)
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
