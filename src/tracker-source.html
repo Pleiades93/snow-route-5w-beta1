@@ -15,7 +15,8 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #14161c; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
-  :root { --anim-dur: 280ms; --ease-open: cubic-bezier(.25,.8,.3,1); --ease-close: cubic-bezier(.7,0,.75,.2); /* MENU ANIMATION BASELINE (Andrew, 2026-10-30): every menu uses this one duration; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. */
+  /* MENU ANIMATION BASELINE (Andrew, 2026-10-30): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. */
+  :root { --anim-dur: 280ms; --ease-open: cubic-bezier(.25,.8,.3,1); --ease-close: cubic-bezier(.7,0,.75,.2); }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
     --card-op: rgba(26,29,36,.97); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 4px 20px rgba(0,0,0,.45); --shadow-float: 0 4px 14px rgba(0,0,0,.4); }
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-DrNof8u2QJg3NCUpftSJXP2+zU1p/N/8otZJpNtceYyyxosUa7mV9Ve5PVxh+GZj' https://cdn.jsdelivr.net; style-src-elem 'sha384-AJdYojBWJd+NTx+L1e7ZXQPMVNYaU59+Zgfokoa22ciHUkRi5CQc/JPNGt00XgGp' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-DrNof8u2QJg3NCUpftSJXP2+zU1p/N/8otZJpNtceYyyxosUa7mV9Ve5PVxh+GZj' https://cdn.jsdelivr.net; style-src-elem 'sha384-Jg7qIyYkdxchO87baKS3xdS8heNkXvetkVw3bMtbTnnOvWjVC1xh8q5VRAF0VvAj' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -16,7 +16,8 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #14161c; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
-  :root { --anim-dur: 280ms; --ease-open: cubic-bezier(.25,.8,.3,1); --ease-close: cubic-bezier(.7,0,.75,.2); /* MENU ANIMATION BASELINE (Andrew, 2026-10-30): every menu uses this one duration; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. */
+  /* MENU ANIMATION BASELINE (Andrew, 2026-10-30): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. */
+  :root { --anim-dur: 280ms; --ease-open: cubic-bezier(.25,.8,.3,1); --ease-close: cubic-bezier(.7,0,.75,.2); }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
     --card-op: rgba(26,29,36,.97); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 4px 20px rgba(0,0,0,.45); --shadow-float: 0 4px 14px rgba(0,0,0,.4); }
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }

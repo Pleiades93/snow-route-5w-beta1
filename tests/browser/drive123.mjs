@@ -127,6 +127,11 @@ ok('A0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // mirror. These checks pin the contract in computed styles, not appearances.
 const TOK = JSON.parse(await ev(`(() => { const cs = getComputedStyle(document.documentElement); return JSON.stringify({
   dur: cs.getPropertyValue('--anim-dur').trim(), open: cs.getPropertyValue('--ease-open').trim(), close: cs.getPropertyValue('--ease-close').trim() }); })()`));
+const ANCHOR = JSON.parse(await ev(`(() => { const g = $('gearBtn').getBoundingClientRect(); const cs = getComputedStyle($('fanWrap')); return JSON.stringify({
+  pos: cs.position, gx: Math.round(g.x), gb: Math.round(g.bottom), vw: window.innerWidth, vh: window.innerHeight }); })()`));
+ok('A0 chrome anchored as designed (fan wrap fixed; gear in the bottom-right) | ' + JSON.stringify(ANCHOR),
+  ANCHOR.pos === 'fixed' && ANCHOR.gx > ANCHOR.vw / 2 && ANCHOR.gb > ANCHOR.vh - 80 && ANCHOR.gb <= ANCHOR.vh);
+
 ok('A1 shared tokens exist (280ms; mirrored curve pair) | ' + JSON.stringify(TOK),
   TOK.dur === '280ms' && TOK.open === 'cubic-bezier(.25,.8,.3,1)' && TOK.close === 'cubic-bezier(.7,0,.75,.2)');
 
