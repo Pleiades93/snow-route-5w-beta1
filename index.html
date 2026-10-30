@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-DrNof8u2QJg3NCUpftSJXP2+zU1p/N/8otZJpNtceYyyxosUa7mV9Ve5PVxh+GZj' https://cdn.jsdelivr.net; style-src-elem 'sha384-Jg7qIyYkdxchO87baKS3xdS8heNkXvetkVw3bMtbTnnOvWjVC1xh8q5VRAF0VvAj' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-fdll8QJuuLkZrimqvWFfaQ11af8zgWbexvvFfWfVkPc+d/2qz9fuHzMaKHGBJwUe' https://cdn.jsdelivr.net; style-src-elem 'sha384-Jg7qIyYkdxchO87baKS3xdS8heNkXvetkVw3bMtbTnnOvWjVC1xh8q5VRAF0VvAj' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -170,7 +170,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.19</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.20</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -2172,7 +2172,7 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
 function addReferenceLayers() {
   if (map.getSource('ref')) return;
   const feats = [];
-  for (const r of REFERENCE) { const mid = r.pts[Math.floor(r.pts.length / 2)]; feats.push({ type: 'Feature', properties: { refName: r.name }, geometry: { type: 'LineString', coordinates: r.pts.map(p => [p[1], p[0]]) } }); if (r.name === 'Village Green') feats.push({ type: 'Feature', properties: { refLabel: 'Village Green · reference' }, geometry: { type: 'Point', coordinates: [mid[1], mid[0]] } }); }
+  for (const name of Object.keys(REFERENCE)) { const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); if (name === 'Village Green') { const longest = segs.reduce((a, b) => (b.length > a.length ? b : a), segs[0]); const mid = longest[Math.floor(longest.length / 2)]; feats.push({ type: 'Feature', properties: { refLabel: 'Village Green · reference' }, geometry: { type: 'Point', coordinates: [mid[1], mid[0]] } }); } } // production REFERENCE shape: { name: [segment, ...] } - the first cut wrongly iterated it as an array of {name, pts}, threw on every style-ready, and silently killed the GPS + trail layers queued after it (Andrew's missing GPS dot, 2026-10-30)
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
   map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
   map.addLayer({ id: 'ref-label', type: 'symbol', source: 'ref', filter: ['has', 'refLabel'], layout: { 'text-field': ['get', 'refLabel'], 'text-font': ['Noto Sans Regular'], 'text-size': 10, 'text-allow-overlap': true }, paint: { 'text-color': isNight() ? '#aab4c0' : '#69727d', 'text-halo-color': isNight() ? '#14171d' : '#ffffff', 'text-halo-width': 1.2 } });
@@ -2206,7 +2206,8 @@ function onStyleReady() {
   pickFontFromStyle();
   if (window.GLP && !map.getSource('centres')) window.GLP.init(map);
   else if (window.GLP) window.GLP.sync();
-  addReferenceLayers(); addGpsLayers(); addTrailLayers(); pushGps(); drawTrail(); refreshAll();
+  for (const fn of [addReferenceLayers, addGpsLayers, addTrailLayers]) { try { fn(); } catch (e) { /* one bad layer must never kill the rest of the stack (the REFERENCE throw hid the GPS dot until 2026-10-30) */ } }
+  pushGps(); drawTrail(); refreshAll();
 }
 map.on('load', onStyleReady);
 let restackArmed = false;
