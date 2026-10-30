@@ -125,7 +125,7 @@ ok('K0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // ---- K1: the chrome is anchored to the visible screen, not the page ---------
 const anchoring = JSON.parse(await ev(`JSON.stringify({
   hud: getComputedStyle($('hud')).position, sheet: getComputedStyle($('sheet')).position,
-  modal: getComputedStyle($('noteModal')).position, fan: getComputedStyle($('fanWrap')).position })`));
+  modal: getComputedStyle($('noteModal')).position, fan: getComputedStyle($('tabBar')).position })`));
 ok('K1 header, sheet, modal and menu button are fixed-anchored | ' + JSON.stringify(anchoring),
   anchoring.hud === 'fixed' && anchoring.sheet === 'fixed' && anchoring.modal === 'fixed' && anchoring.fan === 'fixed');
 
