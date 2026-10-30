@@ -113,7 +113,12 @@ const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.n
 ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, v => v, 30000));
 
 const MIDS = JSON.parse(await ev(`(() => { const out = []; for (let i = 0; i < 3; i++) { const part = STRETCH.Velmar.parts[i]; out.push(part[Math.floor(part.length / 2)]); } return JSON.stringify(out); })()`));
-const tapAt = async (ll) => { await ev(`(() => { map.jumpTo({ center: [${ll[1]}, ${ll[0]}], zoom: 16 }); return true; })()`); await sleep(250); await ev(`map.fire('click', { lngLat: { lat: ${ll[0]}, lng: ${ll[1]} } })`); await sleep(250); };
+const tapAt = async (ll) => { // a REAL dispatched tap (CDP mouse events at the projected point) - map.fire('click') resolved each tap to the PREVIOUS tap's stretch in this rig (ids came back 0,0,1 for taps 0,1,2), so the synthetic shortcut cannot be trusted; the real path is also what a finger does
+  await ev(`(() => { map.jumpTo({ center: [${ll[1]}, ${ll[0]}], zoom: 16 }); return true; })()`); await sleep(300);
+  const pt = JSON.parse(await ev(`(() => { const p = map.project([${ll[1]}, ${ll[0]}]); return JSON.stringify({ x: p.x, y: p.y }); })()`));
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: pt.x, y: pt.y, button: 'left', clickCount: 1 }, S);
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pt.x, y: pt.y, button: 'left', clickCount: 1 }, S);
+  await sleep(300); };
 const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: selSet.map(en => en.idx).join(','), n: selSet.length, bar: !$('selBar').classList.contains('hidden'), txt: $('selBarTxt').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
 
 // ---- M1: three consecutive taps accumulate ----
@@ -145,8 +150,7 @@ ok('M5 tapping a selected section removes only it | ' + JSON.stringify(SS),
   SS.n === 2 && SS.bar === true && SS.pieces[1] === 2 && SS.pieces[0] === 2 && SS.pieces[2] === 2);
 
 // ---- M6: an empty-map tap clears the whole selection ----
-await ev(`(() => { map.jumpTo({ center: [${MIDS[0][1] + 0.05}, ${MIDS[0][0] + 0.05}], zoom: 13 }); return true; })()`); await sleep(250);
-await ev(`map.fire('click', { lngLat: { lat: ${MIDS[0][0] + 0.05}, lng: ${MIDS[0][1] + 0.05} } })`); await sleep(300);
+await tapAt([MIDS[0][0] + 0.05, MIDS[0][1] + 0.05]);
 SS = await selState();
 ok('M6 tapping empty map clears the selection and hides the pill | ' + JSON.stringify(SS), SS.n === 0 && SS.bar === false && SS.chips === 0);
 
