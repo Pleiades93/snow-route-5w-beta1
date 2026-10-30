@@ -19,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ALL = ['drive65', 'drive66', 'drive83', 'drive86', 'drive88', 'drive89', 'drive114', 'drive115', 'drive116', 'drive117'];
+const ALL = ['drive65', 'drive66', 'drive83', 'drive86', 'drive88', 'drive89', 'drive114', 'drive115', 'drive116', 'drive117', 'drive118'];
 const names = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
 const TIMEOUT_MS = Number(process.env.RUNNER_TIMEOUT_MS) || 300000;
 
