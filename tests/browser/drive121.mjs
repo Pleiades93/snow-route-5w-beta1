@@ -140,7 +140,7 @@ const FIXTURE = {
   'snow5w.v2.history': JSON.stringify([
     { at: '2026-01-05T12:30:00.000Z', via: 'manual', items: fullItems, notes: {}, sides: { p: { Velmar: Array(14).fill(3) }, t: {} }, km: 17.67, startedAt: 1767650100000 },
     { at: '2026-01-04T11:00:00.000Z', via: 'gps', items: { Velmar: T2 }, notes: { Velmar: [{ k: 'note', at: T1, text: 'Earlier partial' }] }, sides: { p: { Velmar: [3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }, t: {} }, km: 3.1, startedAt: 1767560100000 }]),
-  'snow5w.v2.night': 'true',
+  'snow5w.v2.night': '1', // the app's own writer stores '1'/'0' (the night toggle) - the fixture must match the writers, which is its whole purpose
   'snow5w.v4.notes': JSON.stringify({ Woolacott: [{ k: 'car', at: '2026-01-05T12:10:00.000Z' }, { k: 'note', at: '2026-01-05T12:11:00.000Z', text: 'Bin at the curb' }] }),
   'snow5w.v4.via': JSON.stringify({ Astona: 'manual', Velmar: 'gps' }),
   'snow5w.v4.trail': JSON.stringify([[43.8207, -79.567, 1767650400], [43.821, -79.5675, 1767650460], [43.8213, -79.568, 1767650520]]),
@@ -179,7 +179,7 @@ await b.ev('location.reload()');
 await waitBoot(b.ev);
 await sleep(1200);
 const s2state = await b.ev(`JSON.stringify({ w: pieces.Woolacott, stored: JSON.parse(localStorage.getItem('snow5w.v5.sides')).p.Woolacott })`);
-ok('S2 back at fixture state A (Woolacott partial again) | state ' + s2state, await b.ev(`JSON.stringify(pieces.Woolacott)`) === '"[3,1,0]"');
+ok('S2 back at fixture state A (Woolacott partial again) | state ' + s2state, JSON.stringify(JSON.parse(s2state).w) === '[3,1,0]');
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
 // The restore has written and verified every key and is inside its 600ms reload
 // pause. Kill the browser NOW - the harshest moment to interrupt it.
@@ -190,7 +190,7 @@ b = await launch(false);
 await waitBoot(b.ev);
 await sleep(1200);
 const s3state = await b.ev(`JSON.stringify({ w: pieces.Woolacott, stored: JSON.parse(localStorage.getItem('snow5w.v5.sides')).p.Woolacott })`);
-ok('S3 interrupted restore still landed state B (Woolacott complete) | state ' + s3state, await b.ev(`JSON.stringify(pieces.Woolacott)`) === '"[3,3,3]"');
+ok('S3 interrupted restore still landed state B (Woolacott complete) | state ' + s3state, JSON.stringify(JSON.parse(s3state).w) === '[3,3,3]');
 ok('S3 restored state is stable across the relaunch boot', await b.ev(`[...doneSet].includes('Woolacott')`));
 await closeBrowser(b);
 
