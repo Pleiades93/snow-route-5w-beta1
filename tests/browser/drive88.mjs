@@ -107,7 +107,7 @@ const rowOf = (n) => `(() => { const rows = [...document.querySelectorAll('.srow
 await sleep(3000);
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
 // Phase 1: list buttons + auto-saving notes
-await ev(`(() => { $('listBtn').click(); return true; })()`); await sleep(400);
+await ev(`(() => { $('streetsBtn').click(); return true; })()`); await sleep(400);
 let A = JSON.parse(await ev(`(() => JSON.stringify({ rows: document.querySelectorAll('.srow').length, smap: !!document.querySelector('.srow .smap'), snote: !!document.querySelector('.srow .snote') }))()`));
 ok('P1 rows carry the pin button and NO note button (v5.55)', A.rows === 34 && A.smap && !A.snote);
 await ev(`(() => { ${'PLACEHOLDER'} return true; })()`.replace('PLACEHOLDER', ''));
@@ -125,7 +125,7 @@ await sleep(800);
 A = JSON.parse(await ev(`(() => JSON.stringify({ nt: noteTextOf('Angie') }))()`));
 ok('P1 note works on a street that is not cleaned', A.nt.includes('gate locked'));
 await ev(`(() => { location.reload(); return true; })()`); await sleep(3000);
-await ev(`(() => { $('listBtn').click(); return true; })()`); await sleep(400);
+await ev(`(() => { $('streetsBtn').click(); return true; })()`); await sleep(400);
 A = JSON.parse(await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Velmar')]; return JSON.stringify({ preview: r.querySelector('.nt').textContent }); })()`));
 ok('P1 note survives reload and previews in the row', A.preview.includes('blocked by car'));
 // Phase 2: Reset (finish & save) files the notes with the clean
