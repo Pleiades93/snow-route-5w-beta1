@@ -3131,13 +3131,15 @@ if ('serviceWorker' in navigator) {
   // fetches cache nothing and the map cannot load offline until some later visit. Once the
   // worker is ready this page IS controlled - warm both style files through it if they are
   // missing, so a first install becomes offline-ready on its first boot.
+  window.__warm = 'pending';
   navigator.serviceWorker.ready.then(async () => {
     try {
-      if (await caches.match(GL_STYLES.day)) return;
-      await fetch(GL_STYLES.day).catch(() => {});
-      await fetch(GL_STYLES.night).catch(() => {});
-    } catch (e) { /* warming is best-effort */ }
-  }).catch(() => {});
+      if (await caches.match(GL_STYLES.day)) { window.__warm = 'already-cached'; return; }
+      const r1 = await fetch(GL_STYLES.day).catch(() => null);
+      const r2 = await fetch(GL_STYLES.night).catch(() => null);
+      window.__warm = 'fetched:' + (r1 && r1.status) + '/' + (r2 && r2.status);
+    } catch (e) { window.__warm = 'error:' + (e && e.message || e); }
+  }).catch(() => { window.__warm = 'no-worker'; });
 }
 if (window.visualViewport) window.visualViewport.addEventListener('resize', () => { try { map.resize(); } catch (e) { /* map not up yet */ } });
 applyNight(); refreshAll(); checkStale(); syncWake();

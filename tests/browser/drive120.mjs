@@ -117,6 +117,7 @@ const RECTS = (sel) => `(() => [...document.querySelectorAll('${sel}')].filter(e
 const overlaps = (a, b) => a.x < b.r - 1 && b.x < a.r - 1 && a.y < b.b - 1 && b.y < a.b - 1;
 const inView = (r) => r.x >= -1 && r.y >= -1 && r.r <= 421 && r.b <= 901;
 const noOverlap = (rs) => rs.every((a, i) => rs.every((b, j) => i === j || !overlaps(a, b)));
+let A;
 const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 20000)) { const v = await ev(expr); if (v === true) return true; await sleep(300); } return false; };
 
 ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, v => v, 30000));
