@@ -127,10 +127,10 @@ ok('A0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // mirror. These checks pin the contract in computed styles, not appearances.
 const TOK = JSON.parse(await ev(`(() => { const cs = getComputedStyle(document.documentElement); return JSON.stringify({
   dur: cs.getPropertyValue('--anim-dur').trim(), open: cs.getPropertyValue('--ease-open').trim(), close: cs.getPropertyValue('--ease-close').trim() }); })()`));
-const ANCHOR = JSON.parse(await ev(`(() => { const g = $('gearBtn').getBoundingClientRect(); const cs = getComputedStyle($('fanWrap')); return JSON.stringify({
-  pos: cs.position, gx: Math.round(g.x), gb: Math.round(g.bottom), vw: window.innerWidth, vh: window.innerHeight }); })()`));
-ok('A0 chrome anchored as designed (fan wrap fixed; gear at the top left, Beta 1.21) | ' + JSON.stringify(ANCHOR),
-  ANCHOR.pos === 'fixed' && ANCHOR.gx < ANCHOR.vw / 2 && ANCHOR.gb > 0 && ANCHOR.gb < 140);
+const ANCHOR = JSON.parse(await ev(`(() => { const g = $('tabBar').getBoundingClientRect(); const cs = getComputedStyle($('tabBar')); return JSON.stringify({
+  pos: cs.position, gx: Math.round(g.x), gw: Math.round(g.width), gb: Math.round(g.bottom), vw: window.innerWidth, vh: window.innerHeight }); })()`));
+ok('A0 chrome anchored as designed (tab bar fixed across the bottom, Beta 1.23) | ' + JSON.stringify(ANCHOR),
+  ANCHOR.pos === 'fixed' && ANCHOR.gx === 0 && ANCHOR.gw === ANCHOR.vw && ANCHOR.gb === ANCHOR.vh);
 
 ok('A1 shared tokens exist (280ms; mirrored curve pair) | ' + JSON.stringify(TOK),
   TOK.dur === '280ms' && TOK.open === 'cubic-bezier(.25,.8,.3,1)' && TOK.close === 'cubic-bezier(.7,0,.75,.2)');
@@ -147,23 +147,13 @@ const opened = await sheetT(); opened.fn = firstFn(opened.raw);
 ok('A2 open sheet animates on the open curve at the same duration | ' + JSON.stringify(opened),
   opened.dur === '0.28s' && opened.fn === 'cubic-bezier(0.25,0.8,0.3,1)');
 
-const fanT = async () => JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('#fanBtns .fanItem')].map(el => { const cs = getComputedStyle(el); return {
-  delay: cs.transitionDelay.split(',')[0].trim(), dur: cs.transitionDuration.split(',')[0].trim(), raw: cs.transitionTimingFunction }; }))`));
-await ev(`(() => { closeSheets(); return true; })()`);
-await sleep(500);
-const fanClosed = await fanT(); fanClosed.forEach(f => f.fn = firstFn(f.raw));
-ok('A3 fan closing: shared duration, close curve, mirrored stagger (far item first) | ' + JSON.stringify(fanClosed),
-  fanClosed.length === 6 && fanClosed.every(f => f.dur === '0.28s' && f.fn === 'cubic-bezier(0.7,0,0.75,0.2)') &&
-  JSON.stringify(fanClosed.map(f => f.delay)) === '["0s","0.04s","0.08s","0.12s","0.16s","0.2s"]');
-await ev(`(() => { $('gearBtn').click(); return true; })()`);
-await poll120(`$('fanBtns').classList.contains('open')`, v => v, 5000);
-const fanOpen = await fanT(); fanOpen.forEach(f => f.fn = firstFn(f.raw));
-ok('A3 fan opening: same duration, open curve, stagger nearest-first | ' + JSON.stringify(fanOpen),
-  fanOpen.length === 6 && fanOpen.every(f => f.dur === '0.28s' && f.fn === 'cubic-bezier(0.25,0.8,0.3,1)') &&
-  JSON.stringify(fanOpen.map(f => f.delay)) === '["0.2s","0.16s","0.12s","0.08s","0.04s","0s"]');
-await sleep(800);
-const fanSettled = JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('#fanBtns .fanItem')].map(el => parseFloat(getComputedStyle(el).opacity)))`));
-ok('A4 fan settles fully visible after opening | ' + JSON.stringify(fanSettled), fanSettled.length === 6 && fanSettled.every(o => o === 1));
+// A3/A4 (re-aimed Beta 1.23): the fan is gone; its stagger contract retired with it.
+// The tab bar is static chrome - always fully visible, no animation delays - while
+// the menu animation baseline lives on in the sheets (A1/A2 above).
+const tabState = JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('#tabBar .tabItem')].map(el => { const cs = getComputedStyle(el); return {
+  op: parseFloat(cs.opacity), delay: cs.transitionDelay.split(',')[0].trim() }; }))`));
+ok('A3 tab bar is static chrome: six actions, fully visible, no stagger | ' + JSON.stringify(tabState),
+  tabState.length === 6 && tabState.every(t => t.op === 1 && t.delay === '0s'));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));

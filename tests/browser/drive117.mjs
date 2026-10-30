@@ -199,7 +199,6 @@ try {
   okS('W4 seeded: a tile in the tiles cache + a marked side under v1', await ev(`pieces.Velmar[0] === 1`));
 
   current = 'v2';   // the server now serves the next release (Node-side flag from the preamble)
-  await ev(`document.getElementById('gearBtn').click(); true`); await sleep(800);
   await ev(`document.getElementById('updBtn').click(); true`);
   const w5first = await until(async () => await ev(`(document.getElementById('ver') || { textContent: '' }).textContent.trim() === '${V2LABEL}'`), 30000);
   R.firstReloadLanded = (w5first === true);   // data, not a gate: the app's own design anticipates a mid-switch reload landing on the old shell ("Update did not take yet") - convergence, possibly via that designed retry, is the gated property

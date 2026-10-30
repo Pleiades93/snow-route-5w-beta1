@@ -124,7 +124,7 @@ await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`);
 // T1: the button is Finish, and red
 let A = await pollRead(`(() => { const b = $('resetBtn'); const cs = getComputedStyle(b); return JSON.stringify({ label: b.textContent, bg: cs.backgroundColor }); })()`, v => v.label === 'Finish');
 ok('T1 button says Finish', A.label === 'Finish');
-ok('T1 button is red', A.bg === 'rgb(194, 47, 36)');
+ok('T1 button wears the black redesign (Beta 1.23)', A.bg === 'rgb(10, 10, 11)');
 // T2: pop-up flow - No changes nothing
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
 A = JSON.parse(await ev(`(() => JSON.stringify({ vis: !$('finModal').classList.contains('hidden'), msg: $('finMsg').textContent }))()`));

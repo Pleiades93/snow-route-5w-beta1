@@ -125,14 +125,14 @@ ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // V1 (Beta 1.21 layout): the dock - List | round run button | Pace on one level,
 // centred and symmetrical; the gear alone at the top left; the header is title-only.
 const dockGeom = async () => JSON.parse(await ev(`(() => { const r = (id) => { const b = $(id).getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, cx: b.x + b.width / 2, cy: b.y + b.height / 2 }; };
-  return JSON.stringify({ list: r('listBtn'), pace: r('paceBtn'), start: r('startBtn'), gear: r('gearBtn'), vw: window.innerWidth }); })()`));
+  return JSON.stringify({ list: r('listBtn'), pace: r('paceBtn'), start: r('startBtn'), tabs: [...document.querySelectorAll('#tabBar .tabItem')].map(e => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, lbl: e.querySelector('.tabLbl').textContent, svg: !!e.querySelector('svg') }; }), vw: window.innerWidth }); })()`));
 let D = await dockGeom();
 let rects = [D.list, D.pace, D.start];
 ok('V1 dock buttons all inside the viewport | dock ' + JSON.stringify(D), rects.every(inView));
 ok('V1 dock buttons do not overlap each other', noOverlap(rects));
 ok('V1 run button is centred and List/Pace are symmetrical around it | dock ' + JSON.stringify(D),
   Math.abs(D.start.cx - D.vw / 2) <= 2 && Math.abs((D.start.cx - D.list.cx) - (D.pace.cx - D.start.cx)) <= 2 && Math.abs(D.list.cy - D.start.cy) <= 2 && Math.abs(D.pace.cy - D.start.cy) <= 2);
-ok('V1 gear sits alone at the top left | gear ' + JSON.stringify(D.gear), D.gear.x >= 8 && D.gear.x < D.vw / 2 && D.gear.y >= 0 && D.gear.y < 120);
+ok('V1 tab bar carries six labelled, iconned actions | tabs ' + JSON.stringify(D.tabs), D.tabs.length === 6 && D.tabs.every(t => t.lbl.length > 0 && t.svg));
 A = await J(`({ sw: $('hud').scrollWidth, cw: $('hud').clientWidth })`);
 ok('V1 header content does not overflow horizontally', A.sw <= A.cw + 1);
 
@@ -158,17 +158,14 @@ await sleep(700);
 const chipsEdge = JSON.parse(await ev(`JSON.stringify(${RECTS('.sideChip .chipBtn')})`));
 ok('V3b edge-anchored chips keep their separation | chips ' + JSON.stringify(chipsEdge), chipsEdge.length === 2 && chipsEdge.every(inView) && !overlaps(chipsEdge[0], chipsEdge[1]));
 
-// V4: menu fan - five 50px items in a column with clear gaps, all in bounds
-await ev(`(() => { deselect(); $('gearBtn').click(); return true; })()`);
-await sleep(800);
-const fan = JSON.parse(await ev(`JSON.stringify(${RECTS('#fanBtns .fanItem')})`));
-ok('V4 fan shows six items', fan.length === 6);
-ok('V4 fan items are 50px and inside the viewport | fan ' + JSON.stringify(fan), fan.every(f => Math.abs(f.w - 50) <= 2 && Math.abs(f.h - 50) <= 2 && inView(f)));
-const sorted = [...fan].sort((a, b) => a.y - b.y);
-ok('V4 fan items have clear vertical gaps (no overlap)', sorted.every((f, i) => i === 0 || sorted[i - 1].b <= f.y - 6));
+// V4: bottom tab bar (Beta 1.23) - six equal actions, in bounds, no overlaps
+const tabs = JSON.parse(await ev(`JSON.stringify(${RECTS('#tabBar .tabItem')})`));
+ok('V4 tab bar shows six items', tabs.length === 6);
+ok('V4 tab items are equal width, inside the viewport, no overlaps | tabs ' + JSON.stringify(tabs),
+  tabs.every(inView) && noOverlap(tabs) && Math.max(...tabs.map(t => t.w)) - Math.min(...tabs.map(t => t.w)) <= 3);
 
 // V5: sheets - open sheet fits the viewport; closed sheet is truly invisible
-await ev(`(() => { closeFan(); $('listBtn').click(); return true; })()`); // the List button toggles the sheet itself; there is no openList() function
+await ev(`(() => { $('listBtn').click(); return true; })()`); // the List button toggles the sheet itself; there is no openList() function
 await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
 await sleep(600);
 A = await J(`(() => { const r = $('sheet').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; })()`);
@@ -179,9 +176,7 @@ A = await J(`(() => { const e = $('sheet'); const r = e.getBoundingClientRect();
 ok('V5 closed sheet is invisible (hidden or fully below the viewport)', A.vis === 'hidden' || A.top >= 899);
 
 // V6: night theme - header measurements hold there too
-await ev(`(() => { $('gearBtn').click(); return true; })()`);
-await sleep(500);
-await ev(`(() => { $('nightBtn').click(); return true; })()`);
+await ev(`(() => { $('nightBtn').click(); return true; })()`); // the Night tab is directly tappable now
 await sleep(900);
 A = await J(`({ night: document.body.classList.contains('night') })`);
 D = await dockGeom();

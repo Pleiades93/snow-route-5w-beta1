@@ -125,7 +125,7 @@ const waitBoot = async () => { for (let i = 0; i < 25; i++) { try { if (await ev
 const reload = async (ms) => { await ev(`location.reload(); true`); await sleep(500); await waitBoot(); await sleep(ms || 4000); };
 const noteVisible = async () => ev(`!document.getElementById('mapNote').classList.contains('hidden')`);
 const until = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 12000)) { if (await fn()) return true; await sleep(300); } return false; };
-const rects = async () => ev(`(function(){ const r = (id) => { const e = document.getElementById(id); if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, btm: b.bottom }; }; return { note: r('mapNote'), gear: r('gearBtn'), info: r('info'), vw: window.innerWidth, vh: window.innerHeight }; })()`);
+const rects = async () => ev(`(function(){ const r = (id) => { const e = document.getElementById(id); if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, btm: b.bottom }; }; return { note: r('mapNote'), gear: r('tabBar'), info: r('info'), vw: window.innerWidth, vh: window.innerHeight }; })()`);
 const overlaps = (a, b) => a && b && a.x < b.r && b.x < a.r && a.y < b.btm && b.y < a.btm;
 
 try {
@@ -141,7 +141,7 @@ try {
   ok('A5 marking still works on the dead map', await ev(`pieces.Velmar[0] === 1`));
   let R1 = await rects();
   ok('A6 layout (day): notice fully in viewport', R1.note && R1.note.x >= 0 && R1.note.y >= 0 && R1.note.r <= R1.vw && R1.note.btm <= R1.vh);
-  ok('A7 layout (day): notice does not overlap the gear button | note ' + JSON.stringify(R1.note) + ' gear ' + JSON.stringify(R1.gear), !overlaps(R1.note, R1.gear));
+  ok('A7 layout (day): notice does not overlap the tab bar | note ' + JSON.stringify(R1.note) + ' gear ' + JSON.stringify(R1.gear), !overlaps(R1.note, R1.gear));
   ok('A8 layout (day): dismiss button is a full-size tap target', await ev(`document.getElementById('mapNoteNo').getBoundingClientRect().height >= 44`));
 
   // Phase C: recovery - tiles come back, notice clears itself (no dismiss).
@@ -169,7 +169,7 @@ try {
   ok('D3 notice appears in night theme', await ev(`isNight() === true`) && await until(noteVisible, 18000));
   let R2 = await rects();
   ok('D4 layout (night): notice fully in viewport', R2.note && R2.note.h > 40 && R2.note.x >= 0 && R2.note.y >= 0 && R2.note.r <= R2.vw && R2.note.btm <= R2.vh);
-  ok('D5 layout (night): notice does not overlap the gear button | note ' + JSON.stringify(R2.note) + ' gear ' + JSON.stringify(R2.gear), !overlaps(R2.note, R2.gear));
+  ok('D5 layout (night): notice does not overlap the tab bar | note ' + JSON.stringify(R2.note) + ' gear ' + JSON.stringify(R2.gear), !overlaps(R2.note, R2.gear));
   await ev(`document.getElementById('mapNoteNo').click(); true`); await sleep(300);
   ok('D6 night dismiss works', !(await noteVisible()));
 } catch (e) {

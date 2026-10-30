@@ -126,18 +126,18 @@ ok('S0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // a dead strip under the dock so the iPhone home swipe cannot drag the map;
 // the header slab is transparent so the map runs full-screen at the top too.
 const S22 = JSON.parse(await ev(`(() => { const sb = $('startBtn'); const cs = getComputedStyle(sb);
-  const strip = $('deadStrip'); const sr = strip.getBoundingClientRect(); const br = sb.getBoundingClientRect();
+  const strip = $('tabBar'); const sr = strip.getBoundingClientRect(); const br = sb.getBoundingClientRect();
   const atBottom = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 3);
   const atStart = document.elementFromPoint(br.x + br.width / 2, br.y + br.height / 2);
   return JSON.stringify({ label: sb.textContent.trim(), bg: cs.backgroundColor, count: $('count').textContent,
     hudBg: getComputedStyle($('hud')).backgroundColor,
     strip: { x: sr.x, w: sr.width, top: sr.top, bottom: sr.bottom }, startB: br.bottom,
-    atBottom: atBottom && atBottom.id, atStart: atStart && atStart.id, vw: window.innerWidth, vh: window.innerHeight }); })()`));
-ok('S1 Start button says Start and wears iOS green | ' + JSON.stringify(S22), S22.label === 'Start' && S22.bg === 'rgb(52, 199, 89)');
+    atBottom: atBottom && (atBottom.id || (atBottom.closest('#tabBar') ? 'tabBar' : '')), atStart: atStart && atStart.id, color: cs.color, vw: window.innerWidth, vh: window.innerHeight }); })()`));
+ok('S1 Start button: black circle, volt-yellow word (per the reference) | ' + JSON.stringify(S22), S22.label === 'Start' && S22.bg === 'rgb(10, 10, 11)' && S22.color === 'rgb(216, 255, 61)');
 ok('S2 count reads "0 of 34 · 0%" (no "completed") | ' + S22.count, S22.count === '0 of 34 · 0%');
 ok('S3 header slab is transparent (map full-screen at the top)', S22.hudBg === 'rgba(0, 0, 0, 0)');
-ok('S4 dead strip spans the bottom, sits below the dock, and takes the touch at the screen edge | ' + JSON.stringify(S22),
-  S22.strip.x === 0 && S22.strip.w === S22.vw && Math.abs(S22.strip.bottom - S22.vh) <= 1 && S22.strip.top >= S22.startB - 1 && S22.atBottom === 'deadStrip' && S22.atStart === 'startBtn');
+ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-strip job), dock clear above it | ' + JSON.stringify(S22),
+  S22.strip.x === 0 && S22.strip.w === S22.vw && Math.abs(S22.strip.bottom - S22.vh) <= 1 && S22.startB <= S22.strip.top + 1 && S22.atBottom === 'tabBar' && S22.atStart === 'startBtn');
 
 await ev(`(() => { markDone('Woolacott', 'tap'); return true; })()`);
 await sleep(400);
