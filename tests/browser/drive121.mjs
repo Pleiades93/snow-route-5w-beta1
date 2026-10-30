@@ -167,7 +167,7 @@ const probe = JSON.parse(await b.ev(`JSON.stringify({
 ok('S1 fixture sides decode exactly (Velmar complete, Woolacott partial)', probe.velmarAll3 && JSON.stringify(probe.wool) === '[3,1,0]');
 ok('S1 fixture done set + piece times survive', JSON.stringify(probe.done) === '["Astona","Velmar"]' && JSON.stringify(probe.pt) === JSON.stringify([T1, null]));
 ok('S1 fixture history survives (2 entries, full run intact)', probe.hist === 2 && probe.histFull === 34);
-ok('S1 fixture notes/trail/coverage/run/night survive', probe.notes === 2 && probe.trail === 3 && probe.covV === 4 && probe.runStart === 1767650300000 && probe.night === true);
+ok('S1 fixture notes/trail/coverage/run/night survive | probe ' + JSON.stringify(probe), probe.notes === 2 && probe.trail === 3 && probe.covV === 4 && probe.runStart === 1767650300000 && probe.night === true);
 const rt = JSON.parse(await b.ev(`(() => { const d = JSON.parse(buildBackup()).data; const F = ${FIXJ}; const out = {}; for (const k of Object.keys(F)) { try { out[k] = JSON.stringify(JSON.parse(d[k])) === JSON.stringify(JSON.parse(F[k])); } catch (e) { out[k] = d[k] === F[k]; } } return JSON.stringify(out); })()`));
 ok('S1 backup of the fixture state is meaning-identical on all 11 keys', Object.keys(rt).length === 11 && Object.values(rt).every(Boolean));
 
@@ -178,7 +178,8 @@ await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localSto
 await b.ev('location.reload()');
 await waitBoot(b.ev);
 await sleep(1200);
-ok('S2 back at fixture state A (Woolacott partial again)', await b.ev(`JSON.stringify(pieces.Woolacott)`) === '"[3,1,0]"');
+const s2state = await b.ev(`JSON.stringify({ w: pieces.Woolacott, stored: JSON.parse(localStorage.getItem('snow5w.v5.sides')).p.Woolacott })`);
+ok('S2 back at fixture state A (Woolacott partial again) | state ' + s2state, await b.ev(`JSON.stringify(pieces.Woolacott)`) === '"[3,1,0]"');
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
 // The restore has written and verified every key and is inside its 600ms reload
 // pause. Kill the browser NOW - the harshest moment to interrupt it.
@@ -188,7 +189,8 @@ await closeBrowser(b);
 b = await launch(false);
 await waitBoot(b.ev);
 await sleep(1200);
-ok('S3 interrupted restore still landed state B (Woolacott complete)', await b.ev(`JSON.stringify(pieces.Woolacott)`) === '"[3,3,3]"');
+const s3state = await b.ev(`JSON.stringify({ w: pieces.Woolacott, stored: JSON.parse(localStorage.getItem('snow5w.v5.sides')).p.Woolacott })`);
+ok('S3 interrupted restore still landed state B (Woolacott complete) | state ' + s3state, await b.ev(`JSON.stringify(pieces.Woolacott)`) === '"[3,3,3]"');
 ok('S3 restored state is stable across the relaunch boot', await b.ev(`[...doneSet].includes('Woolacott')`));
 await closeBrowser(b);
 
