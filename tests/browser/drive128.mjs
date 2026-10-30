@@ -112,7 +112,22 @@ await sleep(3000);
 const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 20000)) { const v = await ev(expr); if (v === true) return true; await sleep(300); } return false; };
 ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, v => v, 30000));
 
-const MIDS = JSON.parse(await ev(`(() => { const out = []; for (let i = 0; i < 3; i++) { const part = STRETCH.Velmar.parts[i]; out.push(part[Math.floor(part.length / 2)]); } return JSON.stringify(out); })()`));
+const MIDS = JSON.parse(await ev(`(() => { // tap points chosen for a clean win: Velmar's stitched line revisits some vertices
+  // (parts 2, 5 and 6 have a midpoint exactly on a neighbour's line - a 0.00 m tie that screen
+  // rounding decides by lottery), so each part contributes the vertex FARTHEST from every other part
+  const MLAT = 111320, MLNG = 80386;
+  const seg = (p, a, b) => { const vx = b[1]*MLNG - a[1]*MLNG, vy = b[0]*MLAT - a[0]*MLAT; const L2 = vx*vx + vy*vy; let t = L2 ? (((p[1]*MLNG - a[1]*MLNG) * vx) + ((p[0]*MLAT - a[0]*MLAT) * vy)) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p[1]*MLNG - (a[1]*MLNG + vx*t), p[0]*MLAT - (a[0]*MLAT + vy*t)); };
+  const parts = STRETCH.Velmar.parts; const out = [];
+  for (let idx = 0; idx < 3; idx++) {
+    let bestPt = null, bestMargin = -1;
+    for (const v of parts[idx]) {
+      const ds = parts.map((p2, j) => { let d = 1e9; for (let i = 1; i < p2.length; i++) d = Math.min(d, seg(v, p2[i-1], p2[i])); return d; });
+      const others = Math.min(...ds.filter((_, j) => j !== idx));
+      if (others > bestMargin) { bestMargin = others; bestPt = v; }
+    }
+    out.push(bestPt);
+  }
+  return JSON.stringify(out); })()`));
 const tapAt = async (ll) => { // a REAL dispatched tap (CDP mouse events at the projected point) - map.fire('click') resolved each tap to the PREVIOUS tap's stretch in this rig (ids came back 0,0,1 for taps 0,1,2), so the synthetic shortcut cannot be trusted; the real path is also what a finger does
   await ev(`(() => { map.jumpTo({ center: [${ll[1]}, ${ll[0]}], zoom: 16 }); return true; })()`); await sleep(300);
   const pt = JSON.parse(await ev(`(() => { const p = map.project([${ll[1]}, ${ll[0]}]); return JSON.stringify({ x: p.x, y: p.y }); })()`));
