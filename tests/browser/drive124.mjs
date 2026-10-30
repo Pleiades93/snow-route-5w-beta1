@@ -141,6 +141,11 @@ const probe = async () => { const raw = await ev(`(() => { try {
 } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`);
   return typeof raw === 'string' ? JSON.parse(raw) : { __err: 'non-string evaluate result' }; };
 
+const PRE = JSON.parse(await ev(`(() => JSON.stringify({
+  centres: !!map.getSource('centres'), ref: !!map.getSource('ref'), gps: !!map.getSource('gps'), trail: !!map.getSource('trail'),
+  refLine: !!map.getLayer('ref-line'), trailLine: !!map.getLayer('trail-line') }))()`));
+ok('G0b layer-chain state at probe time | ' + JSON.stringify(PRE), PRE.gps === true);
+
 const DIAG = JSON.parse(await ev(`(() => { try {
   const before = { centres: !!map.getSource('centres'), ref: !!map.getSource('ref'), gps: !!map.getSource('gps'), trail: !!map.getSource('trail') };
   let callErr = null; try { addGpsLayers(); } catch (e) { callErr = String(e && e.message || e); }
