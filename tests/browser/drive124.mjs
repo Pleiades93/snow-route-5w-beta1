@@ -131,7 +131,7 @@ await ev(`(() => { acceptFix({ coords: { latitude: ${'${FIX.lat}'}, longitude: $
 await poll120(`dispPos && Math.abs(dispPos[0] - ${'${FIX.lat}'}) < 0.0002 && Math.abs(dispPos[1] - ${'${FIX.lng}'}) < 0.0002`, v => v, 8000);
 await sleep(600);
 
-const probe = async () => JSON.parse(await ev(`(() => {
+const probe = async () => { const raw = await ev(`(() => { try {
   const src = map.getSource('gps'); const data = src && src._data;
   const feats = data && data.features ? data.features.map(f => f.properties.k) : null;
   const pt = map.project([dispPos[1], dispPos[0]]);
@@ -139,7 +139,8 @@ const probe = async () => JSON.parse(await ev(`(() => {
   const stack = map.queryRenderedFeatures(pt).map(f => f.layer.id);
   const lay = map.getLayer('gps-dot');
   return JSON.stringify({ layerExists: !!lay, vis: lay ? map.getLayoutProperty('gps-dot', 'visibility') : null, feats, dotHits, stack });
-})()`));
+} catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`);
+  return typeof raw === 'string' ? JSON.parse(raw) : { __err: 'non-string evaluate result' }; };
 let P = await probe();
 ok('G1 gps layers exist and the source carries the dot after a fix | ' + JSON.stringify(P),
   P.layerExists && P.vis !== 'none' && Array.isArray(P.feats) && P.feats.includes('dot'));
