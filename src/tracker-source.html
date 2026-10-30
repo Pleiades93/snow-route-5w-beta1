@@ -2266,6 +2266,10 @@ function positionChips() {
   const probe = projLL([frame.baseLL[0] + frame.left[1] * 12 / MLAT, frame.baseLL[1] + frame.left[0] * 12 / MLNG]);
   let lx = probe.x - base.x, ly = probe.y - base.y; const LL = Math.hypot(lx, ly) || 1; lx /= LL; ly /= LL; // screen direction of geographic LEFT
   const cw = map.getCanvas().clientWidth, ch = map.getCanvas().clientHeight;
+  // Stage 2 (drive120 V3): clamp the BASE point into the canvas first, so the two chips keep
+  // their full separation near screen edges - clamping each chip independently squeezed them
+  // together (measured 21.6px apart, overlapping) when the stretch point sat at the edge.
+  base.x = Math.max(62, Math.min(cw - 62, base.x)); base.y = Math.max(62, Math.min(ch - 62, base.y));
   [0, 1].forEach(side => {
     const sgn = side === 0 ? 1 : -1; // side 0 sits on geographic LEFT, side 1 on geographic RIGHT - the same sides the engine paints
     let dx = lx * sgn, dy = ly * sgn;
@@ -3134,6 +3138,12 @@ if ('serviceWorker' in navigator) {
   window.__warm = 'pending';
   navigator.serviceWorker.ready.then(async () => {
     try {
+      // 'ready' can resolve before THIS page is actually controlled (the claim lands a beat
+      // later); a fetch sent in that gap bypasses the worker and caches nothing - the exact
+      // failure drive119 caught (warm=fetched:200/200, cache empty). Wait for control.
+      if (!navigator.serviceWorker.controller) await Promise.race([
+        new Promise(res => navigator.serviceWorker.addEventListener('controllerchange', res, { once: true })),
+        new Promise(res => setTimeout(res, 3000))]);
       if (await caches.match(GL_STYLES.day)) { window.__warm = 'already-cached'; return; }
       const r1 = await fetch(GL_STYLES.day).catch(() => null);
       const r2 = await fetch(GL_STYLES.night).catch(() => null);

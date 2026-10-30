@@ -131,7 +131,7 @@ ok('V1 header content does not overflow horizontally', A.sw <= A.cw + 1);
 
 // V2: same with a street selected (selection strip visible - the state whose old
 // floating-panel version overflowed the header in the production app's history)
-await ev(`(() => { map.jumpTo({ center: [-79.567, 43.821], zoom: 16 }); const part = STRETCH.Velmar.parts[0]; selectStretch('Velmar', 0, part[Math.floor(part.length / 2)]); return true; })()`); // a real tap always passes an anchor point; without one the chip layout cannot run
+await ev(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; map.jumpTo({ center: mid, zoom: 16 }); selectStretch('Velmar', 0, mid); return true; })()`); // a real tap always passes an anchor point; without one the chip layout cannot run
 await sleep(700);
 rects = JSON.parse(await ev(`JSON.stringify(${RECTS('#hud button')})`));
 ok('V2 with selection strip: header buttons inside the viewport', rects.every(inView));
@@ -142,6 +142,12 @@ const chips = JSON.parse(await ev(`JSON.stringify(${RECTS('.sideChip .chipBtn')}
 ok('V3 two side chips are shown', chips.length === 2);
 ok('V3 chips are 40px tap targets', chips.every(c => Math.abs(c.w - 40) <= 2 && Math.abs(c.h - 40) <= 2));
 ok('V3 chips inside the viewport and not overlapping | chips ' + JSON.stringify(chips), chips.every(inView) && !overlaps(chips[0], chips[1]));
+// V3b: the same selection with the stretch point pushed against the right edge - the
+// independent per-chip clamp used to squeeze the pair together there (drive120's catch).
+await ev(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; map.jumpTo({ center: [mid[0], mid[1] - 0.0035], zoom: 16 }); selectStretch('Velmar', 0, mid); return true; })()`);
+await sleep(700);
+const chipsEdge = JSON.parse(await ev(`JSON.stringify(${RECTS('.sideChip .chipBtn')})`));
+ok('V3b edge-anchored chips keep their separation | chips ' + JSON.stringify(chipsEdge), chipsEdge.length === 2 && chipsEdge.every(inView) && !overlaps(chipsEdge[0], chipsEdge[1]));
 
 // V4: menu fan - five 50px items in a column with clear gaps, all in bounds
 await ev(`(() => { deselect(); $('gearBtn').click(); return true; })()`);
