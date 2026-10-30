@@ -84,6 +84,12 @@ Coverage:
   reported honestly; invalid nested history sanitized; current-format
   backup round-trip; a failed history write stops Finish with the run
   intact; a partial multi-key save reloads to a consistent state.
+- `drive121` — data-safety rehearsal (Stage 3): a complete Beta 1.17 dataset
+  frozen as a literal loads losslessly (sides, times, history, notes, trail,
+  coverage, run state, night) and a backup of it is meaning-identical on all
+  11 keys; then a restore whose browser is killed inside the reload pause
+  still lands the restored state after relaunch. If a future format change
+  fails this fixture, the change needs a migration — see STORAGE-SCHEMA.md.
 - `drive120` — visual geometry (Stage 2): header controls in-bounds and
   non-overlapping in the default and street-selected states; the 40px side
   chips in-bounds with full separation, including with the stretch point
