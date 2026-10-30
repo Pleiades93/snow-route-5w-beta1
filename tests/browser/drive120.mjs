@@ -124,14 +124,14 @@ ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 
 // V1: header buttons - in bounds, no overlaps, no horizontal overflow (default state)
 let rects = JSON.parse(await ev(`JSON.stringify(${RECTS('#hud button')})`));
-ok('V1 header buttons all inside the viewport | rects ' + JSON.stringify(rects), rects.length >= 5 && rects.every(inView));
+ok('V1 header buttons all inside the viewport | rects ' + JSON.stringify(rects), rects.length >= 4 && rects.every(inView)); // 4 visible at boot by design: Finish and Cancel-start are display:none until relevant
 ok('V1 header buttons do not overlap each other', noOverlap(rects));
 A = await J(`({ sw: $('hud').scrollWidth, cw: $('hud').clientWidth })`);
 ok('V1 header content does not overflow horizontally', A.sw <= A.cw + 1);
 
 // V2: same with a street selected (selection strip visible - the state whose old
 // floating-panel version overflowed the header in the production app's history)
-await ev(`(() => { map.jumpTo({ center: [-79.567, 43.821], zoom: 16 }); selectStretch('Velmar', 0); return true; })()`);
+await ev(`(() => { map.jumpTo({ center: [-79.567, 43.821], zoom: 16 }); const part = STRETCH.Velmar.parts[0]; selectStretch('Velmar', 0, part[Math.floor(part.length / 2)]); return true; })()`); // a real tap always passes an anchor point; without one the chip layout cannot run
 await sleep(700);
 rects = JSON.parse(await ev(`JSON.stringify(${RECTS('#hud button')})`));
 ok('V2 with selection strip: header buttons inside the viewport', rects.every(inView));
@@ -153,7 +153,8 @@ const sorted = [...fan].sort((a, b) => a.y - b.y);
 ok('V4 fan items have clear vertical gaps (no overlap)', sorted.every((f, i) => i === 0 || sorted[i - 1].b <= f.y - 6));
 
 // V5: sheets - open sheet fits the viewport; closed sheet is truly invisible
-await ev(`(() => { closeFan(); openList(); return true; })()`);
+await ev(`(() => { closeFan(); $('listBtn').click(); return true; })()`); // the List button toggles the sheet itself; there is no openList() function
+await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
 await sleep(600);
 A = await J(`(() => { const r = $('sheet').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; })()`);
 ok('V5 open list sheet fits the viewport | sheet ' + JSON.stringify(A), inView(A) && A.y >= 0);
