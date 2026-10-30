@@ -25,7 +25,8 @@ fs.mkdirSync(path.join(FIX, 'lib'), { recursive: true });
 const srcIdx = fs.readFileSync(path.join(DIR, 'tracker-source.html'), 'utf8');
 const srcSw = fs.readFileSync(path.join(DIR, 'sw.js'), 'utf8');
 const V1CACHE = (srcSw.match(/const CACHE = '([^']+)'/) || [])[1];
-if (!V1CACHE) throw new Error('drive119 fixture: could not parse cache name from src/sw.js');
+const TILECACHE = (srcSw.match(/TILES = '([^']+)'/) || [])[1];
+if (!V1CACHE || !TILECACHE) throw new Error('drive119 fixture: could not parse cache names from src/sw.js');
 fs.writeFileSync(path.join(FIX, 'v1', 'index.html'), srcIdx);
 fs.writeFileSync(path.join(FIX, 'v1', 'sw.js'), srcSw);
 const CORE = [...srcSw.matchAll(/\['(https:[^']+)',\s*'(sha384-[^']+)'\]/g)].map(m => ({ url: m[1], integrity: m[2], file: m[1].split('/').pop() }));
@@ -107,7 +108,15 @@ async function launch(offline) {
     return r.result && r.result.result ? r.result.result.value : undefined;
   };
   await send('Page.navigate', { url: 'file://' + path.join(FIX, 'bootstrap.html') }, S);
-  return { proc, ws, ev };
+  return { proc, ws, ev, send };
+}
+// Graceful shutdown so on-disk storage (localStorage LevelDB) commits before the next launch
+// reads the profile - a bare SIGKILL right after a write can lose it (S2/S3 failures, run #21).
+async function closeBrowser(b) {
+  try { b.send('Browser.close'); } catch (e) {}
+  for (let i = 0; i < 24 && b.proc.exitCode === null; i++) await sleep(250);
+  if (b.proc.exitCode === null) { try { b.proc.kill('SIGKILL'); } catch (e) {} }
+  await sleep(600);
 }
 const until = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 20000)) { const v = await fn(); if (v && !(typeof v === 'object' && 'error' in v)) return v; await sleep(400); } return false; };
 const waitBoot = async (ev, ms) => !!(await until(async () => await ev(`!!document.getElementById('ver')`), ms || 25000));
@@ -121,10 +130,11 @@ let b = await launch(false);
 okS('S1 app boots online', await waitBoot(b.ev));
 okS('S1 worker registered, activated and controlling', await until(async () => await b.ev(`(async () => { const r = await navigator.serviceWorker.getRegistration(); return !!(r && r.active && r.active.state === 'activated' && navigator.serviceWorker.controller); })()`), 30000));
 okS('S1 map activates online (style fetched)', await until(async () => await b.ev(`typeof glOk !== 'undefined' && glOk === true`), 30000));
-okS('S1 day style is in the shell cache', await until(async () => await b.ev(`(async () => { const c = await caches.open('${V1CACHE}'); return !!(await c.match('https://tiles.versatiles.org/styles/colorful/style.json')); })()`), 25000));
+okS('S1 day style is cached (styles route to the tiles cache by design)', await until(async () => await b.ev(`(async () => { const c = await caches.open('${TILECACHE}'); return !!(await c.match('https://tiles.versatiles.org/styles/colorful/style.json')); })()`), 25000));
 const seed = JSON.parse(await b.ev(`(() => { const n = STREETNAMES.find(x => STRETCH[x].parts.length === 1); togglePiece(n, 0, 0); return JSON.stringify({ n, v: pieces[n][0], stored: (JSON.parse(localStorage.getItem(LS.sides))).p[n][0] }); })()`));
 ok('S1 seeded side marked and stored', seed.v === 1 && seed.stored === 1);
-b.proc.kill('SIGKILL'); await sleep(1500);
+await sleep(2500); // let the storage commit land before shutdown
+await closeBrowser(b);
 
 // ---- Session 2: same profile, network OFF - boot from cache, read progress, mark offline ----
 b = await launch(true);
@@ -134,14 +144,15 @@ ok('S2 seeded progress visible offline', A.v === 1 && A.complete === false);
 await b.ev(`(() => { togglePiece(${JSON.stringify(seed.n)}, 0, 1); return true; })()`);
 A = JSON.parse(await b.ev(`(() => JSON.stringify({ complete: streetComplete(${JSON.stringify(seed.n)}), stored: (JSON.parse(localStorage.getItem(LS.sides))).p[${JSON.stringify(seed.n)}][0] }))()`));
 ok('S2 street can be completed offline and the mark persists to storage', A.complete === true && A.stored === 3);
-b.proc.kill('SIGKILL'); await sleep(1500);
+await sleep(2500);
+await closeBrowser(b);
 
 // ---- Session 3: offline again - the offline-made mark must survive another restart ----
 b = await launch(true);
 okS('S3 app boots offline again', await waitBoot(b.ev, 45000));
 A = JSON.parse(await b.ev(`(() => JSON.stringify({ complete: streetComplete(${JSON.stringify(seed.n)}) }))()`));
 ok('S3 offline-made completion survives the second restart', A.complete === true);
-b.proc.kill('SIGKILL');
+await closeBrowser(b);
 
 R.exceptions = allExceptions;
 console.log(JSON.stringify(R, null, 1));
