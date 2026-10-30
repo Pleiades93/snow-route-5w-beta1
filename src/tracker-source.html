@@ -2800,7 +2800,7 @@ $('noteYes').addEventListener('click', () => {
 });
 
 // ===== GPS (checklist SS7) =====
-let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, fixWin = [], lastFixAt = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
+let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
 const SAMPLES = {};
 (function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
 for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count
@@ -2832,7 +2832,8 @@ function glideTo(target) {
   const t0 = performance.now(); clearInterval(glideTimer);
   glideTimer = setInterval(() => {
     const t = Math.min(1, (performance.now() - t0) / dur);
-    dispPos = [from[0] + (target[0] - from[0]) * t, from[1] + (target[1] - from[1]) * t];
+    const e = t * t * (3 - 2 * t); // smoothstep: the glide eases in and out instead of starting/stopping dead (Beta 1.28) - linear segments meeting at each fix were half the visible jaggedness
+    dispPos = [from[0] + (target[0] - from[0]) * e, from[1] + (target[1] - from[1]) * e];
     pushGps(); followCam();
     if (t >= 1) clearInterval(glideTimer);
   }, 40);
@@ -2861,24 +2862,52 @@ function updateHeading(hdg, speed) {
   if (Math.abs(d) > 3) map.easeTo({ bearing: cur + d, duration: 350 });
 }
 function northUp() { smHeading = null; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); }
+// ===== POSITION FILTER (Beta 1.28, Andrew: the dot jitters at slow speed) =====
+// A Kalman filter [the estimator navigation apps use: it carries a position AND a
+// velocity, and weighs each new fix by its stated accuracy against how well the fix
+// fits the motion so far] replaces the 3-fix weighted average. The average let every
+// noisy fix drag the dot metres sideways - worst at driveway speeds, where raw GPS
+// wander is bigger than the real movement. The filter discounts wander (at low speed
+// the estimate barely creeps) and trusts steady motion (at speed it tracks fully).
+// Worked per-axis in local metres around the first fix's origin. The hard gates in
+// acceptFix (finite/on-Earth, accuracy) still run BEFORE a fix reaches the filter.
+let kf = null; // {ox, oy, at, x:{p,v,a,b,c}, y:{...}} - a/b/c are the axis covariance terms
+const KF_Q = 0.5; // process noise: how much real acceleration to expect between fixes
+function kfAxis(z, ax, dt, R) {
+  ax.p += ax.v * dt; // predict: coast on the estimated velocity
+  const a = ax.a + 2 * dt * ax.b + dt * dt * ax.c + KF_Q * dt ** 4 / 4;
+  const b = ax.b + dt * ax.c + KF_Q * dt ** 3 / 2;
+  const c = ax.c + KF_Q * dt * dt;
+  const y = z - ax.p, S = a + R, K0 = a / S, K1 = b / S; // gain: high when the motion model is unsure or the fix is precise
+  ax.p += K0 * y; ax.v += K1 * y;
+  ax.a = (1 - K0) * a; ax.b = (1 - K0) * b; ax.c = c - K1 * b;
+}
+function kfUpdate(ll, acc, now) {
+  const zx = ll[1] * MLNG, zy = ll[0] * MLAT, R = Math.max(acc, 5) ** 2;
+  if (kf) {
+    const dt0 = (now - kf.at) / 1000;
+    if (dt0 > 10 || Math.hypot(zx - kf.ox - kf.x.p, zy - kf.oy - kf.y.p) > 75) kf = null; // reacquisition: a long silence or a far jump voids the motion model
+  }
+  if (!kf) { kf = { ox: zx, oy: zy, at: now, x: { p: 0, v: 0, a: R, b: 0, c: 4 }, y: { p: 0, v: 0, a: R, b: 0, c: 4 } }; return { est: ll.slice(), aim: ll.slice() }; }
+  const dt = Math.min(Math.max((now - kf.at) / 1000, 0.05), 5); kf.at = now;
+  kfAxis(zx - kf.ox, kf.x, dt, R); kfAxis(zy - kf.oy, kf.y, dt, R);
+  const est = [(kf.oy + kf.y.p) / MLAT, (kf.ox + kf.x.p) / MLNG];
+  // gentle lookahead: the glide aims a fraction of a second along the estimated velocity
+  // (capped at 3 m), so the dot keeps flowing between fixes instead of bursting once a second
+  const lx = Math.max(-3, Math.min(3, kf.x.v * 0.45)), ly = Math.max(-3, Math.min(3, kf.y.v * 0.45));
+  return { est, aim: [(kf.oy + kf.y.p + ly) / MLAT, (kf.ox + kf.x.p + lx) / MLNG] };
+}
 function acceptFix(pos) {
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
   if (!Number.isFinite(ll[0]) || !Number.isFinite(ll[1]) || Math.abs(ll[0]) > 90 || Math.abs(ll[1]) > 180) return; // audit G1: never let a non-finite or off-Earth fix reach the smoothing, trail or coverage math
   if (acc > 65 && lastGood && now - lastGood.at < 10000) return;
   if (acc <= 65) lastGood = { ll, at: now };
   const speed = pos.coords.speed;
-  if (lastFixAt && dispPos) {
-    const step = havM(dispPos, ll); const dt = (now - lastFixAt) / 1000;
-    const dead = Math.max(4, acc / 2);
-    if ((!speed || speed < 1) && step < dead) { lastFixAt = now; return; }
-  }
   lastFixAt = now; gpsAccM = acc;
-  fixWin.push({ ll, at: now }); fixWin = fixWin.slice(-3);
-  const W = [0.2, 0.3, 0.5].slice(-fixWin.length); const ws = W.reduce((a, b) => a + b, 0);
-  const sm = [0, 0]; fixWin.forEach((f, i) => { sm[0] += f.ll[0] * W[i] / ws; sm[1] += f.ll[1] * W[i] / ws; });
+  const { est: sm, aim } = kfUpdate(ll, acc, now); // the filter subsumes the old deadband: sub-noise moves barely shift the estimate, so no fix needs swallowing
   const firstFix = !gpsPos;
   gpsPos = sm;
-  glideTo(sm);
+  glideTo(aim);
   updateHeading(pos.coords.heading, speed);
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
