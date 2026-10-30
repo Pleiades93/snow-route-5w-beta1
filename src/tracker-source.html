@@ -167,7 +167,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.25</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.26</div></div>
   </div>
   <div id="info" class="hidden">
     <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>
@@ -3098,8 +3098,8 @@ $('updBtn').addEventListener('click', async () => {
 
 // ===== FAN / NIGHT / FLIP / HOME =====
 const ICONS = {
-  streets: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.2 20.2C6.8 14.5 8.6 8.8 9.9 4.2"/><path d="M18.8 20.2C17.2 14.5 15.4 8.8 14.1 4.2"/><path d="M12 18.9v-2.5M12 14.9v-1.9M12 11.7v-1.4M12 9.3v-1"/></svg>', /* the Streets icon: a road in perspective (refined Beta 1.25) */
-  pace: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4.3 15.6A8.2 8.2 0 1 1 19.7 15.6"/><path d="M4.3 15.6L5.9 15M4.6 9.3L6.1 10.1M9.2 5.1L9.8 6.7M15.5 5.4L14.7 6.9M19.7 10L18.1 10.6"/><path d="M12 12.8L15.2 8.2"/><circle cx="12" cy="12.8" r="1.7" fill="currentColor" stroke="none"/></svg>', /* the Pace icon: an instrument gauge with ticks + needle (refined Beta 1.25) */
+  streets: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5.2 20.2C6.8 14.5 8.6 8.8 9.9 4.2"/><path d="M18.8 20.2C17.2 14.5 15.4 8.8 14.1 4.2"/><path d="M12 18.9v-2.5M12 14.9v-1.9M12 11.7v-1.4M12 9.3v-1"/></svg>', /* the Streets icon: a road in perspective (refined Beta 1.25) */
+  pace: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4.3 15.6A8.2 8.2 0 1 1 19.7 15.6"/><path d="M4.3 15.6L5.9 15M4.6 9.3L6.1 10.1M9.2 5.1L9.8 6.7M15.5 5.4L14.7 6.9M19.7 10L18.1 10.6"/><path d="M12 12.8L15.2 8.2"/><circle cx="12" cy="12.8" r="1.35" fill="currentColor" stroke="none"/></svg>', /* the Pace icon: an instrument gauge with ticks + needle (refined Beta 1.25) */
   clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 20h11"/><path d="M5.6 15.8l7-7a1.8 1.8 0 0 1 2.5 0l2.2 2.2a1.8 1.8 0 0 1 0 2.5l-4.6 4.6H9.2l-3.6-2.3z"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   upd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3.5V8h-4.5"/></svg>',
