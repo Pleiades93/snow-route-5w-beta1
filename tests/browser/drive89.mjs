@@ -160,7 +160,9 @@ const diagPre = JSON.parse(await ev(`(() => JSON.stringify({ label: $('resetBtn'
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, toast: $('toast').textContent }))()`, v => v.h === 0 && v.done === 3 && /Finish undone/.test(v.toast));
 R.diagT4 = { labelWait: diagUndo, pre: diagPre, post: A };
-ok('T4 Undo finish restores the run', A.h === 0 && A.done === 3 && /Finish undone/.test(A.toast));
+// The runner prints only check NAMES for failures - so the state dump rides in the name itself.
+// (The first diagnostic round put it in the result block, which the runner parses but never echoes.)
+ok('T4 Undo finish restores the run | diag ' + JSON.stringify(R.diagT4), A.h === 0 && A.done === 3 && /Finish undone/.test(A.toast));
 // T5: finish again, then delete returns to Previous cleans (the bug fix)
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
 await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(400);
