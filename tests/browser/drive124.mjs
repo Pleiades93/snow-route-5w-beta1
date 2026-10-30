@@ -169,7 +169,7 @@ ok('G1 gps layers exist and the source carries the dot after a fix | diag ' + JS
   P.layerExists && P.vis !== 'none' && Array.isArray(P.feats) && P.feats.includes('dot'));
 ok('G2 the dot is actually rendered at the fix point | stack ' + JSON.stringify(P.stack), P.dotHits >= 1);
 
-await ev(`(() => { setPiece('Velmar', 0, 0, true); return true; })()`);
+await ev(`(() => { togglePiece('Velmar', 0, 0); return true; })()`); // togglePiece is the real marking entry - an earlier draft called a setPiece that does not exist, so the rebuild was never actually exercised
 await sleep(700);
 P = await probe();
 ok('G3 dot still rendered after marking (engine rebuild) | stack ' + JSON.stringify(P.stack), P.dotHits >= 1);
