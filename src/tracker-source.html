@@ -15,6 +15,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #14161c; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+  :root { --anim-dur: 280ms; --ease-open: cubic-bezier(.25,.8,.3,1); --ease-close: cubic-bezier(.7,0,.75,.2); /* MENU ANIMATION BASELINE (Andrew, 2026-10-30): every menu uses this one duration; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. */
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
     --card-op: rgba(26,29,36,.97); --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 4px 20px rgba(0,0,0,.45); --shadow-float: 0 4px 14px rgba(0,0,0,.4); }
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
@@ -73,13 +74,14 @@
   #gearBtn.on { background: #2c7be5; color: #fff; }
   #gearBtn svg { width: 25px; height: 25px; }
   #fanBtns { position: absolute; right: 0; bottom: 0; width: 46px; height: 46px; pointer-events: none; }
-  #fanBtns .fanItem { position: absolute; right: -2px; bottom: -2px; width: 50px; height: 50px; border-radius: 50%; border: none; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; cursor: pointer; transform: scale(.4); opacity: 0; transition: transform .22s ease, opacity .18s ease; pointer-events: none; }
+  #fanBtns .fanItem { position: absolute; right: -2px; bottom: -2px; width: 50px; height: 50px; border-radius: 50%; border: none; background: #fff; color: #22262e; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; cursor: pointer; transform: scale(.4); opacity: 0; transition: transform var(--anim-dur) var(--ease-close), opacity var(--anim-dur) var(--ease-close); pointer-events: none; }
+  #fanBtns .fanItem:nth-of-type(1) { transition-delay: 0ms; } #fanBtns .fanItem:nth-of-type(2) { transition-delay: 40ms; } #fanBtns .fanItem:nth-of-type(3) { transition-delay: 80ms; } #fanBtns .fanItem:nth-of-type(4) { transition-delay: 120ms; } #fanBtns .fanItem:nth-of-type(5) { transition-delay: 160ms; } /* closing stagger = the mirror of opening: farthest item leaves first */
   body.night #fanBtns .fanItem { background: #22262e; color: #f2f4f8; }
   #fanBtns .fanItem svg { width: 25px; height: 25px; }
   #fanBtns .fanItem.on { background: #7b2ff7; color: #fff; }
   #fanBtns .fanItem.red { background: #e63a2e; color: #fff; }
   #fanBtns.open { pointer-events: auto; }
-  #fanBtns.open .fanItem { opacity: 1; pointer-events: auto; }
+  #fanBtns.open .fanItem { opacity: 1; pointer-events: auto; transition-timing-function: var(--ease-open); }
   /* Menu column (Beta 1.14, Andrew): the items rise straight up from the hamburger in one column
      (62px steps, 50px items = 12px gaps) and sink back down - no fan arc. Nearest item animates first. */
   #fanBtns.open .fanItem:nth-of-type(1) { transform: translate(0, -310px) scale(1); transition-delay: 160ms; }
@@ -87,14 +89,14 @@
   #fanBtns.open .fanItem:nth-of-type(3) { transform: translate(0, -186px) scale(1); transition-delay: 80ms; }
   #fanBtns.open .fanItem:nth-of-type(4) { transform: translate(0, -124px) scale(1); transition-delay: 40ms; }
   #fanBtns.open .fanItem:nth-of-type(5) { transform: translate(0, -62px) scale(1); transition-delay: 0ms; }
-  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; padding-bottom: var(--sab); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-op); color: #eef2f6; border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, #sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
-  .sheet.open { transform: translateY(0); visibility: visible; transition: transform .28s ease, visibility 0s; }
+  .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
   .grabBar { width: 44px; height: 5px; border-radius: 3px; background: #4a5262; margin: 0 auto; }
   .sheet.dragging { transition: none; }
-  .sheet.snapping { transition: transform .28s ease, visibility 0s, height .26s cubic-bezier(.25,.8,.3,1), max-height .26s cubic-bezier(.25,.8,.3,1); }
+  .sheet.snapping { transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   #sheetBody { flex: 1 1 auto; min-height: 0; }
   #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 14px 6px; }
   #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
@@ -166,7 +168,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.18</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.19</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
