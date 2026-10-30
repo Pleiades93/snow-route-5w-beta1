@@ -149,14 +149,18 @@ ok('T3 button offers Undo', A.label === 'Undo');
 // what it verifies (history cleared of the finish, run restored, toast) is unchanged.
 await ev(`(() => { history = []; saveHistory(); undoSnap = null; const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing'); return true; })()`);
 await mark3();
-await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
+// Page-side step trace (audit round 3): record every finishRun/doUndo invocation and every tapGuard
+// verdict from here on, so a T4 failure prints WHICH step never fired instead of a state snapshot.
+await ev(`(() => { window.__t4log = []; for (const k of ['finishRun', 'doUndo']) { const o = window[k]; if (typeof o === 'function') window[k] = function () { window.__t4log.push(k); return o.apply(this, arguments); }; } const tg = window.tapGuard; if (typeof tg === 'function') window.tapGuard = function (k) { const r = tg(k); window.__t4log.push('guard:' + k + '=' + r); return r; }; return true; })()`);
+await ev(`(() => { $('resetBtn').click(); return true; })()`);
+await pollRead(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden') }))()`, v => v.open === true, 4000); // the pop-up must actually be open before Yes is tapped
 await ev(`(() => { $('finYes').click(); return true; })()`);
 // Hardened (Beta 1.15): T4 flaked once on a slow runner (1.14 attempt 2) even self-contained - the fixed
 // sleep(300) before the Undo tap is replaced by a state wait for the button to actually BE Undo, and the
 // final poll requires the toast in the SAME sample as the restored state, so no sample can pass state
 // while reading a stale toast.
 const diagUndo = await pollRead(`(() => JSON.stringify({ label: $('resetBtn').textContent }))()`, v => v.label === 'Undo', 6000);
-const diagPre = JSON.parse(await ev(`(() => JSON.stringify({ label: $('resetBtn').textContent, snap: !!undoSnap, h: history.length, done: doneSet.size, modal: $('finModal').classList.contains('hidden') }))()`));
+const diagPre = JSON.parse(await ev(`(() => JSON.stringify({ label: $('resetBtn').textContent, snap: !!undoSnap, h: history.length, done: doneSet.size, modal: $('finModal').classList.contains('hidden'), log: (window.__t4log || []).join(',') }))()`));
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, toast: $('toast').textContent }))()`, v => v.h === 0 && v.done === 3 && /Finish undone/.test(v.toast));
 R.diagT4 = { labelWait: diagUndo, pre: diagPre, post: A };
