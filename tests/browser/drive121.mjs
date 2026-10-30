@@ -153,10 +153,10 @@ const FIXJ = JSON.stringify(FIXTURE);
 
 // ---- session 1: the fixture loads losslessly, and a backup round-trips it ----
 let b = await launch(false);
-await b.navigate(APP_URL, 15000);
-ok('S1 fixture-era page boots', await until(async () => { const v = await b.ev(`document.querySelector('#ver')?.textContent || ''`); return /Beta 1\.1[5-9]|Beta 1\.[2-9]/.test(v) || v.includes('Beta'); }, 30000));
+ok('S1 fixture-era page boots', await waitBoot(b.ev));
 await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localStorage.setItem(k, F[k]); return true; })()`);
-await b.navigate(APP_URL, 15000);
+await b.ev('location.reload()');
+await waitBoot(b.ev);
 await sleep(1200);
 const probe = JSON.parse(await b.ev(`JSON.stringify({
   velmarAll3: pieces.Velmar.length === 14 && pieces.Velmar.every(v => v === 3),
@@ -175,7 +175,8 @@ ok('S1 backup of the fixture state is meaning-identical on all 11 keys', Object.
 await b.ev(`(() => { pieces.Woolacott = [3, 3, 3]; saveAll(); return true; })()`);
 const backupB = await b.ev(`buildBackup()`);
 await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localStorage.setItem(k, F[k]); return true; })()`);
-await b.navigate(APP_URL, 15000);
+await b.ev('location.reload()');
+await waitBoot(b.ev);
 await sleep(1200);
 ok('S2 back at fixture state A (Woolacott partial again)', await b.ev(`JSON.stringify(pieces.Woolacott)`) === '"[3,1,0]"');
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
@@ -185,7 +186,7 @@ await closeBrowser(b);
 
 // ---- session 3: relaunch - the restored state must be present -----------------
 b = await launch(false);
-await b.navigate(APP_URL, 15000);
+await waitBoot(b.ev);
 await sleep(1200);
 ok('S3 interrupted restore still landed state B (Woolacott complete)', await b.ev(`JSON.stringify(pieces.Woolacott)`) === '"[3,3,3]"');
 ok('S3 restored state is stable across the relaunch boot', await b.ev(`[...doneSet].includes('Woolacott')`));
