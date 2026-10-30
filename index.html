@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-A8Eb053Gxb54vf5IRsW7YqoeougsOJldqX8Fgo4a2B7GHcGSyFCjfrs/hpn2q/Kx' https://cdn.jsdelivr.net; style-src-elem 'sha384-3f9M3FV4shv62mxNkjUvAzOpz1qFwHqlXUOVU0ZKVrYbyqLuOalE7xFZi5WniJ9R' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-EfSuICHhUL8Hs7aBnP6c0bRWlajji85bQIUYF2k66A8ZbpeTA2m4eBvgkf+5eDqK' https://cdn.jsdelivr.net; style-src-elem 'sha384-3f9M3FV4shv62mxNkjUvAzOpz1qFwHqlXUOVU0ZKVrYbyqLuOalE7xFZi5WniJ9R' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -168,7 +168,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.26</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.27</div></div>
   </div>
   <div id="info" class="hidden">
     <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>
@@ -2120,7 +2120,7 @@ window.GLP = GLP;
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: 'https://tiles.versatiles.org/styles/colorful/style.json', night: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' };
 let glOk = false, mapNoteArmed = false, mapNoteOff = false;
-const map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 0, minZoom: 9, maxZoom: 19, dragRotate: false, pitchWithRotate: false, touchPitch: false });
+const map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 0, minZoom: 9, maxZoom: 19, maxPitch: 60 }); // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
 const routeBox = (() => { let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const nm of STREETNAMES) for (const seg of ROADS[nm]) for (const p of seg) { w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); } return { w, s, e, n }; })();
 map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28, animate: false });
 function noteMapState() { const dead = mapNoteArmed && !glOk && !mapNoteOff; $('mapNote').classList.toggle('hidden', !dead); }
@@ -2152,6 +2152,13 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       else if (sl.indexOf('water') === 0 || id.indexOf('water') === 0) kind = 'water';
       m.setLayoutProperty(L.id, 'text-font', font);
       m.setLayoutProperty(L.id, 'text-size', SIZE[kind]);
+      if (typeof isNight === 'function' && isNight()) {
+        // NIGHT READABILITY (Andrew, Beta 1.27): some of the dark style's own name colours sit almost
+        // on top of its dark road colours and vanish. Lift every basemap name to one calm light grey
+        // with a firm dark edge - readable, not loud. Night only; day keeps its native colours. (This
+        // overrules the Beta 1.6 style-native-colours call for the night style, on his road report.)
+        try { m.setPaintProperty(L.id, 'text-color', '#ccd6df'); m.setPaintProperty(L.id, 'text-halo-color', 'rgba(8,10,14,0.9)'); m.setPaintProperty(L.id, 'text-halo-width', 1.3); } catch (e2) {}
+      }
       if (kind === 'road') {
         m.setLayerZoomRange(L.id, 13, 24);
         // CLASH FIX (Andrew, Beta 1.7): on the 34 route streets the basemap's own along-street name and the
@@ -2832,14 +2839,14 @@ function glideTo(target) {
   }, 40);
 }
 function followCam() {
-  if (!dispPos || followPaused || !runStart) return;
+  if (!dispPos || followPaused || watchId == null) return; // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive; the 25% dead-zone + per-glide-tick steps keep it gradual. Trail recording and heading-up stay run-only.
   const c = map.getCanvas(); const p = projLL(dispPos);
-  const mx = c.clientWidth * 0.25, my = c.clientHeight * 0.25;
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
-  if (Math.abs(dx) > mx || Math.abs(dy) > my) map.panBy([dx, dy], { animate: false });
+  if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+  map.panBy([dx * 0.35, dy * 0.35], { animate: false }); // centre-lock (Andrew's clarification): ease a third of the way to centre on every glide tick - a gradual lock that keeps the dot kind of in the centre, never a snap and never a chase view
 }
 map.on('dragstart', () => { followPaused = true; });
-map.on('dragend', () => { northUp(); }); // he took the map over: ease back to north-up like a nav app
+map.on('dragend', () => { if (runStart) northUp(); }); // during a run: ease back to north-up like a nav app. Outside a run (Beta 1.27): a rotation/tilt he deliberately set stays put.
 // HEADING-UP (Andrew, Beta 1.14 - replaces Flip): while the camera follows during a run, the map rotates
 // so his direction of travel points up - course-up from the GPS course, not the compass and not true
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
