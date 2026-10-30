@@ -2194,6 +2194,7 @@ function addReferenceLayers() {
 function addGpsLayers() {
   if (map.getSource('gps')) return;
   map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({ id: 'gps-cone', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'cone'], paint: { 'fill-color': '#1a8cff', 'fill-opacity': 0.3 } }); // Beta 1.28: the facing beam, painted under the accuracy ring and the dot
   map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#1a8cff', 'fill-opacity': 0.12 } });
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#1a8cff', 'line-width': 1.5, 'line-opacity': 0.5 } });
   map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9, 'circle-color': '#1a8cff', 'circle-stroke-width': 3, 'circle-stroke-color': '#ffffff' } });
@@ -2849,6 +2850,13 @@ let suggested = new Set();
 function pushGps() {
   const src = map.getSource('gps'); if (!src) return;
   const feats = [];
+  if (dispPos && watchId != null && facingDeg != null) { // the facing beam (Beta 1.28): a soft wedge from the dot along the facing direction, Apple Maps style
+    const R = 46, half = 33 * Math.PI / 180, h = facingDeg * Math.PI / 180;
+    const cone = [[dispPos[1], dispPos[0]]];
+    for (let a = -half; a <= half + 0.001; a += half / 4) { const b = h + a; cone.push([dispPos[1] + (R * Math.sin(b)) / MLNG, dispPos[0] + (R * Math.cos(b)) / MLAT]); }
+    cone.push([dispPos[1], dispPos[0]]);
+    feats.push({ type: 'Feature', properties: { k: 'cone' }, geometry: { type: 'Polygon', coordinates: [cone] } });
+  }
   if (dispPos) {
     feats.push({ type: 'Feature', properties: { k: 'dot' }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
     if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispPos[1] + (R * Math.sin(th)) / MLNG, dispPos[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
@@ -2938,6 +2946,31 @@ function kfUpdate(ll, acc, now) {
   const lx = Math.max(-3, Math.min(3, kf.x.v * 0.45)), ly = Math.max(-3, Math.min(3, kf.y.v * 0.45));
   return { est, aim: [(kf.oy + kf.y.p + ly) / MLAT, (kf.ox + kf.x.p + lx) / MLNG] };
 }
+// ===== FACING (Beta 1.28, Andrew: the Apple Maps light beam on the dot) =====
+// One funnel for every facing source, smoothed around the circle so the beam never
+// snaps. Sources: the GPS course while moving (truest inside a steel vehicle), the
+// device compass while still. On iOS the compass needs a permission granted from a
+// tap, so it is requested from startGps - a genuine user gesture.
+let facingDeg = null, lastCourseAt = 0, compassOn = false;
+function setFacing(deg, w) {
+  if (typeof deg !== 'number' || isNaN(deg)) return;
+  const before = facingDeg;
+  facingDeg = facingDeg === null ? deg : ((facingDeg + headDelta(facingDeg, deg) * (w || 0.3)) % 360 + 360) % 360;
+  if (watchId != null && dispPos && (before === null || Math.abs(headDelta(before, facingDeg)) > 1.5)) pushGps();
+}
+function startCompass() {
+  if (compassOn) return;
+  const onOri = e => {
+    let deg = null;
+    if (typeof e.webkitCompassHeading === 'number') deg = e.webkitCompassHeading; // iOS: degrees clockwise from north, ready to use
+    else if (e.absolute && typeof e.alpha === 'number') deg = (360 - e.alpha) % 360;
+    if (deg === null || Date.now() - lastCourseAt < 3000) return; // while the course is fresh it outranks the compass
+    setFacing(deg, 0.25);
+  };
+  const listen = () => { compassOn = true; window.addEventListener('deviceorientationabsolute', onOri, true); window.addEventListener('deviceorientation', onOri, true); };
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') listen(); }).catch(() => {});
+  else listen();
+}
 function acceptFix(pos) {
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
   if (!Number.isFinite(ll[0]) || !Number.isFinite(ll[1]) || Math.abs(ll[0]) > 90 || Math.abs(ll[1]) > 180) return; // audit G1: never let a non-finite or off-Earth fix reach the smoothing, trail or coverage math
@@ -2950,6 +2983,7 @@ function acceptFix(pos) {
   gpsPos = sm;
   glideTo(aim);
   updateHeading(pos.coords.heading, speed);
+  if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
   if (firstFix && (gpsFromRun || watchId != null)) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); followPaused = false; }
@@ -2990,7 +3024,7 @@ function gpsError(e) {
 function startGps(fromRun) {
   if (watchId != null) { if (fromRun) gpsFromRun = true; return; }
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
-  gpsFromRun = !!fromRun; followPaused = false;
+  gpsFromRun = !!fromRun; followPaused = false; startCompass();
   watchId = navigator.geolocation.watchPosition(acceptFix, gpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { stopGps(true); startGps(gpsFromRun); } }, 15000);
