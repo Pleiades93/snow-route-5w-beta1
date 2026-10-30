@@ -123,9 +123,7 @@ const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.n
 ok('G0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, v => v, 30000));
 
 // GPS dot diagnostic (Andrew's phone report, 2026-10-30): fixes arrive and the
-// camera follows, but the position dot does not show. These checks ask the map
-// what it actually renders at the fix point, before and after the two events
-// that rebuild layers: marking (engine sync) and a basemap swap (restack).
+// camera follows, but the position dot does not show.
 const FIX = JSON.parse(await ev(`(() => { const p = SAMPLES.Velmar[10]; return JSON.stringify({ lat: p[0], lng: p[1] }); })()`));
 await ev('(() => { acceptFix({ coords: { latitude: ' + FIX.lat + ', longitude: ' + FIX.lng + ', accuracy: 10, speed: 0, heading: null }, timestamp: Date.now() }); return true; })()');
 const dispOk = await poll120('dispPos && Math.abs(dispPos[0] - ' + FIX.lat + ') < 0.0002 && Math.abs(dispPos[1] - ' + FIX.lng + ') < 0.0002', v => v, 8000);
@@ -142,8 +140,17 @@ const probe = async () => { const raw = await ev(`(() => { try {
   return JSON.stringify({ layerExists: !!lay, vis: lay ? map.getLayoutProperty('gps-dot', 'visibility') : null, feats, dotHits, stack });
 } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`);
   return typeof raw === 'string' ? JSON.parse(raw) : { __err: 'non-string evaluate result' }; };
+
+const DIAG = JSON.parse(await ev(`(() => { try {
+  const before = { centres: !!map.getSource('centres'), ref: !!map.getSource('ref'), gps: !!map.getSource('gps'), trail: !!map.getSource('trail') };
+  let callErr = null; try { addGpsLayers(); } catch (e) { callErr = String(e && e.message || e); }
+  const after = { gps: !!map.getSource('gps'), dotLayer: !!map.getLayer('gps-dot') };
+  if (after.gps) pushGps();
+  return JSON.stringify({ before, callErr, after });
+} catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`));
+await sleep(400);
 let P = await probe();
-ok('G1 gps layers exist and the source carries the dot after a fix | ' + JSON.stringify(P),
+ok('G1 gps layers exist and the source carries the dot after a fix | diag ' + JSON.stringify(DIAG) + ' probe ' + JSON.stringify(P),
   P.layerExists && P.vis !== 'none' && Array.isArray(P.feats) && P.feats.includes('dot'));
 ok('G2 the dot is actually rendered at the fix point | stack ' + JSON.stringify(P.stack), P.dotHits >= 1);
 
