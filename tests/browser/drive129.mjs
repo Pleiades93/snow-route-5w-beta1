@@ -112,7 +112,7 @@ ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 
 const base = JSON.parse(await ev(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; return JSON.stringify({ lat: mid[0], lng: mid[1] }); })()`));
 const gpsData = async () => JSON.parse(await ev(`(() => { const d = (map.getSource('gps') || {})._data || { features: [] }; return JSON.stringify(d.features.map(f => f.properties.k)); })()`));
-const coneBearing = async () => ev(`(() => { const d = map.getSource('gps')._data; const cone = d.features.find(f => f.properties.k === 'cone'); if (!cone) return -1; const cs = cone.geometry.coordinates[0]; const c = cs[0]; let far = null, fd = -1; for (const p of cs) { const dd = Math.hypot((p[0]-c[0]) * 80386, (p[1]-c[1]) * 111320); if (dd > fd) { fd = dd; far = p; } } return Math.round(((Math.atan2((far[0]-c[0]) * 80386, (far[1]-c[1]) * 111320) * 180 / Math.PI) + 360) % 360); })()`);
+const coneBearing = async () => ev(`(() => { const d = map.getSource('gps')._data; const cone = d.features.find(f => f.properties.k === 'cone'); if (!cone) return -1; const cs = cone.geometry.coordinates[0]; const c = cs[0]; const arc = cs.slice(1, -1); let sx = 0, sy = 0; for (const p of arc) { sx += (p[0]-c[0]) * 80386; sy += (p[1]-c[1]) * 111320; } return Math.round(((Math.atan2(sx, sy) * 180 / Math.PI) + 360) % 360); })()`); // the fan's arc vertices all sit at the same radius, so a farthest-vertex probe is a float tie-break lottery (it read 23 for a 350 beam: the +33 edge) - the arc's centroid points exactly along the facing
 const bangDiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
 
 await ev(`(() => { watchId = 4242; followPaused = false; return true; })()`);
