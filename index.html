@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-4m9ukVfYjDT4K1H+MakuIBR8OxXi3GsFDaD/zQN8Sf2baw9gJVTrnTZAVaAGdTU6' https://cdn.jsdelivr.net; style-src-elem 'sha384-g/hE8FL4eCwcauTvE1jEtjB14KXGCnMjJEwyyv4zCqRmsF59fVoXbqYqSRedKb2T' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yld++SRn1dZaP6Es5dwVTPp4HSmLUEAfa8nl0Id8pyNSgKA36z1RV/RWxeCGplh6' https://cdn.jsdelivr.net; style-src-elem 'sha384-g/hE8FL4eCwcauTvE1jEtjB14KXGCnMjJEwyyv4zCqRmsF59fVoXbqYqSRedKb2T' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -167,7 +167,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.15</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.16</div></div>
     <div class="spacer"></div>
     <div class="count" id="count">0 of 34 completed · 0%</div>
   </div>
@@ -329,7 +329,8 @@ const names = STREETNAMES; // the paint engine's name for the street list
 
 // ===== STATE =====
 const STREETSET = new Set(STREETNAMES);
-let doneSet = new Set(parseJ(lsGet(LS.done), []));
+const _doneRaw = parseJ(lsGet(LS.done), []);
+let doneSet = new Set(Array.isArray(_doneRaw) ? _doneRaw.filter(n => typeof n === 'string' && STREETSET.has(n)) : []); // audit D2: a non-array value (legacy object, number) made new Set() throw and killed the boot; loadSides re-derives this from pieces below regardless
 let doneTimes = parseJ(lsGet(LS.times), {});
 for (const k of Object.keys(doneTimes)) { if (typeof doneTimes[k] !== 'string' || isNaN(Date.parse(doneTimes[k]))) delete doneTimes[k]; }
 let doneVia = parseJ(lsGet(LS.via), {});
@@ -371,7 +372,7 @@ function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return 
   if (raw && typeof raw === 'object') { if (raw.p) { P = raw.p; T = raw.t || {}; } else P = raw; }
   for (const n of STREETNAMES) {
     const count = STRETCH[n].parts.length;
-    let arr = (P && Array.isArray(P[n]) && P[n].length === count) ? P[n].slice() : null;
+    let arr = (P && Array.isArray(P[n]) && P[n].length === count) ? P[n].map(v => (v === 1 || v === 2 || v === 3) ? v : 0) : null; // audit G3: normalize side values to the 0..3 the app writes - a crafted 99 otherwise counted sides via bitwise reads while streetComplete (===3) disagreed
     if (!arr) arr = new Array(count).fill(doneSet.has(n) ? 3 : 0);
     pieces[n] = arr;
     pieceTimes[n] = (T && T[n]) || {};
@@ -2674,8 +2675,13 @@ $('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) retur
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
 let undoSnap = null, undoTimer = 0;
 $('resetBtn').addEventListener('click', () => {
-  if (!tapGuard('resetBtn')) return;
+  // Undo is checked BEFORE the double-tap guard (audit finding, drive89 T4): the guard exists to stop a
+  // repeated OPEN of the finish pop-up, but the same button means Undo once a finish lands - a fast
+  // Finish > Yes > Undo sequence lands inside the 400ms guard window and the Undo tap was silently
+  // swallowed (proven by drive89's state dump: label Undo, snapshot present, tap never acted). doUndo
+  // nulls the snapshot, so it cannot double-fire; the pop-up branch keeps its guard.
   if (undoSnap) { doUndo(); return; }
+  if (!tapGuard('resetBtn')) return;
   const nDone = doneSet.size, nNotes = Object.keys(notes).length;
   $('finMsg').textContent = (nDone || nNotes)
     ? (nDone + ' of 34 streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : ''))
@@ -2789,7 +2795,7 @@ $('noteYes').addEventListener('click', () => {
 let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, fixWin = [], lastFixAt = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
 const SAMPLES = {};
 (function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
-for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => i < SAMPLES[n].length); }
+for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count
 let suggested = new Set();
 function pushGps() {
   const src = map.getSource('gps'); if (!src) return;
@@ -2849,6 +2855,7 @@ function updateHeading(hdg, speed) {
 function northUp() { smHeading = null; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); }
 function acceptFix(pos) {
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
+  if (!Number.isFinite(ll[0]) || !Number.isFinite(ll[1]) || Math.abs(ll[0]) > 90 || Math.abs(ll[1]) > 180) return; // audit G1: never let a non-finite or off-Earth fix reach the smoothing, trail or coverage math
   if (acc > 65 && lastGood && now - lastGood.at < 10000) return;
   if (acc <= 65) lastGood = { ll, at: now };
   const speed = pos.coords.speed;
