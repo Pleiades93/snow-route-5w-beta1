@@ -124,7 +124,7 @@ ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 
 // V1: header buttons - in bounds, no overlaps, no horizontal overflow (default state)
 let rects = JSON.parse(await ev(`JSON.stringify(${RECTS('#hud button')})`));
-ok('V1 header buttons all inside the viewport', rects.length >= 5 && rects.every(inView));
+ok('V1 header buttons all inside the viewport | rects ' + JSON.stringify(rects), rects.length >= 5 && rects.every(inView));
 ok('V1 header buttons do not overlap each other', noOverlap(rects));
 A = await J(`({ sw: $('hud').scrollWidth, cw: $('hud').clientWidth })`);
 ok('V1 header content does not overflow horizontally', A.sw <= A.cw + 1);
@@ -141,7 +141,7 @@ ok('V2 with selection strip: header buttons do not overlap', noOverlap(rects));
 const chips = JSON.parse(await ev(`JSON.stringify(${RECTS('.sideChip .chipBtn')})`));
 ok('V3 two side chips are shown', chips.length === 2);
 ok('V3 chips are 40px tap targets', chips.every(c => Math.abs(c.w - 40) <= 2 && Math.abs(c.h - 40) <= 2));
-ok('V3 chips inside the viewport and not overlapping', chips.every(inView) && !overlaps(chips[0], chips[1]));
+ok('V3 chips inside the viewport and not overlapping | chips ' + JSON.stringify(chips), chips.every(inView) && !overlaps(chips[0], chips[1]));
 
 // V4: menu fan - five 50px items in a column with clear gaps, all in bounds
 await ev(`(() => { deselect(); $('gearBtn').click(); return true; })()`);
@@ -156,7 +156,7 @@ ok('V4 fan items have clear vertical gaps (no overlap)', sorted.every((f, i) => 
 await ev(`(() => { closeFan(); openList(); return true; })()`);
 await sleep(600);
 A = await J(`(() => { const r = $('sheet').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; })()`);
-ok('V5 open list sheet fits the viewport', inView(A) && A.y >= 0);
+ok('V5 open list sheet fits the viewport | sheet ' + JSON.stringify(A), inView(A) && A.y >= 0);
 await ev(`(() => { closeSheets(); return true; })()`);
 await sleep(600);
 A = await J(`(() => { const e = $('sheet'); const r = e.getBoundingClientRect(); return { vis: getComputedStyle(e).visibility, top: r.top }; })()`);
