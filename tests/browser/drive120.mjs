@@ -165,7 +165,7 @@ ok('V4 tab items are equal width, inside the viewport, no overlaps | tabs ' + JS
   tabs.every(inView) && noOverlap(tabs) && Math.max(...tabs.map(t => t.w)) - Math.min(...tabs.map(t => t.w)) <= 3);
 
 // V5: sheets - open sheet fits the viewport; closed sheet is truly invisible
-await ev(`(() => { closeFan(); $('listBtn').click(); return true; })()`); // the List button toggles the sheet itself; there is no openList() function
+await ev(`(() => { $('listBtn').click(); return true; })()`); // the List button toggles the sheet itself; there is no openList() function
 await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
 await sleep(600);
 A = await J(`(() => { const r = $('sheet').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; })()`);
@@ -176,9 +176,7 @@ A = await J(`(() => { const e = $('sheet'); const r = e.getBoundingClientRect();
 ok('V5 closed sheet is invisible (hidden or fully below the viewport)', A.vis === 'hidden' || A.top >= 899);
 
 // V6: night theme - header measurements hold there too
-await ev(`(() => { $('gearBtn').click(); return true; })()`);
-await sleep(500);
-await ev(`(() => { $('nightBtn').click(); return true; })()`);
+await ev(`(() => { $('nightBtn').click(); return true; })()`); // the Night tab is directly tappable now
 await sleep(900);
 A = await J(`({ night: document.body.classList.contains('night') })`);
 D = await dockGeom();

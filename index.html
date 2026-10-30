@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-74Wn9bIwKv7LmWsm+0y694KacPGE72qOyzPILtZeOlHWGX2zNqYAQc6B5HR2bnu2' https://cdn.jsdelivr.net; style-src-elem 'sha384-D3IDKB5bPn3Ykjsl4AyxAECv7R0N7mRgN2fyAdciIKA/5tASZTswe0qylzfEQig9' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-74Wn9bIwKv7LmWsm+0y694KacPGE72qOyzPILtZeOlHWGX2zNqYAQc6B5HR2bnu2' https://cdn.jsdelivr.net; style-src-elem 'sha384-tf7H62y2FI/S7nvFwE3l9Sf6HJDOhsysp/RihhyW9XxZzENAkG2xSIxALs9akMnb' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -77,7 +77,7 @@
   .tabLbl { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
   .tabItem.on { color: #4da3ff; }
   .tabItem.red { color: #ff6b5e; }
-  #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 74px + var(--sab)); z-index: 1000; display: flex; align-items: center; gap: 18px; } /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
+  #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 74px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; } /* flex-start + the dock buttons' 24px top margin centres them on the big circle, not on the taller slot (Beta 1.23 fix - drive120 V1 measured a 29px offset) */ /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
   .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; border: none; background: var(--glass-night); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #f2f4f8; color: #22262e; box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .dockBtn svg { width: 27px; height: 27px; }
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
