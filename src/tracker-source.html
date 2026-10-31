@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Route 5W">
+<meta name="apple-mobile-web-app-title" content="Snow Route Beta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#14161c">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Route 5W Beta — Snow Tracker</title>
+<title>Snow Route Beta</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V" crossorigin="anonymous">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -196,7 +196,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.35</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.36</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3110,7 +3110,7 @@ function fmtStamp(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.toLoc
 function buildReport() {
   const byTime = m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || ''));
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
-  const L = ['Route 5W — snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of 34'];
+  const L = ['Snow Route — snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of 34'];
   if (ts.length) {
     L.push('Started: ' + fmtStamp(new Date(ts[0]).toISOString()) + '   Last: ' + fmtStamp(new Date(ts[ts.length - 1]).toISOString()) + '   Duration: ' + fmtDur(ts[ts.length - 1] - ts[0]));
     if (trail.length > 1) L.push('GPS distance since start: ' + trailKm(ts[0]).toFixed(1) + ' km');
@@ -3129,7 +3129,7 @@ function buildReport() {
   return L.join('\n');
 }
 function buildGpx() {
-  let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Route 5W Beta"><trk><name>Route 5W trail</name><trkseg>\n';
+  let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n';
   for (const p of trail) g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
   g += '</trkseg></trk></gpx>';
   return g;
@@ -3175,7 +3175,7 @@ $('xClr').addEventListener('click', () => {
   if (xMode === 'gpx') showX('gpx');
 });
 function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure
-  if (!parsed || parsed.app !== 'snow5w-backup' || !parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Route 5W backup', 3200); return; }
+  if (!parsed || parsed.app !== 'snow5w-backup' || !parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return; }
   if (parsed.v !== 1) { toast('Unsupported backup version (' + String(parsed.v) + ') — nothing was changed', 3200); return; }
   const JSON_SHAPE = { [LS.done]: 'arr', [LS.times]: 'obj', [LS.hist]: 'arr', [LS.notes]: 'obj', [LS.via]: 'obj', [LS.trail]: 'arr', [LS.cov]: 'obj', [LS.sides]: 'obj' };
   const entries = [];

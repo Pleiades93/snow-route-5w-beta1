@@ -2,7 +2,7 @@
 
 ## Overview
 
-Snow Route 5W Beta is a single-page app for one operator clearing driveway
+Snow Route Beta is a single-page app for one operator clearing driveway
 windrows on both sides of a 34-street route in Vaughan, Ontario. It is a
 from-scratch MapLibre GL application (no Leaflet): the vector basemap IS the
 map, and the tracker's own roads are painted as GeoJSON layers inserted into
