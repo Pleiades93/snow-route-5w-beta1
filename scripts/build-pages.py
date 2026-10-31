@@ -51,7 +51,7 @@ def verify(bundle: str, src_text: str, sw_text: str) -> None:
     stamped = csp_stamp.stamped_policy(bundle)
     assert stamped is not None, 'CSP FAIL: bundle carries no Content-Security-Policy meta'
     assert stamped == csp_stamp.compute_policy(bundle), 'CSP FAIL: stamped policy does not match the bundle code - stale stamp'
-    for host in ('tiles.versatiles.org', 'basemaps.cartocdn.com', 'tiles.basemaps.cartocdn.com'):
+    for host in ('tiles.basemaps.cartocdn.com', 'protomaps.github.io'):
         assert f'https://{host}' in stamped, f'CSP FAIL: policy omits map host {host} - the styles fetch tiles/glyphs/sprites from it (2026-10-29 dark-mode incident: tiles.basemaps.cartocdn.com was missing and the whole dark basemap was policy-blocked)'
     print('CSP check: PASS (stamped policy hash matches the bundle\'s own script/style)')
     r = csp_stamp.strip_stamp(bundle)
