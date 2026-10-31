@@ -120,7 +120,6 @@ const KB = JSON.parse(await ev(`(() => { const cs = getComputedStyle($('sheet'))
 ok('K1 keyboard up: sheet stops animating and may use the visible height | ' + JSON.stringify(KB), KB.kb === true && KB.dur === '0s' && KB.maxH > 800);
 await ev(`(() => { document.querySelector('.noteEd textarea').blur(); return true; })()`); await sleep(200);
 ok('K2 keyboard down: the sheet returns to normal motion', await ev(`document.body.classList.contains('kb')`) === false);
-await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Velmar')]; r.querySelector('.nwrap').click(); return true; })()`); await sleep(400); // reopen the editor for the auto-save flow below
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Driveway at #12 blocked by car'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 await sleep(800);
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snow5w.v4.notes') || '', hint: document.querySelector('.noteEd .nhint').textContent, nt: noteTextOf('Velmar') }))()`));

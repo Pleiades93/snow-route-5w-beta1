@@ -1919,7 +1919,7 @@ function firstSymbolId() {
 // Rounds 30-32 (Andrew): place-name tuning on the baseGLM. The
 // vector styles already carry every place name with zoom bands and
 // population-sorted collision thinning (the Apple Maps behaviour);
-const PLACE_EARLY = { suburb: 11, quarter: 12, neighbourhood: 12.5, hamlet: 11.5 };
+const PLACE_EARLY = { suburb: 9, quarter: 9.5, neighbourhood: 10, hamlet: 9, village: 9 }; // how early each settlement kind may appear - the ONE owner of place-label zooms (Beta 1.31, Andrew: both maps carry more cities and towns; the stock styles held suburbs/hamlets/quarters/neighbourhoods back to z11-14). tunePlaceLabels also caps place labels at 15.5, where the route labels take over.
 function placeClass(id) {
   if (id.includes('neighbourhood') || id.includes('neighborhood')) return 'neighbourhood';
   if (id.includes('quarter')) return 'quarter';
@@ -2191,15 +2191,12 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
         try { m.setPaintProperty(L.id, 'text-color', '#ccd6df'); m.setPaintProperty(L.id, 'text-halo-color', 'rgba(8,10,14,0.9)'); m.setPaintProperty(L.id, 'text-halo-width', 1.3); } catch (e2) {}
       }
       if (kind === 'place' && (sl === 'place_labels' || sl === 'places')) {
-        // MORE PLACES (Andrew, Beta 1.31): both ready-made styles hold the smaller settlements back
-        // until deep zooms - around the route that means most local names (suburbs, hamlets, quarters,
-        // neighbourhoods) only appear at z13-14+. Bring every settlement layer in earlier: minzoom
-        // drops 2.5 levels (floor 9; layers already earlier keep theirs, which also spares the
-        // country/state layers), and a zoom gate buried in a filter (the night style holds
-        // neighbourhoods to z14 inside its hamlet layer) relaxes to 11.5. Native collision still
-        // thins a crowded view on its own.
-        const mz = typeof L.minzoom === 'number' ? L.minzoom : 0;
-        if (mz > 9) m.setLayerZoomRange(L.id, Math.max(9, mz - 2.5), typeof L.maxzoom === 'number' ? L.maxzoom : 24);
+        // MORE PLACES (Andrew, Beta 1.31): a zoom gate buried in a filter (the night style holds
+        // neighbourhoods back to z14 inside its hamlet layer's filter) relaxes to 11.5 so it agrees
+        // with the earlier arrival the PLACE_EARLY zooms now allow. Native collision still thins a
+        // crowded view on its own.
+        // (Zoom ranges themselves live in ONE place: the engine's PLACE_EARLY table, applied by
+        // tunePlaceLabels before this hook runs. What remains here is the filter-side gate.)
         if (L.filter) {
           const relax = f => Array.isArray(f) ? f.map((x, i) => (i === 2 && f[0] === '>=' && Array.isArray(f[1]) && f[1][0] === 'zoom' && typeof x === 'number' && x > 11.5) ? 11.5 : relax(x)) : f;
           const nf = relax(L.filter);
