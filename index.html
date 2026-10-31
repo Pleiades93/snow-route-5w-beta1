@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-N22iqTFswP6sPP+y7am8TOGmA1a0MGy1svhBmYrSPlPlkNrDffM9+7Z8UJJ+Roxf' https://cdn.jsdelivr.net; style-src-elem 'sha384-FkgQgXWZJ4gLZckInyiL8sZK+HV01uf30QqLvOXj391KO/j0/b549AalbQ2NCIxo' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-ReTUcG2F+eb+A9UFUmUsl+/RlfXp8jjxE4iOrNIpOUl8gJ7+PSOlj+VnNlB3X8bX' https://cdn.jsdelivr.net; style-src-elem 'sha384-FkgQgXWZJ4gLZckInyiL8sZK+HV01uf30QqLvOXj391KO/j0/b549AalbQ2NCIxo' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -197,7 +197,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.40</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.41</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -1943,7 +1943,7 @@ function tunePlaceLabels() {
     if (!cls || L.id.includes('dot')) continue;   // low-zoom city dots keep stock behaviour
     const early = PLACE_EARLY[cls];
     const minZ = early !== undefined ? (L.minzoom === undefined ? early : Math.min(L.minzoom, early)) : (L.minzoom || 0); // a layer with NO stock gate (Protomaps places) takes the table value as its gate
-    GLM.setLayerZoomRange(L.id, minZ, 15.5);
+    if (L.minzoom !== minZ || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 15.5) GLM.setLayerZoomRange(L.id, minZ, 15.5); // Beta 1.41: no-op guard (see glHideLabels) - skip when the range already matches
   }
 }
 function addStack() {
@@ -2164,7 +2164,7 @@ const PM_NIGHT = {"version":8,"name":"protomaps-dark","glyphs":"https://protomap
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // Beta 1.33 (Andrew's pick): BOTH basemaps are Protomaps - one map in light + dark flavours - embedded by pmstyles.js, so a day/night switch is a local setStyle: nothing to fetch, nothing to break mid-switch
 let glOk = false, mapNoteArmed = false, mapNoteOff = false, basemapDead = false, tilesOk = 0;
-const map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 0, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
+const map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
 const routeBox = (() => { let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const nm of STREETNAMES) for (const seg of ROADS[nm]) for (const p of seg) { w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); } return { w, s, e, n }; })();
 map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28, animate: false });
 function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); }
@@ -2196,6 +2196,9 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
     // 15.4-16.4, restyled at creation for the current theme. The originals exclude route
     // names by filter instead. Rebuilt from the embedded style spec on every restack.
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
+    const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // Beta 1.41: no-op guards - every redundant style mutation re-triggers symbol placement in the workers, and this pass runs on EVERY stack build (boot, every theme flip, every marking tap). When the value already matches, the mutation is skipped; the end state is identical.
+    const setP = (id, k, v) => { if (!eq(m.getPaintProperty(id, k), v)) { try { m.setPaintProperty(id, k, v); } catch (e2) {} } };
     const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f; // the generated styles author kind filters in legacy form; as expressions they must be rebuilt or any combined filter is rejected whole
     for (const baseId of ['roads_labels_major', 'roads_labels_minor']) {
       const cloneId = baseId + '-route';
@@ -2219,14 +2222,14 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       if (sl === 'street_labels' || sl === 'streets_polygons_labels' || sl === 'roads' || id.indexOf('roadname') === 0 || id.indexOf('label-street') === 0 || id.indexOf('label-motorway') === 0) kind = 'road';
       else if (sl === 'place_labels' || sl === 'places' || sl === 'boundary_labels' || id.indexOf('place_') === 0 || id.indexOf('label-place') === 0 || id.indexOf('label-boundary') === 0) kind = 'place';
       else if (sl.indexOf('water') === 0 || id.indexOf('water') === 0) kind = 'water';
-      m.setLayoutProperty(L.id, 'text-font', font);
-      m.setLayoutProperty(L.id, 'text-size', SIZE[kind]);
+      setL(L.id, 'text-font', font);
+      setL(L.id, 'text-size', SIZE[kind]);
       if (typeof isNight === 'function' && isNight()) {
         // NIGHT READABILITY (Andrew, Beta 1.27): some of the dark style's own name colours sit almost
         // on top of its dark road colours and vanish. Lift every basemap name to one calm light grey
         // with a firm dark edge - readable, not loud. Night only; day keeps its native colours. (This
         // overrules the Beta 1.6 style-native-colours call for the night style, on his road report.)
-        try { m.setPaintProperty(L.id, 'text-color', '#ccd6df'); m.setPaintProperty(L.id, 'text-halo-color', 'rgba(8,10,14,0.9)'); m.setPaintProperty(L.id, 'text-halo-width', 1.3); } catch (e2) {}
+        setP(L.id, 'text-color', '#ccd6df'); setP(L.id, 'text-halo-color', 'rgba(8,10,14,0.9)'); setP(L.id, 'text-halo-width', 1.3);
       }
       if (kind === 'place' && (sl === 'place_labels' || sl === 'places')) {
         // MORE PLACES (Andrew, Beta 1.31): a zoom gate buried in a filter (the night style holds
@@ -2242,7 +2245,7 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
         }
       }
       if (kind === 'road') {
-        m.setLayerZoomRange(L.id, 13, 24);
+        if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
         // LABEL HANDOVER (Andrew, Beta 1.40): zoomed out, OUR titles name the route streets;
         // zooming in, the basemap's own names take over - on route streets they fade IN across
         // 15.4-16.4 while our titles fade OUT on the same band (engine labelpts), so the two
@@ -2253,13 +2256,14 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
           // The originals keep every NON-route name; route names move to the clones above.
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
-          try { m.setFilter(L.id, baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]); } catch (e2) {}
+          const targetF = baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
+          if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
           if (!(typeof isNight === 'function' && isNight())) {
             // DAY READABILITY (Andrew, Beta 1.40): the stock day road names are pale and wash
             // out over the app's coloured route lines. Darken them to the app's own label ink
             // with a firm light edge - the same treatment our titles use. Day only; the night
             // branch above already lifts every name for the dark map.
-            try { m.setPaintProperty(L.id, 'text-color', '#333333'); m.setPaintProperty(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); m.setPaintProperty(L.id, 'text-halo-width', 1.5); } catch (e2) {}
+            setP(L.id, 'text-color', '#333333'); setP(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); setP(L.id, 'text-halo-width', 1.5);
           }
         }
       }
@@ -3286,6 +3290,8 @@ $('xPre').addEventListener('click', async () => {
         const maxz = Math.min(14, src.maxzoom || 14);
         // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
         for (let z = 10; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+        // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (routeBox + margin, derived from the app's own route bounds so it cannot drift): 15 tiles. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
+        if ((src.maxzoom || 14) >= 15) { const cb = { w: routeBox.w - 0.005, s: routeBox.s - 0.004, e: routeBox.e + 0.005, n: routeBox.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); }
       }
     }
     const list = [...urls];
@@ -3375,6 +3381,10 @@ if ('serviceWorker' in navigator) {
       // install is offline-ready by construction - no style fetch exists to warm. (Tiles and
       // glyphs still warm through ordinary use and the Preload button.)
       window.__warm = 'embedded';
+      // Beta 1.41: pre-warm the OTHER theme's sprites through the worker - the two sprite
+      // flavours are a theme flip's only network fetch, so the first flip should never
+      // wait on them. (After an offline Preload both flavours are cached already.)
+      try { const otherKey = isNight() ? 'day' : 'night'; const oSpr = GL_STYLES[otherKey] && (Array.isArray(GL_STYLES[otherKey].sprite) ? GL_STYLES[otherKey].sprite[0].url : GL_STYLES[otherKey].sprite); if (oSpr) { window.__spriteWarm = otherKey; for (const suf of ['.json', '.png', '@2x.json', '@2x.png']) fetch(oSpr + suf).catch(() => {}); } } catch (e) {}
     } catch (e) { window.__warm = 'error:' + (e && e.message || e); }
   }).catch(() => { window.__warm = 'no-worker'; });
 }
