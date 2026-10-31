@@ -159,20 +159,22 @@ ok('T3 Settings rises with Update and Backup inside (Pack D icons + labels) | ' 
 await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
 ok('T3 Settings closes on a second tap', await ev(`$('setMenu').classList.contains('open')`) === false);
 
-// P1 (Beta 1.31, Andrew): the day style's smaller settlements arrive early now.
-const PL1 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L.minzoom; return JSON.stringify({ vil: byId['label-place-village'], ham: byId['label-place-hamlet'], nei: byId['label-place-neighbourhood'] }); })()`));
-ok('P1 day map lets smaller places in early (village 8, hamlet 8, neighbourhood 9 - the PLACE_EARLY table) | ' + JSON.stringify(PL1),
-  PL1.vil === 8 && PL1.ham === 8 && PL1.nei === 9);
+// P1 (Beta 1.33, Protomaps): ONE places system - localities (cities/towns/villages) are
+// gated by the tile data itself, size by size (the Apple/Google ladder); the app's tuning
+// owns the neighbourhood layer's arrival (9) and the 15.5 cap where route labels take over.
+const PL1 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = { mn: L.minzoom, mx: L.maxzoom }; return JSON.stringify({ sub: byId['places_subplace'], loc: byId['places_locality'] }); })()`));
+ok('P1 day map: Protomaps place ladder (neighbourhood layer in at 9, places capped at 15.5) | ' + JSON.stringify(PL1),
+  !!PL1.sub && PL1.sub.mn === 9 && !!PL1.loc && PL1.loc.mx === 15.5);
 // P3: the zooms are only a promise - prove the little places actually RENDER at a wide view.
 await ev(`(() => { map.jumpTo({ center: [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2], zoom: 10.5 }); return true; })()`);
 let placeCount = 0;
-for (let i = 0; i < 24 && placeCount < 5; i++) { await sleep(500); placeCount = await ev(`map.queryRenderedFeatures({ layers: map.getStyle().layers.filter(l => l.id.indexOf('label-place') === 0).map(l => l.id) }).filter(f => f.properties && f.properties.name).length`); }
+for (let i = 0; i < 24 && placeCount < 5; i++) { await sleep(500); placeCount = await ev(`map.queryRenderedFeatures({ layers: ['places_locality', 'places_subplace'] }).filter(f => f.properties && f.properties.name).length`); }
 ok('P3 at z10.5 the day map renders named little places, not just permits them | count ' + placeCount, placeCount >= 5);
 // P3b (Andrew): zoomed out until the route is a dot, the REGION must still read like a map -
 // the surrounding municipalities on the labels, so he can keep his bearings.
 await ev(`(() => { map.jumpTo({ center: [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2], zoom: 9.2 }); return true; })()`);
 let regionNames = [];
-for (let i = 0; i < 24; i++) { await sleep(500); regionNames = JSON.parse(await ev(`JSON.stringify(map.queryRenderedFeatures({ layers: ['label-place-city', 'label-place-town'] }).map(f => f.properties && f.properties.name).filter(Boolean))`)); if (['Vaughan', 'Richmond Hill', 'Markham', 'Toronto', 'King City', 'Aurora', 'Newmarket'].filter(n => regionNames.includes(n)).length >= 2) break; }
+for (let i = 0; i < 24; i++) { await sleep(500); regionNames = JSON.parse(await ev(`JSON.stringify(map.queryRenderedFeatures({ layers: ['places_locality'] }).map(f => f.properties && f.properties.name).filter(Boolean))`)); if (['Vaughan', 'Richmond Hill', 'Markham', 'Toronto', 'King City', 'Aurora', 'Newmarket'].filter(n => regionNames.includes(n)).length >= 2) break; }
 ok('P3b at dot-zoom (z9.2) the surrounding cities/towns are on the map | ' + JSON.stringify(regionNames.slice(0, 14)),
   ['Vaughan', 'Richmond Hill', 'Markham', 'Toronto', 'King City', 'Aurora', 'Newmarket'].filter(n => regionNames.includes(n)).length >= 2);
 await ev(`(() => { $('homeBtn').click(); return true; })()`); await sleep(600);
@@ -203,12 +205,30 @@ const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el)
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')), menuBg: surf($('setMenu')) }); })()`));
 ok('T4 night menus share the deep blue-black (bar = sheets = pop-up), text bright | ' + JSON.stringify(T4),
   T4.sheetBg === 'rgba(7, 10, 17, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
-const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L.minzoom; return JSON.stringify({ vil: byId['place_villages'], sub: byId['place_suburbs'], ham: byId['place_hamlet'] }); })()`));
-ok('P2 night map too: villages 8, suburbs 8, hamlets 8 | ' + JSON.stringify(PL2),
-  PL2.vil === 8 && PL2.sub === 8 && PL2.ham === 8);
+const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = { mn: L.minzoom, mx: L.maxzoom }; return JSON.stringify({ sub: byId['places_subplace'], loc: byId['places_locality'] }); })()`));
+ok('P2 night map too: same Protomaps ladder (subplace 9, locality capped 15.5) | ' + JSON.stringify(PL2),
+  !!PL2.sub && PL2.sub.mn === 9 && !!PL2.loc && PL2.loc.mx === 15.5);
 await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); return true; })()`); await sleep(300);
 const NAC = await ev(`getComputedStyle($('selPop')).boxShadow`);
 ok('P4 the colour edge survives the night theme (mint for the completed Woolacott) | ' + NAC, NAC.includes('6, 214, 160'));
+await ev(`(() => { markUndone('Woolacott'); deselect(); return true; })()`);
+
+// P5 (Beta 1.33, Andrew: "make sure nothing breaks when switching and everything stays
+// the same"): with a street done, a selection up and the camera moved off home, flip
+// night -> day -> night and prove selection, progress, camera, route stack and the tuned
+// place zooms survive EVERY swap untouched.
+await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); map.jumpTo({ center: [-79.5595, 43.8155], zoom: 14.2 }); return true; })()`); await sleep(500);
+const swSnap = async () => JSON.parse(await ev(`(() => { const L = {}; for (const l of map.getStyle().layers) L[l.id] = l; return JSON.stringify({ night: document.body.classList.contains('night'), centre: map.getCenter().toArray(), zoom: map.getZoom(), name: $('selName').textContent, count: $('countTxt').textContent, route: !!map.getLayer('t1-surface'), gps: !!map.getLayer('gps-dot'), sub: L['places_subplace'] ? L['places_subplace'].minzoom : null, locMax: L['places_locality'] ? L['places_locality'].maxzoom : null }); })()`));
+const swWait = async () => { for (let i = 0; i < 20; i++) { if (await ev(`!!(window.map && map.getLayer && map.getLayer('t1-surface'))`)) return; await sleep(400); } };
+const SW0 = await swSnap();
+await ev(`(() => { $('nightBtn').click(); return true; })()`); await swWait(); await sleep(300);
+const SW1 = await swSnap();
+ok('P5 switching to DAY keeps everything: selection, progress, camera, stack, place tuning | ' + JSON.stringify(SW1),
+  SW1.night === false && SW1.name === SW0.name && SW1.count === SW0.count && Math.abs(SW1.centre[0] - SW0.centre[0]) < 0.0001 && Math.abs(SW1.centre[1] - SW0.centre[1]) < 0.0001 && Math.abs(SW1.zoom - SW0.zoom) < 0.01 && SW1.route && SW1.gps && SW1.sub === 9 && SW1.locMax === 15.5);
+await ev(`(() => { $('nightBtn').click(); return true; })()`); await swWait(); await sleep(300);
+const SW2 = await swSnap();
+ok('P5 switching back to NIGHT keeps everything too | ' + JSON.stringify(SW2),
+  SW2.night === true && SW2.name === SW0.name && SW2.count === SW0.count && Math.abs(SW2.centre[0] - SW0.centre[0]) < 0.0001 && Math.abs(SW2.centre[1] - SW0.centre[1]) < 0.0001 && Math.abs(SW2.zoom - SW0.zoom) < 0.01 && SW2.route && SW2.gps && SW2.sub === 9 && SW2.locMax === 15.5);
 await ev(`(() => { markUndone('Woolacott'); deselect(); return true; })()`);
 
 await ev(`(() => { $('cancelStartBtn').click(); return true; })()`);

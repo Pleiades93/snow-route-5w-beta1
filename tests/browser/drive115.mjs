@@ -63,10 +63,10 @@ const { result: { targetId } } = await send('Target.createTarget', { url: 'about
 const { result: { sessionId } } = await send('Target.attachToTarget', { targetId, flatten: true });
 const S = sessionId;
 
-let failTiles = false;   // drive115: when true, GL style-host requests (Versatiles + CARTO) are failed on purpose (total-basemap-outage simulation)
+let failTiles = false;   // drive115: when true, GL map-host requests (Protomaps tiles + glyphs/sprites) are failed on purpose (total-basemap-outage simulation)
 async function handlePaused(p) {
   const url = p.request.url;
-  if (failTiles && (url.includes('versatiles.org') || url.includes('cartocdn.com'))) { await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, S); return; }
+  if (failTiles && (url.includes('tiles.basemaps.cartocdn.com') || url.includes('protomaps.github.io'))) { await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, S); return; }
   try {
     if (url.endsWith('/sw.js')) {
       await send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: 404, body: '' }, S);
@@ -87,7 +87,7 @@ async function handlePaused(p) {
 await send('Fetch.enable', { patterns: [
   { urlPattern: '*jsdelivr*', requestStage: 'Request' },
   { urlPattern: '*openfreemap*', requestStage: 'Request' },
-  { urlPattern: '*versatiles*', requestStage: 'Request' },
+  { urlPattern: '*protomaps*', requestStage: 'Request' },
   { urlPattern: '*unpkg*', requestStage: 'Request' },
   { urlPattern: '*cartocdn*', requestStage: 'Request' },
   { urlPattern: '*sw.js', requestStage: 'Request' }

@@ -163,7 +163,7 @@ try {
   await ev(`(function(){ const s = document.createElement('script'); s.src = 'https://example.com/evil.js'; document.head.appendChild(s); return true; })()`);
   await sleep(900);
   ok('P10 foreign external script is REFUSED (violation logged)', cspLog().slice(before2).some(c => /example\.com/.test(c.text)));
-  ok('P11 CSP allows every host the two styles actually use (2026-10-29 dark-mode regression)', pol.includes('tiles.basemaps.cartocdn.com') && pol.includes('tiles.versatiles.org') && pol.includes('basemaps.cartocdn.com'));
+  ok('P11 CSP allows every host the Protomaps styles actually use, and the retired hosts are gone (2026-10-29 dark-mode regression)', pol.includes('tiles.basemaps.cartocdn.com') && pol.includes('protomaps.github.io') && !pol.includes('versatiles.org') && !pol.includes('https://basemaps.cartocdn.com'));
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }
