@@ -193,6 +193,13 @@ const L7 = JSON.parse(await ev(`(() => { const nm = $('selName').getBoundingClie
 ok('M7 the card is stacked clean: one-line name on top, actions in their own row below, gold edge for the unfinished main road | ' + JSON.stringify(L7),
   L7.nameH <= 24 && L7.actsBelow === true && L7.shadow.includes('255, 194, 51'));
 
+// M11 (Beta 1.39, Andrew): Mark completed and Mark both sides are ONE green -
+// the both-sides green (#2ecc71) is the official one. Measured as computed
+// style on the live buttons, not read from the stylesheet.
+const GRN = JSON.parse(await ev(`(() => { const b1 = getComputedStyle($('selBtn')), b2 = getComputedStyle($('selAllBtn')); return JSON.stringify({ a: b1.backgroundColor, b: b2.backgroundColor, vis: b1.display !== 'none' && b2.display !== 'none' }); })()`));
+ok('M11 Mark completed and Mark both sides share the one official green | ' + JSON.stringify(GRN),
+  GRN.vis && GRN.a === 'rgb(46, 204, 113)' && GRN.b === 'rgb(46, 204, 113)');
+
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
 const tapPx = async (x, y) => { // a real tap at raw viewport pixels (the open sheet covers the centre, so tapAt's centred tap would land on the sheet itself)
