@@ -134,7 +134,7 @@ const tapAt = async (ll) => { // a REAL dispatched tap (CDP mouse events at the 
   await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: pt.x, y: pt.y, button: 'left', clickCount: 1 }, S);
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pt.x, y: pt.y, button: 'left', clickCount: 1 }, S);
   await sleep(300); };
-const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: selSet.map(en => en.idx).join(','), n: selSet.length, bar: !$('selBar').classList.contains('hidden'), txt: $('selBarTxt').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
+const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: selSet.map(en => en.idx).join(','), n: selSet.length, bar: !$('selPop').classList.contains('hidden'), txt: $('selName').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
 
 // ---- M1: three consecutive taps accumulate ----
 await tapAt(MIDS[0]); await tapAt(MIDS[1]); await tapAt(MIDS[2]);
@@ -175,6 +175,13 @@ await ev(`document.querySelectorAll('.sideChip .chipBtn')[0].click()`); await sl
 SS = await selState();
 ok('M7 single-select: the chip toggles only the one stretch and no pill appears | ' + JSON.stringify(SS),
   SS.n === 1 && SS.bar === false && SS.pieces[0] === 3 && SS.pieces[1] === 2 && SS.pieces[2] === 2);
+
+// ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
+await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
+await tapAt([MIDS[0][0] + 0.05, MIDS[0][1] + 0.05]); // a real tap out on the map
+const M8 = JSON.parse(await ev(`(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), n: selSet.length }))()`));
+ok('M8 tapping away closes the sheet AND the same tap never reaches the map (selection intact) | ' + JSON.stringify(M8),
+  M8.sheetOpen === false && M8.n === 1);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));

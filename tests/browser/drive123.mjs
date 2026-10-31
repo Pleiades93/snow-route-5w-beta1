@@ -155,6 +155,17 @@ const tabState = JSON.parse(await ev(`JSON.stringify([...document.querySelectorA
 ok('A3 tab bar is static chrome: five actions, fully visible, no stagger | ' + JSON.stringify(tabState),
   tabState.length === 5 && tabState.every(t => t.op === 1 && t.delay === '0s'));
 
+// A5 (Beta 1.30): a close must ANIMATE - the sheet's current height is frozen for the
+// slide-down and cleared only after the motion ends; clearing it instantly was the snap.
+await ev(`(() => { const sh = $('sheet'); sh.style.height = '500px'; sh.classList.add('open'); return true; })()`);
+await sleep(100);
+await ev(`closeSheets()`);
+const frozenH = await ev(`$('sheet').style.height`);
+ok('A5 closing freezes the current height for the slide (no instant snap) | height right after close: ' + JSON.stringify(frozenH), frozenH === '500px');
+await sleep(700);
+const clearedH = await ev(`$('sheet').style.height`);
+ok('A5 the frozen height clears once the close motion has ended | ' + JSON.stringify(clearedH), clearedH === '');
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));
 proc.kill('SIGKILL'); process.exit(0);
