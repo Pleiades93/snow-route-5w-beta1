@@ -206,10 +206,10 @@ ok('T4 night menus share the deep blue-black (bar = sheets = pop-up), text brigh
 const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L.minzoom; return JSON.stringify({ vil: byId['place_villages'], sub: byId['place_suburbs'], ham: byId['place_hamlet'] }); })()`));
 ok('P2 night map too: villages 8, suburbs 8, hamlets 8 | ' + JSON.stringify(PL2),
   PL2.vil === 8 && PL2.sub === 8 && PL2.ham === 8);
-await ev(`(() => { selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); return true; })()`); await sleep(300);
+await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); return true; })()`); await sleep(300);
 const NAC = await ev(`getComputedStyle($('selPop')).boxShadow`);
 ok('P4 the colour edge survives the night theme (mint for the completed Woolacott) | ' + NAC, NAC.includes('6, 214, 160'));
-await ev(`deselect()`);
+await ev(`(() => { markUndone('Woolacott'); deselect(); return true; })()`);
 
 await ev(`(() => { $('cancelStartBtn').click(); return true; })()`);
 await sleep(400);

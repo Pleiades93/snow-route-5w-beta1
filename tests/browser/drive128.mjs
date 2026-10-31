@@ -207,13 +207,13 @@ ok('M9 two roads selected: same compact pill, same wording | ' + JSON.stringify(
 await ev(`deselect()`);
 
 // ---- M10: the colour edge mirrors the street's state ----
-await ev(`(() => { selectStretch('Astona', 0, STRETCH.Astona.line[5]); return true; })()`); await sleep(250);
+await ev(`(() => { selectStretch('Boddy', 0, STRETCH.Boddy.line[3]); return true; })()`); await sleep(250);
 let AC = await ev(`getComputedStyle($('selPop')).boxShadow`);
 ok('M10 a regular unfinished street wears the raspberry edge | ' + AC, AC.includes('239, 71, 111'));
 await ev(`(() => { $('selBtn').click(); return true; })()`); await sleep(400);
 AC = await ev(`getComputedStyle($('selPop')).boxShadow`);
 ok('M10 once the street is complete the edge turns mint | ' + AC, AC.includes('6, 214, 160'));
-await ev(`(() => { markUndone('Astona'); deselect(); return true; })()`);
+await ev(`(() => { markUndone('Boddy'); deselect(); return true; })()`);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));
