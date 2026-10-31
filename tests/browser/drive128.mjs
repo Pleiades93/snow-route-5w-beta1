@@ -138,6 +138,10 @@ const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: s
 const popMetrics = async () => JSON.parse(await ev(`(() => { const r = $('selPop').getBoundingClientRect(); return JSON.stringify({ h: r.height, w: r.width, status: getComputedStyle($('selStatus')).display, statusTxt: $('selStatus').textContent, note: $('selNote').style.display, btn: $('selBtn').style.display }); })()`));
 
 // ---- M1: three consecutive taps accumulate ----
+// Beta 1.42: the start-up splash overlays the first seconds by design and a real
+// tap on it goes nowhere - wait until it has removed itself before tapping, or
+// the first tap is silently swallowed. (drive132 owns the splash's own checks.)
+await poll120(`!document.getElementById('splash')`, v => v, 20000);
 await tapAt(MIDS[0]); await tapAt(MIDS[1]); await tapAt(MIDS[2]);
 let SS = await selState();
 ok('M1 three taps select three sections, the pill shows, and all three highlight | ' + JSON.stringify(SS),

@@ -115,8 +115,8 @@ const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.n
 // the first frame instead of whenever the boot section happens to finish.
 await ev(`location.reload(); true`);
 let seen = null;
-for (let i = 0; i < 40 && !(seen && seen.iconW > 0); i++) { const v = await ev(`(() => { const sp = document.getElementById('splash'); const ic = document.getElementById('splashIcon'); return sp ? JSON.stringify({ iconW: ic ? ic.naturalWidth : -1 }) : ''; })()`); if (v) seen = JSON.parse(v); await sleep(100); }
-ok('S1 splash is the first thing on screen, icon loaded | ' + JSON.stringify(seen), !!seen && seen.iconW > 0);
+for (let i = 0; i < 40 && !seen; i++) { const v = await ev(`(() => { const sp = document.getElementById('splash'); const bg = document.getElementById('splashBg'); const ti = document.getElementById('splashTitle'); return sp ? JSON.stringify({ bg: bg ? getComputedStyle(bg).backgroundColor : '', title: ti ? ti.textContent : '' }) : ''; })()`); if (v) seen = JSON.parse(v); else await sleep(100); }
+ok('S1 splash is the first thing on screen (icon blue, its own name) | ' + JSON.stringify(seen), !!seen && seen.bg === 'rgb(43, 75, 242)' && seen.title === 'Snow Route');
 ok('S2 splash removes itself once the app is ready (never traps the user)', await poll120(`!document.getElementById('splash')`, v => v, 15000));
 await sleep(1600);
 ok('S3 splash never comes back (it is removed, not hidden)', await ev(`!document.getElementById('splash')`));
