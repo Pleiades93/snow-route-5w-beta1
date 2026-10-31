@@ -161,8 +161,14 @@ ok('T3 Settings closes on a second tap', await ev(`$('setMenu').classList.contai
 
 // P1 (Beta 1.31, Andrew): the day style's smaller settlements arrive early now.
 const PL1 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L.minzoom; return JSON.stringify({ vil: byId['label-place-village'], ham: byId['label-place-hamlet'], nei: byId['label-place-neighbourhood'] }); })()`));
-ok('P1 day map lets smaller places in early (village 9, hamlet 9, neighbourhood 10 - the PLACE_EARLY table) | ' + JSON.stringify(PL1),
-  PL1.vil === 9 && PL1.ham === 9 && PL1.nei === 10);
+ok('P1 day map lets smaller places in early (village 8, hamlet 8, neighbourhood 9 - the PLACE_EARLY table) | ' + JSON.stringify(PL1),
+  PL1.vil === 8 && PL1.ham === 8 && PL1.nei === 9);
+// P3: the zooms are only a promise - prove the little places actually RENDER at a wide view.
+await ev(`(() => { map.jumpTo({ center: [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2], zoom: 10.5 }); return true; })()`);
+let placeCount = 0;
+for (let i = 0; i < 24 && placeCount < 5; i++) { await sleep(500); placeCount = await ev(`map.queryRenderedFeatures({ layers: map.getStyle().layers.filter(l => l.id.indexOf('label-place') === 0).map(l => l.id) }).filter(f => f.properties && f.properties.name).length`); }
+ok('P3 at z10.5 the day map renders named little places, not just permits them | count ' + placeCount, placeCount >= 5);
+await ev(`(() => { $('homeBtn').click(); return true; })()`); await sleep(600);
 
 // S6/S7 (Beta 1.24): after Start, Cancel must float ABOVE the circle - clear of the
 // tab bar and tappable; and the chrome icons must compute to bright colours on the
@@ -191,8 +197,12 @@ const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el)
 ok('T4 night menus share the deep blue-black (bar = sheets = pop-up), text bright | ' + JSON.stringify(T4),
   T4.sheetBg === 'rgba(7, 10, 17, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
 const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L.minzoom; return JSON.stringify({ vil: byId['place_villages'], sub: byId['place_suburbs'], ham: byId['place_hamlet'] }); })()`));
-ok('P2 night map too: villages 9, suburbs 9, hamlets 9 | ' + JSON.stringify(PL2),
-  PL2.vil === 9 && PL2.sub === 9 && PL2.ham === 9);
+ok('P2 night map too: villages 8, suburbs 8, hamlets 8 | ' + JSON.stringify(PL2),
+  PL2.vil === 8 && PL2.sub === 8 && PL2.ham === 8);
+await ev(`(() => { selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); return true; })()`); await sleep(300);
+const NAC = await ev(`getComputedStyle($('selPop')).boxShadow`);
+ok('P4 the colour edge survives the night theme (mint for the completed Woolacott) | ' + NAC, NAC.includes('6, 214, 160'));
+await ev(`deselect()`);
 
 await ev(`(() => { $('cancelStartBtn').click(); return true; })()`);
 await sleep(400);

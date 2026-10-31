@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-pgcly+eN0MOv6SJs4DIMhZOF7X1IIfOzZTfvt5rvhnX4QiujrSGi1cAHpRYm/TEB' https://cdn.jsdelivr.net; style-src-elem 'sha384-77tvuuAQNsHt/8Jcs9s5ba5uHaGNGoAveXuEi1dmr+4CFYo710VADN3yLmFC8iU/' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-KATc6okh2PrBqhmscO7Yls/KL3GITuEvmE8WJGXGTIJhQ/0pye32LcKqZjfPN1Ei' https://cdn.jsdelivr.net; style-src-elem 'sha384-pNBu8idEV+WERAFneSsqf9nBDCbfsWUQdFPZNZoMd3ocCpsN/MKLSpI2273bipbu' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -42,7 +42,12 @@
   body.storage-bad #warn { display: block; }
   /* Selection strip (Beta 1.14, Andrew): part of the header, not a floating card - it grows the top menu
      only while a street is selected, so Mark completed never floats over the map or fights the buttons. */
-  #selPop .selTxt { flex: 1; min-width: 0; }
+  #selPop .selTxt { min-width: 0; }
+  #selPop .selActs { display: flex; gap: 8px; align-items: center; }
+  #selPop .selActs #selBtn { flex: 1; }
+  #selPop.mini { flex-direction: row; align-items: center; }
+  #selPop.mini .selActs { flex: none; }
+  #selName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #selName { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #selStatus { font-size: 11.5px; opacity: .65; margin-top: 1px; line-height: 1.35; }
   #selBtn { flex: none; border: none; border-radius: var(--rad-btn); padding: 9px 12px; font-size: 13.5px; font-weight: 700; min-height: 40px; background: #1e7a46; color: #fff; }
@@ -90,7 +95,7 @@
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
   #countTxt { position: relative; z-index: 1; }
   body.night { --card: rgba(7,10,17,.94); --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(140,170,230,.10); --field: #101623; --sec: #9fb4c8; --link: #7db4e8; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.29 night card: near-black with a blue soul, replacing the slate grey Andrew disliked */
-  #selPop { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); border-left: 4px solid var(--accent, transparent); padding: 8px 10px; border-radius: 20px; box-shadow: var(--shadow-float); max-width: 94vw; --accent: transparent; } /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */
+  #selPop { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 9px 12px 9px 15px; border-radius: 20px; box-shadow: inset 4px 0 0 var(--accent, transparent), var(--shadow-float); flex-direction: column; align-items: stretch; gap: 7px; max-width: 94vw; --accent: transparent; } /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */
   body.night #selPop { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #selPop.hidden { display: none; }
   #selPop button { border: 0; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; min-height: 36px; white-space: nowrap; }
@@ -189,13 +194,13 @@
 <body>
 <div id="map"></div>
 <div id="chips"></div>
-<div id="selPop" class="hidden"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><button id="selNote" title="Note for this street"></button><button id="selAllBtn">Mark both sides</button><button id="selBtn">Mark completed</button><button id="selClearBtn">Clear</button></div>
+<div id="selPop" class="hidden"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><div class="selActs"><button id="selNote" title="Note for this street"></button><button id="selAllBtn">Mark both sides</button><button id="selBtn">Mark completed</button><button id="selClearBtn">Clear</button></div></div>
 <div id="attrChip">© VersaTiles © OpenStreetMap contributors © CARTO</div>
 <div id="spd" class="hidden"></div>
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.31</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.32</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -1920,7 +1925,7 @@ function firstSymbolId() {
 // Rounds 30-32 (Andrew): place-name tuning on the baseGLM. The
 // vector styles already carry every place name with zoom bands and
 // population-sorted collision thinning (the Apple Maps behaviour);
-const PLACE_EARLY = { suburb: 9, quarter: 9.5, neighbourhood: 10, hamlet: 9, village: 9 }; // how early each settlement kind may appear - the ONE owner of place-label zooms (Beta 1.31, Andrew: both maps carry more cities and towns; the stock styles held suburbs/hamlets/quarters/neighbourhoods back to z11-14). tunePlaceLabels also caps place labels at 15.5, where the route labels take over.
+const PLACE_EARLY = { suburb: 8, quarter: 8.5, neighbourhood: 9, hamlet: 8, village: 8 }; // Beta 1.32 (Andrew): a wider, fuller map - the little places hold on as he zooms out toward the area view (the map itself now goes to z8) // how early each settlement kind may appear - the ONE owner of place-label zooms (Beta 1.31, Andrew: both maps carry more cities and towns; the stock styles held suburbs/hamlets/quarters/neighbourhoods back to z11-14). tunePlaceLabels also caps place labels at 15.5, where the route labels take over.
 function placeClass(id) {
   if (id.includes('neighbourhood') || id.includes('neighborhood')) return 'neighbourhood';
   if (id.includes('quarter')) return 'quarter';
@@ -2152,7 +2157,7 @@ window.GLP = GLP;
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: 'https://tiles.versatiles.org/styles/colorful/style.json', night: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' };
 let glOk = false, mapNoteArmed = false, mapNoteOff = false;
-const map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 0, minZoom: 9, maxZoom: 19, maxPitch: 60 }); // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
+const map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 0, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
 const routeBox = (() => { let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const nm of STREETNAMES) for (const seg of ROADS[nm]) for (const p of seg) { w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); } return { w, s, e, n }; })();
 map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28, animate: false });
 function noteMapState() { const dead = mapNoteArmed && !glOk && !mapNoteOff; $('mapNote').classList.toggle('hidden', !dead); }
@@ -2193,13 +2198,13 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       }
       if (kind === 'place' && (sl === 'place_labels' || sl === 'places')) {
         // MORE PLACES (Andrew, Beta 1.31): a zoom gate buried in a filter (the night style holds
-        // neighbourhoods back to z14 inside its hamlet layer's filter) relaxes to 11.5 so it agrees
+        // neighbourhoods back to z14 inside its hamlet layer's filter) relaxes to 9 so it agrees
         // with the earlier arrival the PLACE_EARLY zooms now allow. Native collision still thins a
         // crowded view on its own.
         // (Zoom ranges themselves live in ONE place: the engine's PLACE_EARLY table, applied by
         // tunePlaceLabels before this hook runs. What remains here is the filter-side gate.)
         if (L.filter) {
-          const relax = f => Array.isArray(f) ? f.map((x, i) => (i === 2 && f[0] === '>=' && Array.isArray(f[1]) && f[1][0] === 'zoom' && typeof x === 'number' && x > 11.5) ? 11.5 : relax(x)) : f;
+          const relax = f => Array.isArray(f) ? f.map((x, i) => (i === 2 && f[0] === '>=' && Array.isArray(f[1]) && f[1][0] === 'zoom' && typeof x === 'number' && x > 9) ? 9 : relax(x)) : f;
           const nf = relax(L.filter);
           if (JSON.stringify(nf) !== JSON.stringify(L.filter)) m.setFilter(L.id, nf);
         }
@@ -2218,10 +2223,10 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
 function addReferenceLayers() {
   if (map.getSource('ref')) return;
   const feats = [];
-  for (const name of Object.keys(REFERENCE)) { const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); if (name === 'Village Green') { const longest = segs.reduce((a, b) => (b.length > a.length ? b : a), segs[0]); const mid = longest[Math.floor(longest.length / 2)]; feats.push({ type: 'Feature', properties: { refLabel: 'Village Green · reference' }, geometry: { type: 'Point', coordinates: [mid[1], mid[0]] } }); } } // production REFERENCE shape: { name: [segment, ...] } - the first cut wrongly iterated it as an array of {name, pts}, threw on every style-ready, and silently killed the GPS + trail layers queued after it (Andrew's missing GPS dot, 2026-10-30)
+  for (const name of Object.keys(REFERENCE)) { if (name === 'Village Green' || name === 'Ott') continue; // Beta 1.32 (Andrew): the Village Green reference is OFF the map - the basemap already names the road, and Ott is part of that same road. The data stays (production parity); only West link still draws.
+    const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // production REFERENCE shape: { name: [segment, ...] } - the first cut wrongly iterated it as an array of {name, pts}, threw on every style-ready, and silently killed the GPS + trail layers queued after it (Andrew's missing GPS dot, 2026-10-30)
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
   map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
-  map.addLayer({ id: 'ref-label', type: 'symbol', source: 'ref', filter: ['has', 'refLabel'], layout: { 'text-field': ['get', 'refLabel'], 'text-font': ['Noto Sans Regular'], 'text-size': 10, 'text-allow-overlap': true }, paint: { 'text-color': isNight() ? '#aab4c0' : '#69727d', 'text-halo-color': isNight() ? '#14171d' : '#ffffff', 'text-halo-width': 1.2 } });
 }
 function addGpsLayers() {
   if (map.getSource('gps')) return;
@@ -2411,13 +2416,13 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
   p.classList.toggle('mini', multi); // Beta 1.31 (Andrew): multi = the compact pill, exactly the reference size; single keeps the card
   const streetsIn = new Set(selSet.map(en => en.name)).size;
   const oneStreet = streetsIn === 1;
-  p.style.setProperty('--accent', oneStreet ? (MAIN.has(sel.name) ? YELLOW : RED) : 'transparent');
+  p.style.setProperty('--accent', !oneStreet ? 'transparent' : (streetComplete(sel.name) ? GREEN : (MAIN.has(sel.name) ? YELLOW : RED))); // the edge mirrors the street (Beta 1.32, Andrew): gold for a main road, raspberry for an unfinished regular road, mint once the street is complete
   if (!multi) {
     $('selName').textContent = sel.name;
     const total = STRETCH[sel.name].parts.length;
     const val = pieces[sel.name][sel.idx];
-    const sideTxt = sd => (val & (sd ? 2 : 1)) ? 'done' : 'to do';
-    $('selStatus').textContent = 'Stretch ' + (sel.idx + 1) + ' of ' + total + ' · sides: ' + sideTxt(0) + ' / ' + sideTxt(1) + (streetComplete(sel.name) ? ' · STREET COMPLETE' : '');
+    const doneSides = (val & 1 ? 1 : 0) + (val & 2 ? 1 : 0);
+    $('selStatus').textContent = 'Stretch ' + (sel.idx + 1) + ' of ' + total + (streetComplete(sel.name) ? ' · street complete' : doneSides === 2 ? ' · both sides done' : doneSides === 1 ? ' · 1 of 2 sides done' : ''); // Beta 1.32: concise - the chips on the map already show WHICH side
   } else {
     $('selName').textContent = selSet.length + ' sections selected';
     $('selStatus').style.display = 'none'; // Beta 1.31: no second line in multi - words were what made it big
