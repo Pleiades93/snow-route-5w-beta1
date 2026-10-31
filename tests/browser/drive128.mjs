@@ -196,8 +196,8 @@ ok('M7 the card is stacked clean: one-line name on top, actions in their own row
 // M11 (Beta 1.39, Andrew): Mark completed and Mark both sides are ONE green -
 // the both-sides green (#2ecc71) is the official one. Measured as computed
 // style on the live buttons, not read from the stylesheet.
-const GRN = JSON.parse(await ev(`(() => { const b1 = getComputedStyle($('selBtn')), b2 = getComputedStyle($('selAllBtn')); return JSON.stringify({ a: b1.backgroundColor, b: b2.backgroundColor, vis: b1.display !== 'none' && b2.display !== 'none' }); })()`));
-ok('M11 Mark completed and Mark both sides share the one official green | ' + JSON.stringify(GRN),
+const GRN = JSON.parse(await ev(`(() => { const b1 = getComputedStyle($('selBtn')), b2 = getComputedStyle($('selAllBtn')); return JSON.stringify({ a: b1.backgroundColor, b: b2.backgroundColor, vis: b1.display !== 'none' }); })()`));
+ok('M11 Mark completed and Mark both sides share the one official green (both-sides button hides when the stretch is fully done - its colour is still read live) | ' + JSON.stringify(GRN),
   GRN.vis && GRN.a === 'rgb(46, 204, 113)' && GRN.b === 'rgb(46, 204, 113)');
 
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
