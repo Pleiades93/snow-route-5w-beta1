@@ -179,10 +179,10 @@ ok('M7 single-select: the chip toggles only the one stretch and the merged pop-u
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
 const tapPx = async (x, y) => { // a real tap at raw viewport pixels (the open sheet covers the centre, so tapAt's centred tap would land on the sheet itself)
-  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 }, S);
   await sleep(60);
-  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
-  await sleep(120);
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 }, S);
+  await sleep(300);
 };
 await tapPx(30, 200); // open map, above the sheet, clear of the header and the pop-up
 const M8 = JSON.parse(await ev(`(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), n: selSet.length }))()`));
