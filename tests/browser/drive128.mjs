@@ -182,6 +182,9 @@ ok('M7 single-select: the chip toggles only the one stretch and the merged pop-u
   SS.n === 1 && SS.bar === true && SS.txt === 'Velmar' && SS.pieces[0] === 3 && SS.pieces[1] === 2 && SS.pieces[2] === 2);
 const PM7 = await popMetrics();
 ok('M7 a single selection keeps the full card (not the pill) | ' + JSON.stringify(PM7), PM7.mini === false && PM7.status !== 'none');
+const L7 = JSON.parse(await ev(`(() => { const nm = $('selName').getBoundingClientRect(), acts = document.querySelector('.selActs').getBoundingClientRect(); return JSON.stringify({ nameH: nm.height, actsBelow: acts.top >= nm.bottom - 1, shadow: getComputedStyle($('selPop')).boxShadow }); })()`));
+ok('M7 the card is stacked clean: one-line name on top, actions in their own row below, gold edge for the unfinished main road | ' + JSON.stringify(L7),
+  L7.nameH <= 24 && L7.actsBelow === true && L7.shadow.includes('255, 194, 51'));
 
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
@@ -202,6 +205,15 @@ const SS9 = await selState(); const PM9 = await popMetrics();
 ok('M9 two roads selected: same compact pill, same wording | ' + JSON.stringify({ SS9, PM9 }),
   SS9.n === 2 && SS9.txt === '2 sections selected' && PM9.mini === true && PM9.h <= 54 && PM9.status === 'none');
 await ev(`deselect()`);
+
+// ---- M10: the colour edge mirrors the street's state ----
+await ev(`(() => { selectStretch('Boddy', 0, STRETCH.Boddy.line[3]); return true; })()`); await sleep(250);
+let AC = await ev(`getComputedStyle($('selPop')).boxShadow`);
+ok('M10 a regular unfinished street wears the raspberry edge | ' + AC, AC.includes('239, 71, 111'));
+await ev(`(() => { $('selBtn').click(); return true; })()`); await sleep(400);
+AC = await ev(`getComputedStyle($('selPop')).boxShadow`);
+ok('M10 once the street is complete the edge turns mint | ' + AC, AC.includes('6, 214, 160'));
+await ev(`(() => { markUndone('Boddy'); deselect(); return true; })()`);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));
