@@ -88,12 +88,21 @@ async function cacheFirst(r, cacheName) {
     return Response.error();
   }
 }
+async function staleWhileRevalidate(r, cacheName) {   // Beta 1.41: answer from cache at once, refresh it in the background - for assets whose URL is not versioned (the sprite sheets), where pure cache-first would freeze them forever and netFirst makes a theme flip wait out a network race
+  const c = await caches.open(cacheName);
+  const hit = await c.match(r);
+  const np = fetch(r).then(res => { if (res && res.ok) c.put(r, res.clone()).catch(() => {}); return res; }).catch(() => null);
+  if (hit) return hit;
+  const res = await np;
+  return res || Response.error();
+}
 self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET') return;
   const u = new URL(r.url);
   const mapHost = u.hostname === 'tiles.basemaps.cartocdn.com' || u.hostname === 'protomaps.github.io'; // Beta 1.33: Protomaps tiles (CARTO-hosted) + glyphs/sprites; the styles themselves are embedded in the page
-  if (mapHost && (u.pathname.endsWith('.json') || u.pathname.includes('/styles/'))) e.respondWith(netFirst(r, TILES));
+  if (mapHost && u.pathname.includes('/sprites/') && u.pathname.endsWith('.json')) e.respondWith(staleWhileRevalidate(r, TILES));
+  else if (mapHost && (u.pathname.endsWith('.json') || u.pathname.includes('/styles/'))) e.respondWith(netFirst(r, TILES));
   else if (mapHost) e.respondWith(cacheFirst(r, TILES));
   else if (u.hostname === 'unpkg.com' || u.hostname === 'cdn.jsdelivr.net') e.respondWith(cacheFirst(r, CACHE));
   else if (r.mode === 'navigate' || u.origin === self.location.origin) e.respondWith(netFirst(r, CACHE));
