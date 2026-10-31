@@ -135,17 +135,17 @@ const tapAt = async (ll) => { // a REAL dispatched tap (CDP mouse events at the 
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pt.x, y: pt.y, button: 'left', clickCount: 1 }, S);
   await sleep(300); };
 const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: selSet.map(en => en.idx).join(','), n: selSet.length, bar: !$('selPop').classList.contains('hidden'), txt: $('selName').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
-const popMetrics = async () => JSON.parse(await ev(`(() => { const r = $('selPop').getBoundingClientRect(); return JSON.stringify({ h: r.height, mini: $('selPop').classList.contains('mini'), status: getComputedStyle($('selStatus')).display, note: $('selNote').style.display, btn: $('selBtn').style.display }); })()`));
+const popMetrics = async () => JSON.parse(await ev(`(() => { const r = $('selPop').getBoundingClientRect(); return JSON.stringify({ h: r.height, w: r.width, status: getComputedStyle($('selStatus')).display, statusTxt: $('selStatus').textContent, note: $('selNote').style.display, btn: $('selBtn').style.display }); })()`));
 
 // ---- M1: three consecutive taps accumulate ----
 await tapAt(MIDS[0]); await tapAt(MIDS[1]); await tapAt(MIDS[2]);
 let SS = await selState();
 ok('M1 three taps select three sections, the pill shows, and all three highlight | ' + JSON.stringify(SS),
-  SS.n === 3 && SS.bar === true && SS.txt === '3 sections selected' && SS.selFeats === 3 && SS.chips === 2);
+  SS.n === 3 && SS.bar === true && SS.txt === '3 sections selected' && SS.selFeats === 3 && SS.chips === 2); // (pop-up wording since 1.34)
 
 const PM1 = await popMetrics();
-ok('M1 multi (same road) is the compact reference pill: one line, count + two actions, nothing crammed | ' + JSON.stringify(PM1),
-  PM1.mini === true && PM1.h <= 54 && PM1.status === 'none' && PM1.note === 'none' && PM1.btn === 'none');
+ok('M1 multi (same road) is the SAME card as a single (Beta 1.34): status line present with the set sides tally, note + whole-street buttons stay out | ' + JSON.stringify(PM1),
+  PM1.status !== 'none' && /^\d+ of 6 sides done$/.test(PM1.statusTxt) && PM1.note === 'none' && PM1.btn === 'none');
 
 // ---- M2: one side chip marks that side on ALL selected ----
 await ev(`document.querySelectorAll('.sideChip .chipBtn')[1].click()`); await sleep(400);
@@ -172,7 +172,7 @@ ok('M5 tapping a selected section removes only it | ' + JSON.stringify(SS),
 // ---- M6: an empty-map tap clears the whole selection ----
 await tapAt([MIDS[0][0] + 0.05, MIDS[0][1] + 0.05]);
 SS = await selState();
-ok('M6 tapping empty map clears the selection and hides the pill | ' + JSON.stringify(SS), SS.n === 0 && SS.bar === false && SS.chips === 0);
+ok('M6 tapping empty map clears the selection and hides the pop-up | ' + JSON.stringify(SS), SS.n === 0 && SS.bar === false && SS.chips === 0);
 
 // ---- M7: single-select is unchanged - fresh selection, chip touches one stretch only ----
 await ev(`(() => { selectStretch('Velmar', 0, [${MIDS[0][0]}, ${MIDS[0][1]}]); return true; })()`); await sleep(300);
@@ -181,7 +181,14 @@ SS = await selState();
 ok('M7 single-select: the chip toggles only the one stretch and the merged pop-up shows the street (one pop-up for every selection since 1.30) | ' + JSON.stringify(SS),
   SS.n === 1 && SS.bar === true && SS.txt === 'Velmar' && SS.pieces[0] === 3 && SS.pieces[1] === 2 && SS.pieces[2] === 2);
 const PM7 = await popMetrics();
-ok('M7 a single selection keeps the full card (not the pill) | ' + JSON.stringify(PM7), PM7.mini === false && PM7.status !== 'none');
+ok('M7 a single selection shows the card with its status line | ' + JSON.stringify(PM7), PM7.status !== 'none');
+// M7b (Beta 1.34, Andrew): adding a second section must NOT change the pop-up's size -
+// one box for one section or many, measured both ways.
+await ev(`(() => { tapStretch('Velmar', 1, STRETCH.Velmar.line[10]); return true; })()`); await sleep(300);
+const PM7b = await popMetrics();
+ok('M7b the two-section pop-up is exactly the single card size (same width, same height) | single ' + JSON.stringify(PM7) + ' multi ' + JSON.stringify(PM7b),
+  Math.abs(PM7b.w - PM7.w) <= 1 && Math.abs(PM7b.h - PM7.h) <= 1 && PM7b.status !== 'none');
+await ev(`(() => { selectStretch('Velmar', 0, [${MIDS[0][0]}, ${MIDS[0][1]}]); return true; })()`); await sleep(300);
 const L7 = JSON.parse(await ev(`(() => { const nm = $('selName').getBoundingClientRect(), acts = document.querySelector('.selActs').getBoundingClientRect(); return JSON.stringify({ nameH: nm.height, actsBelow: acts.top >= nm.bottom - 1, shadow: getComputedStyle($('selPop')).boxShadow }); })()`));
 ok('M7 the card is stacked clean: one-line name on top, actions in their own row below, gold edge for the unfinished main road | ' + JSON.stringify(L7),
   L7.nameH <= 24 && L7.actsBelow === true && L7.shadow.includes('255, 194, 51'));
@@ -202,8 +209,8 @@ ok('M8 tapping away closes the sheet AND the same tap never reaches the map (sel
 // ---- M9: two sections on two DIFFERENT roads - the same compact pill ----
 await ev(`(() => { deselect(); tapStretch('Velmar', 0, STRETCH.Velmar.line[10]); tapStretch('Astona', 0, STRETCH.Astona.line[10]); return true; })()`); await sleep(300);
 const SS9 = await selState(); const PM9 = await popMetrics();
-ok('M9 two roads selected: same compact pill, same wording | ' + JSON.stringify({ SS9, PM9 }),
-  SS9.n === 2 && SS9.txt === '2 sections selected' && PM9.mini === true && PM9.h <= 54 && PM9.status === 'none');
+ok('M9 two roads selected: same card, same wording, sides tally on the status line | ' + JSON.stringify({ SS9, PM9 }),
+  SS9.n === 2 && SS9.txt === '2 sections selected' && PM9.status !== 'none' && /^\d+ of 4 sides done$/.test(PM9.statusTxt));
 await ev(`deselect()`);
 
 // ---- M10: the colour edge mirrors the street's state ----
