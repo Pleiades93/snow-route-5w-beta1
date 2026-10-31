@@ -171,7 +171,7 @@ await sleep(600);
 A = await J(`(() => { const r = $('sheet').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; })()`);
 ok('V5 open list sheet fits the viewport | sheet ' + JSON.stringify(A), inView(A) && A.y >= 0);
 await ev(`(() => { closeSheets(); return true; })()`);
-await sleep(600);
+await poll120(`(() => { const e = $('sheet'); return getComputedStyle(e).visibility === 'hidden' || e.getBoundingClientRect().top >= 899; })()`, v => v, 10000);
 A = await J(`(() => { const e = $('sheet'); const r = e.getBoundingClientRect(); return { vis: getComputedStyle(e).visibility, top: r.top }; })()`);
 ok('V5 closed sheet is invisible (hidden or fully below the viewport)', A.vis === 'hidden' || A.top >= 899);
 

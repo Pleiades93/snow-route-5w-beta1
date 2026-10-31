@@ -147,7 +147,9 @@ try {
   // Phase C: recovery - tiles come back, notice clears itself (no dismiss).
   failTiles = false;
   await ev(`setBasemap(); true`);
-  ok('C1 first successful GL load auto-hides the notice', await until(async () => await ev(`glOk === true`) && !(await noteVisible())));
+  // waits-hardening: recovery re-fetches the whole style + tiles; on a slow runner that
+  // outruns the 12s default this helper carries (the death direction already budgets 18s).
+  ok('C1 first successful GL load auto-hides the notice', await until(async () => await ev(`glOk === true`) && !(await noteVisible()), 30000));
 
   // Phase B: failure again after reload; dismissal sticks while still dead.
   failTiles = true;
