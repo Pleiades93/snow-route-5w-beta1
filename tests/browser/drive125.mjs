@@ -125,6 +125,10 @@ ok('S0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // Beta 1.22 (Andrew's phone round): one-word green Start; count as "N of 34 - P%";
 // a dead strip under the dock so the iPhone home swipe cannot drag the map;
 // the header slab is transparent so the map runs full-screen at the top too.
+// Beta 1.42: the start-up splash overlays the first seconds by design - hit-test
+// probes (elementFromPoint) must wait until it has removed itself, or they measure
+// the splash instead of the app. (drive132 owns the splash's own checks.)
+await poll120(`!document.getElementById('splash')`, v => v, 20000);
 const S22 = JSON.parse(await ev(`(() => { const sb = $('startBtn'); const cs = getComputedStyle(sb);
   const strip = $('tabBar'); const sr = strip.getBoundingClientRect(); const br = sb.getBoundingClientRect();
   const atBottom = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 3);
