@@ -124,6 +124,8 @@ const before = await ev(`isNight()`);
 await ev(`$('nightBtn').click(); true`);
 await sleep(400);
 ok('S4 the app answers taps normally after the splash | night ' + before + ' -> ' + (await ev(`isNight()`)), (await ev(`isNight()`)) !== before);
+const gateGap = await ev(`(window.__bootAt || 0) - (window.__tailAt || 0)`);
+ok('S5 the heavy boot waited for the intro (map created ' + gateGap + 'ms after the boot was scheduled, gate is ~900ms+) | gap ' + gateGap, gateGap >= 700);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));

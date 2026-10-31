@@ -201,11 +201,11 @@
    same blue + centred icon, so the two read as one continuous moment. */
 #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 #splashBg { position: absolute; inset: 0; background: #2b4bf2; }
-#splashIcon { position: relative; width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 18px 50px rgba(0,0,0,.35); opacity: 0; animation: splashRise .55s cubic-bezier(.2,.7,.3,1) forwards; }
+#splashIcon { position: relative; width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 18px 50px rgba(0,0,0,.35); opacity: 0; animation: splashRise .55s cubic-bezier(.2,.7,.3,1) forwards; will-change: transform; }
 #splashTitle { position: relative; margin-top: 26px; color: #fff; font-size: 37px; font-weight: 700; letter-spacing: .2px; opacity: 0; animation: splashSlide .65s cubic-bezier(.16,.84,.3,1) .1s forwards; }
 @keyframes splashRise { from { opacity: 0; transform: translateY(26px) scale(.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes splashSlide { 0% { opacity: 0; transform: translateX(360px); } 55% { opacity: 1; } 82% { transform: translateX(-9px); } 100% { opacity: 1; transform: translateX(0); } }
-#splash.go #splashIcon { animation: splashRush .85s cubic-bezier(.5,0,.85,.35) forwards; }
+#splash.go #splashIcon { animation: splashRush .85s cubic-bezier(.5,0,.85,.35) forwards; box-shadow: none; }
 #splash.go #splashBg { animation: splashBgOut .85s linear forwards; }
 #splash.go #splashTitle { animation: splashTitleOut .3s linear forwards; }
 @keyframes splashRush { 0% { opacity: 1; transform: scale(1); } 88% { opacity: 1; transform: scale(60); } 100% { opacity: 0; transform: scale(66); } }
@@ -224,7 +224,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.43</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.44</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2191,15 +2191,30 @@ const PM_NIGHT = {"version":8,"name":"protomaps-dark","glyphs":"https://protomap
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // Beta 1.33 (Andrew's pick): BOTH basemaps are Protomaps - one map in light + dark flavours - embedded by pmstyles.js, so a day/night switch is a local setStyle: nothing to fetch, nothing to break mid-switch
 let glOk = false, mapNoteArmed = false, mapNoteOff = false, basemapDead = false, tilesOk = 0;
-const map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
+// Beta 1.44 (Andrew: the splash stuttered): the map is created by bootMap(), which
+// app4 calls only AFTER the splash intro has played (~1.1s). Map creation, style
+// processing and the first tile work arrive in a few big processor chunks; while
+// they ran during the intro, the animation froze and lurched - worst on a cold
+// open, invisible on a warm one. Anything that must register on the map before
+// it exists goes through onMapReady and is replayed, in order, at creation.
+let map = null;
+const __onMap = [];
+function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
+function bootMap() {
+  if (map) return;
+  window.__bootAt = Date.now();
+  map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
+  map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28, animate: false });
+  setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
+  for (const fn of __onMap) fn();
+  __onMap.length = 0;
+} // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
 const routeBox = (() => { let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const nm of STREETNAMES) for (const seg of ROADS[nm]) for (const p of seg) { w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); } return { w, s, e, n }; })();
-map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28, animate: false });
 function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); }
 $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
-map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } });
-map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } }); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
-setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000); // Beta 1.33: the styles are embedded, so a dead basemap no longer stops GL from "loading" - it just never draws. Nine seconds after boot with not one tile arrived, the map is dead: record it and show the notice (it lives at boot level because a total outage also blocks the style-ready path this used to hang off)
+onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
+onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
 const ROUTE_TILE_NAMES = [...STREETNAMES, '5th Avenue', 'Angie Place', 'Astona Boulevard', 'Bayside Court', 'Bell Harbour Place', 'Blackburn Boulevard', 'Bloomingdale Lane', 'Boddy Court', 'Bourbon Street', 'Brownlee Avenue', 'Cartwright Boulevard', 'Columbus Avenue', 'Conti Crescent', 'Dianawood Ridge', 'Ferrari Court', 'Flatbush Avenue', 'Flushing Avenue', 'Frankie Lane', 'Galloway Drive', 'Greenpark Boulevard', 'Julian Court', 'Kingsnorth Boulevard', 'Malden Street', 'Marconi Avenue', 'Mellings Drive', 'Radley Street', 'Romeo Crescent', 'Santa Barbara Place', 'Tina Place', 'Topper Court', 'Valeria Boulevard', 'Velmar Drive', 'Wilshire Boulevard', 'Woolacott Road']; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label handover in glHideLabels.
 function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
@@ -2338,7 +2353,7 @@ function onStyleReady() {
   for (const fn of [addReferenceLayers, addGpsLayers, addTrailLayers]) { try { fn(); } catch (e) { /* one bad layer must never kill the rest of the stack (the REFERENCE throw hid the GPS dot until 2026-10-30) */ } }
   pushGps(); drawTrail(); refreshAll();
 }
-map.on('load', onStyleReady);
+onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;
 function setBasemap() {
   map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']);
@@ -2418,7 +2433,7 @@ function positionChips() {
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg)"><path d="M4 12 H19 M13 5.5 L19.5 12 L13 18.5"/></svg>';
   });
 }
-map.on('move', positionChips);
+onMapReady(() => map.on('move', positionChips));
 function refreshSelUI() { if (window.GLP) window.GLP.syncSel(); showChips(); renderPanel(); }
 function selectStretch(name, idx, anchor) { selSet = [{ name, idx, anchor }]; sel = { name, idx, anchor }; selStretch = { name, idx }; refreshSelUI(); } // a fresh single selection (streets list, drives)
 function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tapping a selected stretch removes just it; the anchor follows the last remaining selection
@@ -2430,13 +2445,13 @@ function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tap
   refreshSelUI();
 }
 function deselect() { sel = null; selStretch = null; selSet = []; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
-map.on('click', e => {
+onMapReady(() => map.on('click', e => {
   if (Date.now() < swallowClickUntil) return;
   const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
   const near = nearestStreet(pt);
   if (near.name && near.d <= 16) { const st = nearestStretch(near.name, pt); tapStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }
   else deselect();
-});
+}));
 
 // ===== MARKING (one finish path) =====
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); saveAll(); syncWake(); }
@@ -3034,8 +3049,8 @@ function followCam() {
   if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
   map.panBy([dx * 0.35, dy * 0.35], { animate: false }); // centre-lock (Andrew's clarification): ease a third of the way to centre on every glide tick - a gradual lock that keeps the dot kind of in the centre, never a snap and never a chase view
 }
-map.on('dragstart', () => { followPaused = true; });
-map.on('dragend', () => { if (runStart) northUp(); }); // during a run: ease back to north-up like a nav app. Outside a run (Beta 1.27): a rotation/tilt he deliberately set stays put.
+onMapReady(() => map.on('dragstart', () => { followPaused = true; }));
+onMapReady(() => map.on('dragend', () => { if (runStart) northUp(); })); // during a run: ease back to north-up like a nav app. Outside a run (Beta 1.27): a rotation/tilt he deliberately set stays put.
 // HEADING-UP (Andrew, Beta 1.14 - replaces Flip): while the camera follows during a run, the map rotates
 // so his direction of travel points up - course-up from the GPS course, not the compass and not true
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
@@ -3441,8 +3456,22 @@ document.addEventListener('focusin', e => { if (e.target.matches('textarea, inpu
 document.addEventListener('focusout', e => { if (e.target.matches('textarea, input')) document.body.classList.remove('kb'); });
 document.addEventListener('focusout', () => setTimeout(syncViewport, 60));
 syncViewport();
-applyNight(); refreshAll(); checkStale(); syncWake();
-if (runStart) startGps(true);
+let __tailDone = false;
+window.__tailAt = Date.now();
+function __bootTail() { if (__tailDone) return; __tailDone = true; bootMap(); applyNight(); refreshAll(); checkStale(); syncWake(); if (runStart) startGps(true); }
+// Beta 1.44: the heavy boot waits for the splash intro to finish, so the
+// animation gets the phone to itself and every open feels like a warm one.
+// Reduced-motion (no splash) and no-splash pages boot immediately, as before.
+const __splashEl = document.getElementById('splash');
+if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  // Boot the moment the intro has actually finished on THIS device (the title's
+  // slide is the last intro piece), plus a breath - never on a fixed clock, so a
+  // slow first paint cannot push the boot chunks back into the animation. The
+  // 2.6s timer is only a fallback if the animation event never lands.
+  const __titleEl = document.getElementById('splashTitle');
+  if (__titleEl) __titleEl.addEventListener('animationend', () => setTimeout(__bootTail, 150), { once: true });
+  setTimeout(__bootTail, 2600);
+} else __bootTail();
 // Beta 1.33: no other-style pre-warm fetch - both Protomaps styles are embedded in the page, so the first day/night swap is instant by construction.
 
 // ===== SPLASH EXIT (Beta 1.42) =====
@@ -3458,6 +3487,7 @@ if (runStart) startGps(true);
   const finish = () => { if (gone) return; gone = true; sp.remove(); };
   const arm = () => { const wait = Math.max(0, 1900 - (Date.now() - t0)); setTimeout(() => { sp.classList.add('go'); setTimeout(finish, 1050); }, wait); };
   const iv = setInterval(() => {
+    if (!map && Date.now() - t0 > 4000) __bootTail();
     if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }
   }, 120);
 })();
