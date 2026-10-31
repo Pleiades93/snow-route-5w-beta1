@@ -27,7 +27,8 @@ self.addEventListener('install', e => {
   }).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => (k.startsWith('snowroute-') || k === 'snow5wbeta1-shell-v1' || k === 'snow5wbeta1-tiles-v1') && k !== CACHE && k !== TILES)   // the two exact legacy names are the one-time cleanup of the pre-rename beta caches.map(k => caches.delete(k))))
+  // one-time cleanup: the two exact legacy names below are the pre-rename beta caches
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => (k.startsWith('snowroute-') || k === 'snow5wbeta1-shell-v1' || k === 'snow5wbeta1-tiles-v1') && k !== CACHE && k !== TILES).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 async function netFirst(r, cacheName) {   // fresh when the network answers fast, cached otherwise
