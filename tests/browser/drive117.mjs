@@ -44,7 +44,7 @@ fs.mkdirSync(path.join(FIX, 'v2'), { recursive: true });
 fs.mkdirSync(path.join(FIX, 'lib'), { recursive: true });
 const srcIdx = fs.readFileSync(path.join(DIR, 'tracker-source.html'), 'utf8');
 const srcSw = fs.readFileSync(path.join(DIR, 'sw.js'), 'utf8');
-const v1Label = (srcIdx.match(/id="ver">(v6\.0 · Beta \d+\.\d+)/) || [])[1];
+const v1Label = (srcIdx.match(/id="ver">(Beta \d+\.\d+)/) || [])[1];
 const V1CACHE = (srcSw.match(/const CACHE = '([^']+)'/) || [])[1];
 const TILECACHE = (srcSw.match(/TILES = '([^']+)'/) || [])[1];
 if (!v1Label || !V1CACHE || !TILECACHE) throw new Error('drive117 fixture: could not parse version/cache names from src');

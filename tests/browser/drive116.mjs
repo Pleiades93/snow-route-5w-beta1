@@ -145,7 +145,7 @@ await sleep(800);
 try {
   await ev(`localStorage.clear(); location.reload(); true`);
   await sleep(500); await waitBoot(); await sleep(2500);
-  ok('P1 app boots under its own CSP (version label live)', await ev(`/^v6\\.0 · Beta \\d+\\.\\d+$/.test(document.getElementById('ver').textContent)`));
+  ok('P1 app boots under its own CSP (version label live)', await ev(`/^Beta \\d+\\.\\d+$/.test(document.getElementById('ver').textContent)`));
   ok('P2 MapLibre GL loaded from the allowlisted CDN', await ev(`typeof window.maplibregl === 'object'`));
   const pol = await ev(`(function(){ const m = document.querySelector('meta[http-equiv="Content-Security-Policy"]'); return m ? m.getAttribute('content') : ''; })()`);
   ok('P3 CSP meta present, default-src none + script hash', /^default-src 'none'/.test(pol) && pol.includes("script-src 'sha384-"));
