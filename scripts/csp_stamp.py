@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CSP stamp tool for the Snow Route 5W tracker (v5.82 candidate mechanism).
+"""CSP stamp tool for the Snow Route tracker.
 
 The tracker's production page gets a Content-Security-Policy as a <meta>
 tag whose script/style allowances are SHA-384 hashes of the page's OWN
