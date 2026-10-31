@@ -210,7 +210,7 @@ ok('M8 tapping away closes the sheet AND the same tap never reaches the map (sel
 await ev(`(() => { deselect(); tapStretch('Velmar', 0, STRETCH.Velmar.line[10]); tapStretch('Astona', 0, STRETCH.Astona.line[10]); return true; })()`); await sleep(300);
 const SS9 = await selState(); const PM9 = await popMetrics();
 ok('M9 two roads selected: same card, same wording, sides tally on the status line | ' + JSON.stringify({ SS9, PM9 }),
-  SS9.n === 2 && SS9.txt === '2 sections selected' && PM9.status !== 'none' && /^\\d+ of 4 sides done$/.test(PM9.statusTxt));
+  SS9.n === 2 && SS9.txt === '2 sections selected' && PM9.status !== 'none' && /^\d+ of 4 sides done$/.test(PM9.statusTxt));
 await ev(`deselect()`);
 
 // ---- M10: the colour edge mirrors the street's state ----
