@@ -1,7 +1,7 @@
 {
  "name": "Snow Route Beta",
  "short_name": "Snow Route Beta",
- "description": "Route 5W driveway-clearing tracker - 34 streets, Vaughan ON.",
+ "description": "Snow Route driveway-clearing tracker - 34 streets, Vaughan ON.",
  "start_url": ".",
  "scope": ".",
  "display": "standalone",

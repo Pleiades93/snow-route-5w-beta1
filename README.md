@@ -1,6 +1,6 @@
 # Snow Route Beta
 
-A single-file web app for tracking driveway snow clearing on Route 5W in Vaughan, Ontario.
+A single-file web app for tracking driveway snow clearing in Vaughan, Ontario.
 Built for one operator working a route of 34 streets: tap a street, tap **Mark completed**,
 and the map, pace clock and history stay in step — designed to be used from a phone in a
 truck, in the dark, with gloves-adjacent tapping and spotty signal.

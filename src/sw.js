@@ -1,4 +1,4 @@
-// Route 5W service worker (v5.79, Leaflet build): lets the page open with NO
+// Snow Route service worker: lets the page open with NO
 // signal, and re-uses map data already fetched (vector styles/tiles/glyphs from
 // OpenFreeMap + CARTO, Esri fallback tiles, CDN libraries). Host this file in
 // the SAME folder as index.html, over https. Without it the page still works

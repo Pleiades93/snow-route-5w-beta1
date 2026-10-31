@@ -1,4 +1,4 @@
-# Development Rules — Snow Route 5W Beta → Version 1.0
+# Development Rules — Snow Route Beta → Version 1.0
 
 These rules govern every change to this repository. They exist so the app evolves
 incrementally: preserve what works, prove that changes work, protect user data, and
