@@ -133,9 +133,9 @@ try {
   // Phase A: total failure from a cold start.
   failTiles = true;
   await reload(4000);
-  ok('A1 notice shows when the GL style can never load', await until(noteVisible, 18000));
+  ok('A1 notice shows when the basemap can never draw (tile hosts dead)', await until(noteVisible, 18000));
   ok('A2 notice text explains streets still work', await ev(`/still work/.test(document.querySelector('#mapNote span').textContent)`));
-  ok('A3 no GL load recorded', await ev(`glOk === false`));
+  ok('A3 basemap death recorded (the embedded style loads, but no tile ever arrives)', await until(async () => await ev(`typeof basemapDead !== 'undefined' && basemapDead === true`), 15000));
   ok('A4 streets list still renders with no map (34 rows)', await ev(`document.querySelectorAll('#streetList .srow').length === 34`));
   await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(600);
   ok('A5 marking still works on the dead map', await ev(`pieces.Velmar[0] === 1`));
@@ -156,7 +156,7 @@ try {
   await ev(`document.getElementById('mapNoteNo').click(); true`); await sleep(400);
   ok('B2 dismiss hides the notice', !(await noteVisible()));
   await ev(`setBasemap(); true`); await sleep(2500);
-  ok('B3 dismissal sticks while the map stays dead', !(await noteVisible()) && await ev(`glOk === false`));
+  ok('B3 dismissal sticks while the map stays dead', !(await noteVisible()) && await ev(`typeof basemapDead !== 'undefined' && basemapDead === true`));
 
   // Phase D: healthy boot, night theme - notice stays away; forced layout check at night.
   failTiles = false;

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-moLTu4PirU+9QMeWKC4vTKn8UjmB47NP6QJRsByRD0fH7sfHDulNao08niLYxjsT' https://cdn.jsdelivr.net; style-src-elem 'sha384-pNBu8idEV+WERAFneSsqf9nBDCbfsWUQdFPZNZoMd3ocCpsN/MKLSpI2273bipbu' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Om/HBfu6ZrUIu7lq5mr3P4KYlK3tfrvBN8SrbALHSOPeGtn7QgzE0SY+KUDsPXsc' https://cdn.jsdelivr.net; style-src-elem 'sha384-pNBu8idEV+WERAFneSsqf9nBDCbfsWUQdFPZNZoMd3ocCpsN/MKLSpI2273bipbu' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2162,14 +2162,16 @@ const PM_NIGHT = {"version":8,"name":"protomaps-dark","glyphs":"https://protomap
 
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // Beta 1.33 (Andrew's pick): BOTH basemaps are Protomaps - one map in light + dark flavours - embedded by pmstyles.js, so a day/night switch is a local setStyle: nothing to fetch, nothing to break mid-switch
-let glOk = false, mapNoteArmed = false, mapNoteOff = false;
+let glOk = false, mapNoteArmed = false, mapNoteOff = false, basemapDead = false, tilesOk = 0;
 const map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 0, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
 const routeBox = (() => { let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const nm of STREETNAMES) for (const seg of ROADS[nm]) for (const p of seg) { w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); } return { w, s, e, n }; })();
 map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28, animate: false });
-function noteMapState() { const dead = mapNoteArmed && !glOk && !mapNoteOff; $('mapNote').classList.toggle('hidden', !dead); }
+function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); }
 $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } });
+map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } }); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
+setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000); // Beta 1.33: the styles are embedded, so a dead basemap no longer stops GL from "loading" - it just never draws. Nine seconds after boot with not one tile arrived, the map is dead: record it and show the notice (it lives at boot level because a total outage also blocks the style-ready path this used to hang off)
 const ROUTE_LABEL_NAMES = [...STREETNAMES, '5th Avenue', 'Tina Place', 'Astona Boulevard', 'Greenpark Boulevard', 'Valeria Boulevard'];
 function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
