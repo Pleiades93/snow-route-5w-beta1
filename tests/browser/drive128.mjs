@@ -135,12 +135,17 @@ const tapAt = async (ll) => { // a REAL dispatched tap (CDP mouse events at the 
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pt.x, y: pt.y, button: 'left', clickCount: 1 }, S);
   await sleep(300); };
 const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: selSet.map(en => en.idx).join(','), n: selSet.length, bar: !$('selPop').classList.contains('hidden'), txt: $('selName').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
+const popMetrics = async () => JSON.parse(await ev(`(() => { const r = $('selPop').getBoundingClientRect(); return JSON.stringify({ h: r.height, mini: $('selPop').classList.contains('mini'), status: getComputedStyle($('selStatus')).display, note: $('selNote').style.display, btn: $('selBtn').style.display }); })()`));
 
 // ---- M1: three consecutive taps accumulate ----
 await tapAt(MIDS[0]); await tapAt(MIDS[1]); await tapAt(MIDS[2]);
 let SS = await selState();
 ok('M1 three taps select three sections, the pill shows, and all three highlight | ' + JSON.stringify(SS),
   SS.n === 3 && SS.bar === true && SS.txt === '3 sections selected' && SS.selFeats === 3 && SS.chips === 2);
+
+const PM1 = await popMetrics();
+ok('M1 multi (same road) is the compact reference pill: one line, count + two actions, nothing crammed | ' + JSON.stringify(PM1),
+  PM1.mini === true && PM1.h <= 54 && PM1.status === 'none' && PM1.note === 'none' && PM1.btn === 'none');
 
 // ---- M2: one side chip marks that side on ALL selected ----
 await ev(`document.querySelectorAll('.sideChip .chipBtn')[1].click()`); await sleep(400);
@@ -175,6 +180,8 @@ await ev(`document.querySelectorAll('.sideChip .chipBtn')[0].click()`); await sl
 SS = await selState();
 ok('M7 single-select: the chip toggles only the one stretch and the merged pop-up shows the street (one pop-up for every selection since 1.30) | ' + JSON.stringify(SS),
   SS.n === 1 && SS.bar === true && SS.txt === 'Velmar' && SS.pieces[0] === 3 && SS.pieces[1] === 2 && SS.pieces[2] === 2);
+const PM7 = await popMetrics();
+ok('M7 a single selection keeps the full card (not the pill) | ' + JSON.stringify(PM7), PM7.mini === false && PM7.status !== 'none');
 
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
@@ -188,6 +195,13 @@ await tapPx(30, 200); // open map, above the sheet, clear of the header and the 
 const M8 = JSON.parse(await ev(`(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), n: selSet.length }))()`));
 ok('M8 tapping away closes the sheet AND the same tap never reaches the map (selection intact) | ' + JSON.stringify(M8),
   M8.sheetOpen === false && M8.n === 1);
+
+// ---- M9: two sections on two DIFFERENT roads - the same compact pill ----
+await ev(`(() => { deselect(); tapStretch('Velmar', 0, STRETCH.Velmar.line[10]); tapStretch('Astona', 0, STRETCH.Astona.line[10]); return true; })()`); await sleep(300);
+const SS9 = await selState(); const PM9 = await popMetrics();
+ok('M9 two roads selected: same compact pill, same wording | ' + JSON.stringify({ SS9, PM9 }),
+  SS9.n === 2 && SS9.txt === '2 sections selected' && PM9.mini === true && PM9.h <= 54 && PM9.status === 'none');
+await ev(`deselect()`);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));

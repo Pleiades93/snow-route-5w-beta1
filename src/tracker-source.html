@@ -58,7 +58,7 @@
   #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
-  #mapNoteNo { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 44px; background: #e63a2e; color: #fff; }
+  #mapNoteNo { border: none; background: transparent; width: 44px; min-height: 44px; color: #e63a2e; font-size: 19px; font-weight: 800; cursor: pointer; } /* the plain red X, like every close in the app (Beta 1.31) - still a full 44px tap target */
   #chips { position: absolute; inset: 0; z-index: 950; pointer-events: none; }
   .sideChip { position: absolute; width: 40px; height: 40px; pointer-events: auto; }
   .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
@@ -93,6 +93,7 @@
   body.night #selPop { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #selPop.hidden { display: none; }
   #selPop button { border: 0; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; min-height: 36px; white-space: nowrap; }
+  #selPop.mini { border-radius: 999px; padding: 6px 8px 6px 14px; } /* Beta 1.31 (Andrew): a multi selection goes back to the ORIGINAL pill's exact size - one line, no cramming */
   #selAllBtn { background: #2ecc71; color: #fff; }
   #selClearBtn { background: transparent; color: inherit; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
@@ -105,9 +106,11 @@
   .sheet.dragging { transition: none; }
   .sheet.snapping { transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   #sheetBody { flex: 1 1 auto; min-height: 0; }
-  #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 14px 6px; }
+  #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
   #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
-  #sheetClose, #paceClose { border: none; background: transparent; width: 38px; height: 38px; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* Beta 1.30 (Andrew): a simple red X, no box */
+  #sheetClose, #paceClose { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* Beta 1.30: a simple red X, no box. Beta 1.31 (Andrew): pinned to the sheet's very top-right corner, above the title line */
+  body.kb .sheet { transition: none; max-height: calc(var(--vvh, 100dvh) * .98); } /* Beta 1.31: while the keyboard is up the sheet must not dance - no animated resizing, and it may use nearly all the VISIBLE height so the editor is never squashed under the keyboard */
+  .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
   #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
   #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
   #filters button.on { background: #2c7be5; color: #fff; }
@@ -157,8 +160,9 @@
   @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.98); } }
   @keyframes menuFade { from { opacity: 0; } }
   @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
-  .modal .card { background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
-  .modal .card h3 { font-size: 16px; margin-bottom: 8px; }
+  .modal .card { position: relative; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
+  #finNo, #noteNo, #xClose { position: absolute; top: 2px; right: 4px; width: 38px; height: 38px; padding: 0; background: transparent; border: none; color: #e63a2e; font-size: 21px; font-weight: 800; z-index: 3; cursor: pointer; } /* Beta 1.31 (Andrew): the dialogs' close buttons ARE the corner X now - Not yet / Cancel / Close leave their rows and live in the corner like the sheets' X */
+  .modal .card h3 { font-size: 16px; margin-bottom: 8px; padding-right: 36px; }
   .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
   .modal .row { display: flex; gap: 8px; }
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
@@ -190,14 +194,14 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.30</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.31</div></div>
   </div>
   <div id="stats"></div>
 </div>
 <div id="suggest" class="banner hidden"><span id="sugText"></span><button id="sugYes">Show street</button><button id="sugNo" class="red">Dismiss</button></div>
 <div id="stale" class="banner hidden"><span id="staleText"></span><button id="staleYes">Finish it</button><button id="staleNo" class="red">Keep going</button></div>
 <div id="bakNudge" class="banner hidden"><span id="bakText"></span><button id="bakSave">Save backup</button><button id="bakLater" class="red">Later</button></div>
-<div id="mapNote" class="hidden"><span>Maps can't load — streets, GPS and marking still work. Check your connection.</span><button id="mapNoteNo">Dismiss</button></div>
+<div id="mapNote" class="hidden"><span>Maps can't load — streets, GPS and marking still work. Check your connection.</span><button id="mapNoteNo">✕</button></div>
 <div id="dock">
   <button id="streetsBtn" class="dockBtn" title="Streets"></button>
   <div id="runSlot">
@@ -230,14 +234,14 @@
   <div id="sheetHead"><div id="sheetTitle">Pace</div><button id="paceClose">✕</button></div>
   <div id="pacePad"></div>
 </div>
-<div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">Not yet</button><button id="finYes">Finish clean</button></div></div></div>
-<div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">Cancel</button><button id="noteYes">Save note</button></div></div></div>
+<div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
+<div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
 <div id="xport" class="modal hidden"><div class="card"><h3 id="xTitle">Snow log</h3><textarea id="xText" readonly></textarea><div class="grid">
   <button id="xShare">Share</button><button id="xCopy">Copy</button>
   <button id="xSum">Summary</button><button id="xGpx">GPX trail</button>
   <button id="xBak">Backup (JSON)</button><button id="xRes">Restore</button>
   <button id="xImp" style="display:none">Import backup</button><button id="xClr" class="red">Clear trail</button>
-  <button id="xPre">Download route maps</button><button id="xClose" class="red">Close</button>
+  <button id="xPre">Download route maps</button><button id="xClose" class="red">✕</button>
 </div><div id="xPreStat"></div></div></div>
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
@@ -2186,6 +2190,22 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
         // overrules the Beta 1.6 style-native-colours call for the night style, on his road report.)
         try { m.setPaintProperty(L.id, 'text-color', '#ccd6df'); m.setPaintProperty(L.id, 'text-halo-color', 'rgba(8,10,14,0.9)'); m.setPaintProperty(L.id, 'text-halo-width', 1.3); } catch (e2) {}
       }
+      if (kind === 'place' && (sl === 'place_labels' || sl === 'places')) {
+        // MORE PLACES (Andrew, Beta 1.31): both ready-made styles hold the smaller settlements back
+        // until deep zooms - around the route that means most local names (suburbs, hamlets, quarters,
+        // neighbourhoods) only appear at z13-14+. Bring every settlement layer in earlier: minzoom
+        // drops 2.5 levels (floor 9; layers already earlier keep theirs, which also spares the
+        // country/state layers), and a zoom gate buried in a filter (the night style holds
+        // neighbourhoods to z14 inside its hamlet layer) relaxes to 11.5. Native collision still
+        // thins a crowded view on its own.
+        const mz = typeof L.minzoom === 'number' ? L.minzoom : 0;
+        if (mz > 9) m.setLayerZoomRange(L.id, Math.max(9, mz - 2.5), typeof L.maxzoom === 'number' ? L.maxzoom : 24);
+        if (L.filter) {
+          const relax = f => Array.isArray(f) ? f.map((x, i) => (i === 2 && f[0] === '>=' && Array.isArray(f[1]) && f[1][0] === 'zoom' && typeof x === 'number' && x > 11.5) ? 11.5 : relax(x)) : f;
+          const nf = relax(L.filter);
+          if (JSON.stringify(nf) !== JSON.stringify(L.filter)) m.setFilter(L.id, nf);
+        }
+      }
       if (kind === 'road') {
         m.setLayerZoomRange(L.id, 13, 24);
         // CLASH FIX (Andrew, Beta 1.7): on the 34 route streets the basemap's own along-street name and the
@@ -2390,6 +2410,7 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
   if (!sel) { p.classList.add('hidden'); return; }
   p.classList.remove('hidden');
   const multi = selSet.length >= 2;
+  p.classList.toggle('mini', multi); // Beta 1.31 (Andrew): multi = the compact pill, exactly the reference size; single keeps the card
   const streetsIn = new Set(selSet.map(en => en.name)).size;
   const oneStreet = streetsIn === 1;
   p.style.setProperty('--accent', oneStreet ? (MAIN.has(sel.name) ? YELLOW : RED) : 'transparent');
@@ -2401,14 +2422,15 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
     $('selStatus').textContent = 'Stretch ' + (sel.idx + 1) + ' of ' + total + ' · sides: ' + sideTxt(0) + ' / ' + sideTxt(1) + (streetComplete(sel.name) ? ' · STREET COMPLETE' : '');
   } else {
     $('selName').textContent = selSet.length + ' sections selected';
-    $('selStatus').textContent = oneStreet ? sel.name + ' · one side tap marks them all' : 'Across ' + streetsIn + ' streets · one side tap marks them all';
+    $('selStatus').style.display = 'none'; // Beta 1.31: no second line in multi - words were what made it big
   }
-  $('selNote').style.display = oneStreet ? '' : 'none'; // notes belong to a street: offered whenever the selection is a single street
+  if (!multi) $('selStatus').style.display = '';
+  $('selNote').style.display = multi ? 'none' : ''; // Beta 1.31: multi carries ONLY the count, Mark both sides and Clear - the reference pill's contents, nothing crammed
   $('selAllBtn').style.display = multi ? '' : 'none';
   $('selClearBtn').style.display = multi ? '' : 'none';
   const b = $('selBtn');
-  b.style.display = oneStreet ? '' : 'none'; // whole-street marking likewise
-  if (oneStreet) {
+  b.style.display = multi ? 'none' : '';
+  if (!multi) {
     if (streetComplete(sel.name)) { b.textContent = 'Mark not done'; b.className = 'notdone'; b.disabled = false; }
     else { b.textContent = 'Mark completed'; b.className = ''; b.disabled = false; }
   }
@@ -2430,6 +2452,7 @@ let listFilter = 'all';
 let noteOpenFor = null, noteSaveTimer = 0;
 function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
+  const scroller = $('sheetBody'); const keepScroll = scroller ? scroller.scrollTop : 0; // Beta 1.31: a rebuild must not yank the list back to the top while he is working in it
   const openEd = el.querySelector('.noteEd textarea');
   const draft = openEd ? openEd.value : null; // an in-progress note survives re-renders
   el.innerHTML = '';
@@ -2459,7 +2482,7 @@ function renderStreets() { // production row design: tap a street's name area to
       noteOpenFor = noteOpenFor === n ? null : n;
       renderStreets();
       const ta = el.querySelector('.noteEd textarea');
-      if (ta) ta.focus();
+      if (ta) { ta.focus(); setTimeout(() => { const t2 = el.querySelector('.noteEd textarea'); if (t2) t2.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 400); } // Beta 1.31: once the keyboard has arrived, make sure the editor sits in view inside the sheet
     });
     el.appendChild(d);
     if (noteOpenFor === n) {
@@ -2478,6 +2501,8 @@ function renderStreets() { // production row design: tap a street's name area to
       el.appendChild(ed);
     }
   });
+  if (scroller) scroller.scrollTop = keepScroll;
+  if (!el.querySelector('.noteEd') && document.activeElement && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') document.body.classList.remove('kb'); // an editor removed by a rebuild must not leave the keyboard state stuck on
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
 function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the height the sheet has at this moment for the whole slide-down, and clear it only after the motion ends. Clearing it instantly (the old way) snapped the sheet to its default height mid-close, which is why closing felt broken while opening felt fine.
@@ -3323,6 +3348,11 @@ function syncViewport() {
 }
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', syncViewport); window.visualViewport.addEventListener('scroll', syncViewport); }
 window.addEventListener('resize', syncViewport);
+// Beta 1.31: the keyboard state - while ANY text field has focus, the sheets stop resizing and
+// animating (body.kb rules in the stylesheet). This is what made note editing feel broken:
+// the sheet kept re-animating its height against the keyboard's own motion on every viewport tick.
+document.addEventListener('focusin', e => { if (e.target.matches('textarea, input')) document.body.classList.add('kb'); });
+document.addEventListener('focusout', e => { if (e.target.matches('textarea, input')) document.body.classList.remove('kb'); });
 document.addEventListener('focusout', () => setTimeout(syncViewport, 60));
 syncViewport();
 applyNight(); refreshAll(); checkStale(); syncWake();

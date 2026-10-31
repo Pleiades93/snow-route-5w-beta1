@@ -166,6 +166,13 @@ await sleep(700);
 const clearedH = await ev(`$('sheet').style.height`);
 ok('A5 the frozen height clears once the close motion has ended | ' + JSON.stringify(clearedH), clearedH === '');
 
+// A6 (Beta 1.31): the close X belongs in the sheet's very corner - top-right, above the title line.
+await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(500);
+const A6 = JSON.parse(await ev(`(() => { const sh = $('sheet').getBoundingClientRect(), cl = $('sheetClose').getBoundingClientRect(), ti = $('sheetTitle').getBoundingClientRect(); return JSON.stringify({ topGap: Math.round(cl.top - sh.top), rightGap: Math.round(sh.right - cl.right), closeTop: Math.round(cl.top), titleMid: Math.round(ti.top + ti.height / 2), pacePos: getComputedStyle($('paceClose')).position }); })()`));
+ok('A6 close X pinned to the top-right corner, above the title (both sheets) | ' + JSON.stringify(A6),
+  A6.topGap >= 0 && A6.topGap <= 8 && A6.rightGap >= 0 && A6.rightGap <= 10 && A6.closeTop < A6.titleMid && A6.pacePos === 'absolute');
+await ev(`closeSheets()`); await sleep(300);
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));
 proc.kill('SIGKILL'); process.exit(0);
