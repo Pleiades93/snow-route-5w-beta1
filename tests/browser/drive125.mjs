@@ -168,6 +168,13 @@ await ev(`(() => { map.jumpTo({ center: [(routeBox.w + routeBox.e) / 2, (routeBo
 let placeCount = 0;
 for (let i = 0; i < 24 && placeCount < 5; i++) { await sleep(500); placeCount = await ev(`map.queryRenderedFeatures({ layers: map.getStyle().layers.filter(l => l.id.indexOf('label-place') === 0).map(l => l.id) }).filter(f => f.properties && f.properties.name).length`); }
 ok('P3 at z10.5 the day map renders named little places, not just permits them | count ' + placeCount, placeCount >= 5);
+// P3b (Andrew): zoomed out until the route is a dot, the REGION must still read like a map -
+// the surrounding municipalities on the labels, so he can keep his bearings.
+await ev(`(() => { map.jumpTo({ center: [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2], zoom: 9.2 }); return true; })()`);
+let regionNames = [];
+for (let i = 0; i < 24; i++) { await sleep(500); regionNames = JSON.parse(await ev(`JSON.stringify(map.queryRenderedFeatures({ layers: ['label-place-city', 'label-place-town'] }).map(f => f.properties && f.properties.name).filter(Boolean))`)); if (['Vaughan', 'Richmond Hill', 'Markham', 'Toronto', 'King City', 'Aurora', 'Newmarket'].filter(n => regionNames.includes(n)).length >= 2) break; }
+ok('P3b at dot-zoom (z9.2) the surrounding cities/towns are on the map | ' + JSON.stringify(regionNames.slice(0, 14)),
+  ['Vaughan', 'Richmond Hill', 'Markham', 'Toronto', 'King City', 'Aurora', 'Newmarket'].filter(n => regionNames.includes(n)).length >= 2);
 await ev(`(() => { $('homeBtn').click(); return true; })()`); await sleep(600);
 
 // S6/S7 (Beta 1.24): after Start, Cancel must float ABOVE the circle - clear of the
