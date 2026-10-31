@@ -132,28 +132,28 @@ const ANCHOR = JSON.parse(await ev(`(() => { const g = $('tabBar').getBoundingCl
 ok('A0 chrome anchored as designed (tab bar fixed across the bottom, Beta 1.23) | ' + JSON.stringify(ANCHOR),
   ANCHOR.pos === 'fixed' && ANCHOR.gx === 0 && ANCHOR.gw === ANCHOR.vw && ANCHOR.gb === ANCHOR.vh);
 
-ok('A1 shared tokens exist (280ms; mirrored curve pair) | ' + JSON.stringify(TOK),
-  TOK.dur === '280ms' && TOK.open === 'cubic-bezier(.25,.8,.3,1)' && TOK.close === 'cubic-bezier(.7,0,.75,.2)');
+ok('A1 shared tokens exist (420ms - Andrew slowed the pace in 1.29, smooth over snappy; mirrored curve pair) | ' + JSON.stringify(TOK),
+  TOK.dur === '420ms' && TOK.open === 'cubic-bezier(.22,.9,.28,1)' && TOK.close === 'cubic-bezier(.72,0,.1,.78)');
 
 const sheetT = async () => JSON.parse(await ev(`(() => { const cs = getComputedStyle($('sheet')); return JSON.stringify({
   dur: cs.transitionDuration.split(',')[0].trim(), raw: cs.transitionTimingFunction, props: cs.transitionProperty }); })()`));
 const firstFn = (raw) => { const seg = String(raw).split('),')[0]; return (seg.endsWith(')') ? seg : seg + ')').replace(/\s+/g, ''); };
 const closed = await sheetT(); closed.fn = firstFn(closed.raw);
 ok('A2 closed sheet animates on the close curve at the shared duration, height included | ' + JSON.stringify(closed),
-  closed.dur === '0.28s' && closed.fn === 'cubic-bezier(0.7,0,0.75,0.2)' && closed.props.includes('transform') && closed.props.includes('height') && closed.props.includes('max-height'));
+  closed.dur === '0.42s' && closed.fn === 'cubic-bezier(0.72,0,0.1,0.78)' && closed.props.includes('transform') && closed.props.includes('height') && closed.props.includes('max-height'));
 await ev(`(() => { $('streetsBtn').click(); return true; })()`);
 await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
 const opened = await sheetT(); opened.fn = firstFn(opened.raw);
 ok('A2 open sheet animates on the open curve at the same duration | ' + JSON.stringify(opened),
-  opened.dur === '0.28s' && opened.fn === 'cubic-bezier(0.25,0.8,0.3,1)');
+  opened.dur === '0.42s' && opened.fn === 'cubic-bezier(0.22,0.9,0.28,1)');
 
 // A3/A4 (re-aimed Beta 1.23): the fan is gone; its stagger contract retired with it.
 // The tab bar is static chrome - always fully visible, no animation delays - while
 // the menu animation baseline lives on in the sheets (A1/A2 above).
 const tabState = JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('#tabBar .tabItem')].map(el => { const cs = getComputedStyle(el); return {
   op: parseFloat(cs.opacity), delay: cs.transitionDelay.split(',')[0].trim() }; }))`));
-ok('A3 tab bar is static chrome: six actions, fully visible, no stagger | ' + JSON.stringify(tabState),
-  tabState.length === 6 && tabState.every(t => t.op === 1 && t.delay === '0s'));
+ok('A3 tab bar is static chrome: five actions, fully visible, no stagger | ' + JSON.stringify(tabState),
+  tabState.length === 5 && tabState.every(t => t.op === 1 && t.delay === '0s'));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));

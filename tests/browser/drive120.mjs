@@ -132,7 +132,7 @@ ok('V1 dock buttons all inside the viewport | dock ' + JSON.stringify(D), rects.
 ok('V1 dock buttons do not overlap each other', noOverlap(rects));
 ok('V1 run button is centred and List/Pace are symmetrical around it | dock ' + JSON.stringify(D),
   Math.abs(D.start.cx - D.vw / 2) <= 2 && Math.abs((D.start.cx - D.list.cx) - (D.pace.cx - D.start.cx)) <= 2 && Math.abs(D.list.cy - D.start.cy) <= 2 && Math.abs(D.pace.cy - D.start.cy) <= 2);
-ok('V1 tab bar carries six labelled, iconned actions | tabs ' + JSON.stringify(D.tabs), D.tabs.length === 6 && D.tabs.every(t => t.lbl.length > 0 && t.svg));
+ok('V1 tab bar carries five labelled, iconned actions | tabs ' + JSON.stringify(D.tabs), D.tabs.length === 5 && D.tabs.every(t => t.lbl.length > 0 && t.svg));
 A = await J(`({ sw: $('hud').scrollWidth, cw: $('hud').clientWidth })`);
 ok('V1 header content does not overflow horizontally', A.sw <= A.cw + 1);
 
@@ -160,7 +160,7 @@ ok('V3b edge-anchored chips keep their separation | chips ' + JSON.stringify(chi
 
 // V4: bottom tab bar (Beta 1.23) - six equal actions, in bounds, no overlaps
 const tabs = JSON.parse(await ev(`JSON.stringify(${RECTS('#tabBar .tabItem')})`));
-ok('V4 tab bar shows six items', tabs.length === 6);
+ok('V4 tab bar shows five items', tabs.length === 5);
 ok('V4 tab items are equal width, inside the viewport, no overlaps | tabs ' + JSON.stringify(tabs),
   tabs.every(inView) && noOverlap(tabs) && Math.max(...tabs.map(t => t.w)) - Math.min(...tabs.map(t => t.w)) <= 3);
 
