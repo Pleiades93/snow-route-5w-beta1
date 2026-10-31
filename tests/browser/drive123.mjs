@@ -173,6 +173,29 @@ ok('A6 close X pinned to the top-right corner, above the title (both sheets) | '
   A6.topGap >= 0 && A6.topGap <= 8 && A6.rightGap >= 0 && A6.rightGap <= 10 && A6.closeTop < A6.titleMid && A6.pacePos === 'absolute');
 await ev(`closeSheets()`); await sleep(300);
 
+// A7 (Beta 1.34, Andrew): EVERY menu's close is the same plain red corner X. The Backup
+// menu's X used to render as a red BOX - the button-grid styles overrode the plain-X rule -
+// and the same collision hit Finish and Note. Assert the COMPUTED look of all three dialog
+// closes (Backup via its real opener, the two dialogs unhidden for the style read).
+await ev(`(() => { $('exportBtn').click(); return true; })()`); await sleep(400);
+await ev(`(() => { $('finModal').classList.remove('hidden'); $('noteModal').classList.remove('hidden'); return true; })()`); await sleep(200);
+const A7 = JSON.parse(await ev(`(() => { const one = id => { const e = $(id), cs = getComputedStyle(e), card = e.closest('.card').getBoundingClientRect(), r = e.getBoundingClientRect(); return { bg: cs.backgroundColor, col: cs.color, fs: cs.fontSize, pos: cs.position, topGap: Math.round(r.top - card.top), rightGap: Math.round(card.right - r.right), inGrid: !!e.closest('.grid') }; }; return JSON.stringify({ x: one('xClose'), fin: one('finNo'), note: one('noteNo') }); })()`));
+const xOk = o => o.bg === 'rgba(0, 0, 0, 0)' && o.col === 'rgb(230, 58, 46)' && o.fs === '21px' && o.pos === 'absolute' && o.topGap >= 0 && o.topGap <= 8 && o.rightGap >= 0 && o.rightGap <= 10 && o.inGrid === false;
+ok('A7 every dialog close is the same plain red corner X as the sheets (Backup, Finish, Note) | ' + JSON.stringify(A7), xOk(A7.x) && xOk(A7.fin) && xOk(A7.note));
+await ev(`(() => { $('xClose').click(); $('finModal').classList.add('hidden'); $('noteModal').classList.add('hidden'); return true; })()`); await sleep(200);
+
+// A8 (Beta 1.34): Download offline maps must actually fetch the VAUGHAN + NEARBY tile set
+// for both modes. The pre-1.34 loop ran the tile y-range backwards (north y is smaller),
+// so it silently fetched ZERO tiles and reported only glyphs+sprites - this check stubs
+// fetch, records every URL the handler asks for, and counts them exactly.
+await ev(`(() => { window.__preSeen = []; window.__realFetch = window.fetch; window.fetch = (u) => { window.__preSeen.push(String(u)); return Promise.resolve(new Response('{}', { status: 200 })); }; $('exportBtn').click(); return true; })()`); await sleep(300);
+await ev(`(() => { $('xPre').click(); return true; })()`);
+let preStat = '';
+for (let i = 0; i < 60; i++) { preStat = await ev(`$('xPreStat').textContent`); if (/Offline maps: saved/.test(preStat)) break; await sleep(250); }
+const A8 = JSON.parse(await ev(`(() => { const seen = window.__preSeen || []; window.fetch = window.__realFetch; const tiles = seen.filter(u => u.endsWith('.mvt')); const inBox = tiles.every(u => { const m = u.match(/\/(\d+)\/(\d+)\/(\d+)\.mvt$/); if (!m) return false; const z = +m[1], x = +m[2], y = +m[3], n = 2 ** z; const xw = Math.floor((-79.75 + 180) / 360 * n), xe = Math.floor((-79.35 + 180) / 360 * n); const yOf = lat => Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n); return x >= xw && x <= xe && y >= yOf(44.05) && y <= yOf(43.70); }); return JSON.stringify({ total: seen.length, tiles: tiles.length, inBox, glyphs: seen.filter(u => u.endsWith('.pbf')).length, sprites: seen.filter(u => u.includes('/sprites/')).length, stat: $('xPreStat').textContent }); })()`));
+ok('A8 offline download fetches the full Vaughan tile set (615 tiles, every one inside the area) + glyphs + both sprite flavours | ' + JSON.stringify(A8),
+  A8.tiles === 615 && A8.inBox === true && A8.glyphs === 256 && A8.sprites === 8 && A8.total === 879);
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));
 proc.kill('SIGKILL'); process.exit(0);

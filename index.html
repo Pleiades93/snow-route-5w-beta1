@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Om/HBfu6ZrUIu7lq5mr3P4KYlK3tfrvBN8SrbALHSOPeGtn7QgzE0SY+KUDsPXsc' https://cdn.jsdelivr.net; style-src-elem 'sha384-pNBu8idEV+WERAFneSsqf9nBDCbfsWUQdFPZNZoMd3ocCpsN/MKLSpI2273bipbu' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-fuP7zLNuOGIA1avccJ8JrfzS3oUvicGtKDw/q/J+XV+FUFmT6P82U4n2mOSfol1u' https://cdn.jsdelivr.net; style-src-elem 'sha384-LWlcBRo5VolT09jSMpK3HSTtiIjEBkC3M1YzpVeiKcpOmezii7HK9ABdYa4k6poe' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -45,8 +45,7 @@
   #selPop .selTxt { min-width: 0; }
   #selPop .selActs { display: flex; gap: 8px; align-items: center; }
   #selPop .selActs #selBtn { flex: 1; }
-  #selPop.mini { flex-direction: row; align-items: center; }
-  #selPop.mini .selActs { flex: none; }
+  #selPop .selActs #selAllBtn { flex: 1; }
   #selName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #selName { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #selStatus { font-size: 11.5px; opacity: .65; margin-top: 1px; line-height: 1.35; }
@@ -95,11 +94,10 @@
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
   #countTxt { position: relative; z-index: 1; }
   body.night { --card: rgba(7,10,17,.94); --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(140,170,230,.10); --field: #101623; --sec: #9fb4c8; --link: #7db4e8; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.29 night card: near-black with a blue soul, replacing the slate grey Andrew disliked */
-  #selPop { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 9px 12px 9px 15px; border-radius: 20px; box-shadow: inset 4px 0 0 var(--accent, transparent), var(--shadow-float); flex-direction: column; align-items: stretch; gap: 7px; max-width: 94vw; --accent: transparent; } /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */
+  #selPop { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 9px 12px 9px 15px; border-radius: 20px; box-shadow: inset 4px 0 0 var(--accent, transparent), var(--shadow-float); flex-direction: column; align-items: stretch; gap: 7px; width: min(342px, 92vw); --accent: transparent; } /* Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */
   body.night #selPop { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #selPop.hidden { display: none; }
   #selPop button { border: 0; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; min-height: 36px; white-space: nowrap; }
-  #selPop.mini { border-radius: 999px; padding: 6px 8px 6px 14px; } /* Beta 1.31 (Andrew): a multi selection goes back to the ORIGINAL pill's exact size - one line, no cramming */
   #selAllBtn { background: #2ecc71; color: #fff; }
   #selClearBtn { background: transparent; color: inherit; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
@@ -114,7 +112,7 @@
   #sheetBody { flex: 1 1 auto; min-height: 0; }
   #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
   #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
-  #sheetClose, #paceClose { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* Beta 1.30: a simple red X, no box. Beta 1.31 (Andrew): pinned to the sheet's very top-right corner, above the title line */
+  #sheetClose, #paceClose, #finNo, #noteNo, #xClose { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box */
   body.kb .sheet { transition: none; max-height: calc(var(--vvh, 100dvh) * .98); } /* Beta 1.31: while the keyboard is up the sheet must not dance - no animated resizing, and it may use nearly all the VISIBLE height so the editor is never squashed under the keyboard */
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
   #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
@@ -167,13 +165,12 @@
   @keyframes menuFade { from { opacity: 0; } }
   @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
   .modal .card { position: relative; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
-  #finNo, #noteNo, #xClose { position: absolute; top: 2px; right: 4px; width: 38px; height: 38px; padding: 0; background: transparent; border: none; color: #e63a2e; font-size: 21px; font-weight: 800; z-index: 3; cursor: pointer; } /* Beta 1.31 (Andrew): the dialogs' close buttons ARE the corner X now - Not yet / Cancel / Close leave their rows and live in the corner like the sheets' X */
   .modal .card h3 { font-size: 16px; margin-bottom: 8px; padding-right: 36px; }
   .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
   .modal .row { display: flex; gap: 8px; }
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
-  #finYes { background: #c22f24; color: #fff; } #finNo { background: #e63a2e; color: #fff; }
-  #noteYes { background: #2c7be5; color: #fff; } #noteNo { background: #e63a2e; color: #fff; }
+  #finYes { background: #c22f24; color: #fff; }
+  #noteYes { background: #2c7be5; color: #fff; }
   #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
   #xport .card { max-width: 380px; }
   #xText { width: 100%; min-height: 110px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 12px; padding: 9px; margin-bottom: 10px; font-family: ui-monospace, monospace; }
@@ -200,7 +197,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.33</div></div>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.34</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -242,12 +239,12 @@
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
-<div id="xport" class="modal hidden"><div class="card"><h3 id="xTitle">Snow log</h3><textarea id="xText" readonly></textarea><div class="grid">
+<div id="xport" class="modal hidden"><div class="card"><h3 id="xTitle">Snow log</h3><button id="xClose">✕</button><textarea id="xText" readonly></textarea><div class="grid">
   <button id="xShare">Share</button><button id="xCopy">Copy</button>
   <button id="xSum">Summary</button><button id="xGpx">GPX trail</button>
   <button id="xBak">Backup (JSON)</button><button id="xRes">Restore</button>
   <button id="xImp" style="display:none">Import backup</button><button id="xClr" class="red">Clear trail</button>
-  <button id="xPre">Download route maps</button><button id="xClose" class="red">✕</button>
+  <button id="xPre">Download offline maps</button>
 </div><div id="xPreStat"></div></div></div>
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
@@ -2420,8 +2417,7 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
   const p = $('selPop');
   if (!sel) { p.classList.add('hidden'); return; }
   p.classList.remove('hidden');
-  const multi = selSet.length >= 2;
-  p.classList.toggle('mini', multi); // Beta 1.31 (Andrew): multi = the compact pill, exactly the reference size; single keeps the card
+  const multi = selSet.length >= 2; // Beta 1.34 (Andrew): single and multi are the SAME size now - same box, same two rows; only the words and buttons change
   const streetsIn = new Set(selSet.map(en => en.name)).size;
   const oneStreet = streetsIn === 1;
   p.style.setProperty('--accent', !oneStreet ? 'transparent' : (streetComplete(sel.name) ? GREEN : (MAIN.has(sel.name) ? YELLOW : RED))); // the edge mirrors the street (Beta 1.32, Andrew): gold for a main road, raspberry for an unfinished regular road, mint once the street is complete
@@ -2433,9 +2429,10 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
     $('selStatus').textContent = 'Stretch ' + (sel.idx + 1) + ' of ' + total + (streetComplete(sel.name) ? ' · street complete' : doneSides === 2 ? ' · both sides done' : doneSides === 1 ? ' · 1 of 2 sides done' : ''); // Beta 1.32: concise - the chips on the map already show WHICH side
   } else {
     $('selName').textContent = selSet.length + ' sections selected';
-    $('selStatus').style.display = 'none'; // Beta 1.31: no second line in multi - words were what made it big
+    let dn = 0; for (const en of selSet) { const v = pieces[en.name][en.idx]; dn += (v & 1 ? 1 : 0) + (v & 2 ? 1 : 0); }
+    $('selStatus').textContent = dn + ' of ' + (selSet.length * 2) + ' sides done'; // Beta 1.34: multi carries the same second line a single does - the sides tally for the whole set
   }
-  if (!multi) $('selStatus').style.display = '';
+  $('selStatus').style.display = '';
   $('selNote').style.display = multi ? 'none' : ''; // Beta 1.31: multi carries ONLY the count, Mark both sides and Clear - the reference pill's contents, nothing crammed
   $('selAllBtn').style.display = multi ? '' : 'none';
   $('selClearBtn').style.display = multi ? '' : 'none';
@@ -3150,7 +3147,7 @@ function showX(mode) {
   else { ta.value = buildReport(); $('xTitle').textContent = 'Snow log'; }
   $('xShare').style.display = navigator.share ? '' : 'none';
   const rec = parseJ(lsGet(LS.pre), null);
-  $('xPreStat').textContent = rec ? 'Route maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Route maps not downloaded yet — preload for offline use.';
+  $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet — preload for offline use.';
   $('xport').classList.remove('hidden');
   ta.scrollTop = 0;
 }
@@ -3241,12 +3238,13 @@ $('xPre').addEventListener('click', async () => {
       const spr = Array.isArray(stj.sprite) ? stj.sprite[0].url : stj.sprite;
       if (spr) { urls.add(spr + '.json'); urls.add(spr + '.png'); urls.add(spr + '@2x.json'); urls.add(spr + '@2x.png'); }
       if (stj.glyphs) { const stack = 'Noto Sans Regular'; for (let a = 0; a <= 255; a++) urls.add(stj.glyphs.replace('{fontstack}', stack).replace('{range}', a * 256 + '-' + (a * 256 + 255))); } // the stack GL actually requests per style (Stage 2, audit G-5)
-      const ex = { w: routeBox.w - 0.005, s: routeBox.s - 0.0036, e: routeBox.e + 0.005, n: routeBox.n + 0.0036 };
+      const ex = { w: -79.75, s: 43.70, e: -79.35, n: 44.05 }; // Beta 1.34 (Andrew's pick): the offline area is Vaughan + nearby at full street detail (z10-14), not just the route. Day and night are two skins over these SAME tiles, so this one set covers both modes
       for (const srcName of Object.keys(stj.sources || {})) {
         const src = stj.sources[srcName];
         if (src.type !== 'vector' || !src.tiles) continue;
         const maxz = Math.min(14, src.maxzoom || 14);
-        for (let z = 10; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+        // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
+        for (let z = 10; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
       }
     }
     const list = [...urls];
@@ -3255,8 +3253,8 @@ $('xPre').addEventListener('click', async () => {
     let saved = 0;
     for (const u of list) { try { if (await caches.match(u)) saved++; } catch (e) {} } // Stage 2 (audit G-5): report only resources CONFIRMED in the offline cache
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length }));
-    st.textContent = 'Route maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)';
-    toast('Route maps: ' + saved + '/' + list.length);
+    st.textContent = 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)';
+    toast('Offline maps: ' + saved + '/' + list.length);
   } catch (e) { st.textContent = 'Preload failed — check connection and retry.'; }
 });
 
