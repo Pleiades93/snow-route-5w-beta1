@@ -196,7 +196,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.39</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.40</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -1956,7 +1956,6 @@ function addStack() {
     GLM.addSource('selEdges', { type: 'geojson', data: CUR.selEdges });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
-    GLM.addSource('labels', { type: 'geojson', data: LABELS });
     GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
     GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
   }
@@ -2005,9 +2004,10 @@ function addStack() {
   add(line('t1-sele', 'selEdges', { 'line-color': ['get', 'col'], 'line-width': 3, 'line-opacity': 1 }, { 'line-cap': 'butt' }));
   // --- hit + labels (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24, 'line-opacity': 0 }));
-  if (!GLM.getLayer('streetnames')) {   // id must not contain 'label': the app's glHideLabels rule would hide it (found by the label probe, 2026-10-28)
-    GLM.addLayer({ id: 'streetnames', type: 'symbol', source: 'labels', minzoom: 16.2, layout: { 'symbol-placement': 'line', 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 7.5, 16, 10.5, 18, 20], 'text-rotation-alignment': 'map', 'text-pitch-alignment': 'viewport' }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.4 } });
-  }
+  // Beta 1.40 (Andrew): our own line-following street names are RETIRED. Zoomed in, the
+  // basemap's own road names take over on every street - ours are the overview titles,
+  // the basemap's are the close-up names, restyled readable (see glHideLabels in app2).
+  // The 'labels' source is no longer added; LABELS/labelFeatures remain as data only.
   // Round 35/39 (Andrew): the point labels sit at the TOP of the
   // stack (appended last, like streetnames) so basemap symbols can no
   // longer knock them out - in Light, housenumber/POI symbols were
@@ -2021,11 +2021,15 @@ function addStack() {
   // shortest-first as he zooms out through 13.7 to 12.6, while every
   // tier still pops with the paint at 12.6 (Beta 1.12: no fading). Longest
   // tier appended last so it wins placement among the tiers.
+  // Beta 1.40 (Andrew): the HANDOVER - our titles fade OUT across 15.4-16.4 while the
+  // basemap's own names fade IN on route streets across the same band (glHideLabels),
+  // so the two systems crossfade and never print together. The 12.6 arrival stays a
+  // near-pop (0.03 of a zoom), per his Beta 1.12 no-fading call for the far switch.
   const PT_MIN = [13.7, 13.35, 13.0, 12.6];
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.2, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 0, 12.6, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.4, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1, 16.4, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
@@ -2168,7 +2172,7 @@ setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000)
 map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } });
 map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } }); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
 setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000); // Beta 1.33: the styles are embedded, so a dead basemap no longer stops GL from "loading" - it just never draws. Nine seconds after boot with not one tile arrived, the map is dead: record it and show the notice (it lives at boot level because a total outage also blocks the style-ready path this used to hang off)
-const ROUTE_LABEL_NAMES = [...STREETNAMES, '5th Avenue', 'Tina Place', 'Astona Boulevard', 'Greenpark Boulevard', 'Valeria Boulevard'];
+const ROUTE_TILE_NAMES = [...STREETNAMES, '5th Avenue', 'Angie Place', 'Astona Boulevard', 'Bayside Court', 'Bell Harbour Place', 'Blackburn Boulevard', 'Bloomingdale Lane', 'Boddy Court', 'Bourbon Street', 'Brownlee Avenue', 'Cartwright Boulevard', 'Columbus Avenue', 'Conti Crescent', 'Dianawood Ridge', 'Ferrari Court', 'Flatbush Avenue', 'Flushing Avenue', 'Frankie Lane', 'Galloway Drive', 'Greenpark Boulevard', 'Julian Court', 'Kingsnorth Boulevard', 'Malden Street', 'Marconi Avenue', 'Mellings Drive', 'Radley Street', 'Romeo Crescent', 'Santa Barbara Place', 'Tina Place', 'Topper Court', 'Valeria Boulevard', 'Velmar Drive', 'Wilshire Boulevard', 'Woolacott Road']; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label handover in glHideLabels.
 function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
   // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
@@ -2184,6 +2188,29 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
+    // Beta 1.40: route-street CLONES of the two road-label layers (the handover, see the
+    // road branch below). A zoom ramp cannot nest inside a name test in one paint value
+    // ('zoom may only feed a top-level step/interpolate' - the map rejects it), so route
+    // streets get their own copy of each label layer: only route names, fading in across
+    // 15.4-16.4, restyled at creation for the current theme. The originals exclude route
+    // names by filter instead. Rebuilt from the embedded style spec on every restack.
+    const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
+    const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f; // the generated styles author kind filters in legacy form; as expressions they must be rebuilt or any combined filter is rejected whole
+    for (const baseId of ['roads_labels_major', 'roads_labels_minor']) {
+      const cloneId = baseId + '-route';
+      if (m.getLayer(cloneId) || !m.getLayer(baseId)) continue;
+      const specL = (spec.layers || []).find(x => x.id === baseId);
+      if (!specL) continue;
+      const clone = JSON.parse(JSON.stringify(specL));
+      clone.id = cloneId;
+      clone.filter = specL.filter ? ['all', convF(specL.filter), ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]] : ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
+      clone.paint = clone.paint || {};
+      clone.paint['text-opacity'] = ['interpolate', ['linear'], ['zoom'], 15.4, 0, 16.4, 1];
+      if (typeof isNight === 'function' && isNight()) { clone.paint['text-color'] = '#ccd6df'; clone.paint['text-halo-color'] = 'rgba(8,10,14,0.9)'; clone.paint['text-halo-width'] = 1.3; }
+      else { clone.paint['text-color'] = '#333333'; clone.paint['text-halo-color'] = 'rgba(255,255,255,.92)'; clone.paint['text-halo-width'] = 1.5; }
+      const order = m.getStyle().layers.map(x => x.id);
+      try { m.addLayer(clone, order[order.indexOf(baseId) + 1]); } catch (e2) {}
+    }
     for (const L of m.getStyle().layers) {
       if (L.type !== 'symbol' || !L.layout || !L.layout['text-field'] || !L['source-layer']) continue;
       const sl = L['source-layer'], id = L.id || '';
@@ -2215,11 +2242,25 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       }
       if (kind === 'road') {
         m.setLayerZoomRange(L.id, 13, 24);
-        // CLASH FIX (Andrew, Beta 1.7): on the 34 route streets the basemap's own along-street name and the
-        // app's bigger route label printed on top of each other. The basemap name now steps aside for route
-        // streets only (short + full map forms); every other street keeps its basemap name as before.
-        const excl = ['!', ['in', ['get', 'name'], ['literal', ROUTE_LABEL_NAMES]]];
-        m.setFilter(L.id, L.filter ? ['all', L.filter, excl] : excl);
+        // LABEL HANDOVER (Andrew, Beta 1.40): zoomed out, OUR titles name the route streets;
+        // zooming in, the basemap's own names take over - on route streets they fade IN across
+        // 15.4-16.4 while our titles fade OUT on the same band (engine labelpts), so the two
+        // never print together. Non-route streets keep their basemap names at every zoom.
+        // (The Beta 1.7 clash-exclusion filter that used to live here silently stopped working:
+        // it mixed legacy filter syntax with an expression, and the map rejected it outright.)
+        if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
+          // The originals keep every NON-route name; route names move to the clones above.
+          const specL = (spec.layers || []).find(x => x.id === id);
+          const baseF = specL && specL.filter ? convF(specL.filter) : null;
+          try { m.setFilter(L.id, baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]); } catch (e2) {}
+          if (!(typeof isNight === 'function' && isNight())) {
+            // DAY READABILITY (Andrew, Beta 1.40): the stock day road names are pale and wash
+            // out over the app's coloured route lines. Darken them to the app's own label ink
+            // with a firm light edge - the same treatment our titles use. Day only; the night
+            // branch above already lifts every name for the dark map.
+            try { m.setPaintProperty(L.id, 'text-color', '#333333'); m.setPaintProperty(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); m.setPaintProperty(L.id, 'text-halo-width', 1.5); } catch (e2) {}
+          }
+        }
       }
     }
   } catch (e) { /* a style without label layers has nothing to normalize */ }
@@ -2227,7 +2268,7 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
 function addReferenceLayers() {
   if (map.getSource('ref')) return;
   const feats = [];
-  for (const name of Object.keys(REFERENCE)) { if (name === 'Village Green' || name === 'Ott') continue; // Beta 1.32 (Andrew): the Village Green reference is OFF the map - the basemap already names the road, and Ott is part of that same road. The data stays (production parity); only West link still draws.
+  for (const name of Object.keys(REFERENCE)) { if (name === 'Village Green' || name === 'Ott' || name === 'West link') continue; // Beta 1.32/1.40 (Andrew): ALL reference lines are OFF the map - Village Green and Ott duplicate roads the basemap already names, and West link traced a dashed line over Velmar's west leg toward Rutherford (his report, 2026-10-31). The data stays (production parity); nothing draws.
     const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // production REFERENCE shape: { name: [segment, ...] } - the first cut wrongly iterated it as an array of {name, pts}, threw on every style-ready, and silently killed the GPS + trail layers queued after it (Andrew's missing GPS dot, 2026-10-30)
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
   map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);

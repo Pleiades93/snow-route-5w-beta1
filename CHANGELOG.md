@@ -4,6 +4,15 @@ User-facing changes and important reliability fixes. Versions are the
 in-app labels (header, under the app name). Since Beta 1.36 the label is
 just "Beta X.Y" and the app is called Snow Route Beta.
 
+## Beta 1.40 — 2026-10-31
+Street names now hand over as you zoom. Zoomed out, the app's own titles
+name your streets; as you zoom in they fade out while the map's own road
+names fade in along the roads — one set at a time, never doubled. The day
+map's road names are darker with a firmer edge, so they stay readable
+over the coloured route streets instead of washing out. Also gone: the
+dashed guide line that traced over Velmar toward Rutherford — no
+reference lines draw on the map anymore.
+
 ## Beta 1.39 — 2026-10-31
 One official green in the selection pop-up: "Mark completed" now uses
 the "Mark both sides" green, so both buttons match exactly.
