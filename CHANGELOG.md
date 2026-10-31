@@ -4,6 +4,10 @@ User-facing changes and important reliability fixes. Versions are the
 in-app labels (header, under the app name). Since Beta 1.36 the label is
 just "Beta X.Y" and the app is called Snow Route Beta.
 
+## Beta 1.42 — 2026-10-31
+
+START-UP SPLASH (Andrew approved the design from the mockups): opening the app cold now starts on the icon blue with the snowflake icon rising in and "Snow Route" sliding in from the right; the pair hold while the map loads behind them, then the flake rushes at you until its white covers the whole screen and dissolves into the app. The exit waits for the map to be genuinely ready (with a safety release so a dead connection can never trap you behind it), and afterwards the splash is removed entirely — it plays once per cold open and never replays. iPhone still launch images (the frozen frame the phone shows before the app loads) ship for current screen sizes, in the same blue with the same icon, so the still and the animation read as one moment.
+
 ## Beta 1.41 — 2026-10-31
 
 PERFORMANCE ROUND (Andrew approved, from the 2026-10-31 performance audit — all five levers, each small and reversible):
