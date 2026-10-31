@@ -159,6 +159,11 @@ ok('T3 Settings rises with Update and Backup inside (Pack D icons + labels) | ' 
 await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
 ok('T3 Settings closes on a second tap', await ev(`$('setMenu').classList.contains('open')`) === false);
 
+// P1 (Beta 1.31, Andrew): the day style's smaller settlements arrive early now.
+const PL1 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L.minzoom; return JSON.stringify({ vil: byId['label-place-village'], ham: byId['label-place-hamlet'], nei: byId['label-place-neighbourhood'] }); })()`));
+ok('P1 day map lets smaller places in early (village 9, hamlet 9, neighbourhood 10 - the PLACE_EARLY table) | ' + JSON.stringify(PL1),
+  PL1.vil === 9 && PL1.ham === 9 && PL1.nei === 10);
+
 // S6/S7 (Beta 1.24): after Start, Cancel must float ABOVE the circle - clear of the
 // tab bar and tappable; and the chrome icons must compute to bright colours on the
 // dark glass (a duplicated dark colour value once rendered them invisible).
@@ -185,6 +190,9 @@ const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el)
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')), menuBg: surf($('setMenu')) }); })()`));
 ok('T4 night menus share the deep blue-black (bar = sheets = pop-up), text bright | ' + JSON.stringify(T4),
   T4.sheetBg === 'rgba(7, 10, 17, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
+const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L.minzoom; return JSON.stringify({ vil: byId['place_villages'], sub: byId['place_suburbs'], ham: byId['place_hamlet'] }); })()`));
+ok('P2 night map too: villages 9, suburbs 9, hamlets 9 | ' + JSON.stringify(PL2),
+  PL2.vil === 9 && PL2.sub === 9 && PL2.ham === 9);
 
 await ev(`(() => { $('cancelStartBtn').click(); return true; })()`);
 await sleep(400);
