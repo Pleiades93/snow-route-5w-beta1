@@ -107,7 +107,10 @@ async function shot(name) {
 // that would have caught the Beta 1.33-era clash, where the exclusion filter was
 // silently rejected and basemap names printed on route streets at every zoom.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push({ name, pass: !!cond });
+const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ev = async (code) => evaluate(code);
+const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 20000)) { const v = await ev(expr); if (v === true) return true; await sleep(300); } return false; };
+ok('W0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, v => v, 30000));
 
 // W1-W3: the Beta 1.41 constructor values are actually in force (read from the live
 // map, not the source text). fadeDuration and the cache sizes have no public getter
@@ -117,7 +120,7 @@ const W = JSON.parse(await ev(`(() => { const sc = map.style && map.style.source
 ok('W1 canvas pixel ratio is capped at 2 | ' + JSON.stringify(W), W.pr === 2);
 ok('W2 tile fade duration is 200ms (tiles melt in, no snap) | fade=' + W.fade, W.fade === 200);
 ok('W3 tile cache sized for a zoom sweep and back (200 tiles / 6 zoom levels) | ' + W.mcs + '/' + W.mcz, W.mcs === 200 && W.mcz === 6);
-ok('W4 the label handover survived the new constructor (route clones present)', W.clone === true);
+ok('W4 the label handover survived the new constructor (route clones present)', await poll120(`!!map.getLayer('roads_labels_major-route')`, v => v, 20000));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));
