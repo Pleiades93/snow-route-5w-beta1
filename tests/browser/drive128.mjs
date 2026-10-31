@@ -134,7 +134,7 @@ const tapAt = async (ll) => { // a REAL dispatched tap (CDP mouse events at the 
   await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: pt.x, y: pt.y, button: 'left', clickCount: 1 }, S);
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pt.x, y: pt.y, button: 'left', clickCount: 1 }, S);
   await sleep(300); };
-const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: selSet.map(en => en.idx).join(','), n: selSet.length, bar: !$('selBar').classList.contains('hidden'), txt: $('selBarTxt').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
+const selState = async () => JSON.parse(await ev(`(() => JSON.stringify({ ids: selSet.map(en => en.idx).join(','), n: selSet.length, bar: !$('selPop').classList.contains('hidden'), txt: $('selName').textContent, pieces: [0, 1, 2].map(i => pieces.Velmar[i]), chips: document.querySelectorAll('.sideChip').length, selFeats: ((map.getSource('sel') || {})._data || {}).features ? map.getSource('sel')._data.features.length : -1 }))()`));
 
 // ---- M1: three consecutive taps accumulate ----
 await tapAt(MIDS[0]); await tapAt(MIDS[1]); await tapAt(MIDS[2]);
@@ -173,8 +173,21 @@ ok('M6 tapping empty map clears the selection and hides the pill | ' + JSON.stri
 await ev(`(() => { selectStretch('Velmar', 0, [${MIDS[0][0]}, ${MIDS[0][1]}]); return true; })()`); await sleep(300);
 await ev(`document.querySelectorAll('.sideChip .chipBtn')[0].click()`); await sleep(400);
 SS = await selState();
-ok('M7 single-select: the chip toggles only the one stretch and no pill appears | ' + JSON.stringify(SS),
-  SS.n === 1 && SS.bar === false && SS.pieces[0] === 3 && SS.pieces[1] === 2 && SS.pieces[2] === 2);
+ok('M7 single-select: the chip toggles only the one stretch and the merged pop-up shows the street (one pop-up for every selection since 1.30) | ' + JSON.stringify(SS),
+  SS.n === 1 && SS.bar === true && SS.txt === 'Velmar' && SS.pieces[0] === 3 && SS.pieces[1] === 2 && SS.pieces[2] === 2);
+
+// ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
+await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
+const tapPx = async (x, y) => { // a real tap at raw viewport pixels (the open sheet covers the centre, so tapAt's centred tap would land on the sheet itself)
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 }, S);
+  await sleep(60);
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 }, S);
+  await sleep(300);
+};
+await tapPx(30, 200); // open map, above the sheet, clear of the header and the pop-up
+const M8 = JSON.parse(await ev(`(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), n: selSet.length }))()`));
+ok('M8 tapping away closes the sheet AND the same tap never reaches the map (selection intact) | ' + JSON.stringify(M8),
+  M8.sheetOpen === false && M8.n === 1);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));

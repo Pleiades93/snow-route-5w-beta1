@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-qbqR5seQ4cEDooz8eV8esS/bTNjIVn4NttNqREHcAUykpzVn66FTBYCZE+XSnVSw' https://cdn.jsdelivr.net; style-src-elem 'sha384-eYDMN3e2Assj6oUMwbcT85+r3Xcm2dK3kLlemwlzhKBpgPt8HB5lJAUoA29EF0CD' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-biDHFvNGu3rKQJyBFrUWSa36RifXHh5X++B/7v2ZTzXiNCUsMTIpTLQZS4XCIefP' https://cdn.jsdelivr.net; style-src-elem 'sha384-c2T7PlCi+OJk2M0QrWWzCVBlClRu1yCxvVEfwbwMwWAf9vm9eDeIJTnEALkvPUjy' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; connect-src 'self' https://tiles.versatiles.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -42,15 +42,14 @@
   body.storage-bad #warn { display: block; }
   /* Selection strip (Beta 1.14, Andrew): part of the header, not a floating card - it grows the top menu
      only while a street is selected, so Mark completed never floats over the map or fights the buttons. */
-  #info { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px; background: rgba(20,22,28,.88); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); border-left: 4px solid var(--accent); border-radius: 14px; --accent: transparent; box-shadow: var(--shadow-card); } /* floats as its own card now that the header slab is gone */
-  #info.hidden { display: none; }
-  #info .selTxt { flex: 1; min-width: 0; }
+  #selPop .selTxt { flex: 1; min-width: 0; }
   #selName { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #selStatus { font-size: 11.5px; color: #b9c6d4; margin-top: 1px; line-height: 1.35; }
+  #selStatus { font-size: 11.5px; opacity: .65; margin-top: 1px; line-height: 1.35; }
   #selBtn { flex: none; border: none; border-radius: var(--rad-btn); padding: 9px 12px; font-size: 13.5px; font-weight: 700; min-height: 40px; background: #1e7a46; color: #fff; }
   #selBtn.notdone { background: #c22f24; }
   #selBtn:disabled { background: #3a4150; color: #8fa0b3; }
-  #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: var(--rad-btn); padding: 0; font-size: 16px; background: #2b303c; color: #dfe7ef; }
+  #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: 999px; padding: 0; background: var(--chip); color: inherit; }
+  #selNote svg { width: 19px; height: 19px; display: block; margin: auto; }
   .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
@@ -91,10 +90,10 @@
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
   #countTxt { position: relative; z-index: 1; }
   body.night { --card: rgba(7,10,17,.94); --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(140,170,230,.10); --field: #101623; --sec: #9fb4c8; --link: #7db4e8; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.29 night card: near-black with a blue soul, replacing the slate grey Andrew disliked */
-  #selBar { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 8px 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.28: the multi-selection action pill - same glass family as the progress pill, parked under the title where nothing else competes */
-  body.night #selBar { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
-  #selBar.hidden { display: none; }
-  #selBar button { border: 0; border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  #selPop { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); border-left: 4px solid var(--accent, transparent); padding: 8px 10px; border-radius: 20px; box-shadow: var(--shadow-float); max-width: 94vw; --accent: transparent; } /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */
+  body.night #selPop { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #selPop.hidden { display: none; }
+  #selPop button { border: 0; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; min-height: 36px; white-space: nowrap; }
   #selAllBtn { background: #2ecc71; color: #fff; }
   #selClearBtn { background: transparent; color: inherit; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
@@ -109,7 +108,7 @@
   #sheetBody { flex: 1 1 auto; min-height: 0; }
   #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 14px 6px; }
   #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
-  #sheetClose { border: none; border-radius: var(--rad-btn); width: 38px; height: 38px; background: #e63a2e; color: #fff; font-size: 16px; font-weight: 800; }
+  #sheetClose, #paceClose { border: none; background: transparent; width: 38px; height: 38px; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* Beta 1.30 (Andrew): a simple red X, no box */
   #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
   #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
   #filters button.on { background: #2c7be5; color: #fff; }
@@ -122,6 +121,8 @@
   .srow .tm { margin-left: auto; font-size: 12px; color: var(--tm-c); white-space: nowrap; }
   .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
   .srow .nt { font-size: 12px; color: var(--nt-c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
+  .srow .sbtn svg { width: 20px; height: 20px; display: block; margin: auto; }
+  .srow .nt .ntIco svg { width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; }
   .srow .sbtn { margin-left: 2px; width: 42px; height: 42px; flex-shrink: 0; border: 1px solid var(--hair); border-radius: var(--rad-btn); background: var(--chip); color: var(--ink); font-size: 17px; padding: 0; }
   .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
   .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
@@ -152,7 +153,9 @@
   .modal.hidden { display: none; }
   .modal:not(.hidden) { animation: menuFade var(--anim-dur) var(--ease-open); }
   .modal:not(.hidden) .card { animation: menuRise var(--anim-dur) var(--ease-open); }
-  .banner:not(.hidden), #mapNote:not(.hidden), #selBar:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
+  .banner:not(.hidden), #mapNote:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
+  #selPop:not(.hidden) { animation: menuRiseC var(--anim-dur) var(--ease-open); } /* centred: its rise keyframes must carry the -50% X shift or the pop-up jumps sideways mid-animation */
+  @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.98); } }
   @keyframes menuFade { from { opacity: 0; } }
   @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
   .modal .card { background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
@@ -182,18 +185,13 @@
 <body>
 <div id="map"></div>
 <div id="chips"></div>
-<div id="selBar" class="hidden"><span id="selBarTxt"></span><button id="selAllBtn">Mark both sides</button><button id="selClearBtn">Clear</button></div>
+<div id="selPop" class="hidden"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><button id="selNote" title="Note for this street"></button><button id="selAllBtn">Mark both sides</button><button id="selBtn">Mark completed</button><button id="selClearBtn">Clear</button></div>
 <div id="attrChip">© VersaTiles © OpenStreetMap contributors © CARTO</div>
 <div id="spd" class="hidden"></div>
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.29</div></div>
-  </div>
-  <div id="info" class="hidden">
-    <div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div>
-    <button id="selNote" title="Note for this street">📝</button>
-    <button id="selBtn" disabled>Mark completed</button>
+    <div class="titleStack"><div class="title">Route 5W Beta</div><div class="ver" id="ver">v6.0 · Beta 1.30</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -230,7 +228,7 @@
 </div>
 <div id="pacePanel" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
-  <div id="sheetHead"><div id="sheetTitle">Pace</div><button id="paceClose" style="border:none;border-radius:11px;width:38px;height:38px;background:#e63a2e;color:#fff;font-size:16px;font-weight:800">✕</button></div>
+  <div id="sheetHead"><div id="sheetTitle">Pace</div><button id="paceClose">✕</button></div>
   <div id="pacePad"></div>
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">Not yet</button><button id="finYes">Finish clean</button></div></div></div>
@@ -2322,8 +2320,7 @@ function positionChips() {
   });
 }
 map.on('move', positionChips);
-function refreshSelUI() { if (window.GLP) window.GLP.syncSel(); showChips(); updateSelBar(); renderPanel(); }
-function updateSelBar() { const bar = $('selBar'); if (selSet.length >= 2) { bar.classList.remove('hidden'); $('selBarTxt').textContent = selSet.length + ' sections selected'; } else bar.classList.add('hidden'); }
+function refreshSelUI() { if (window.GLP) window.GLP.syncSel(); showChips(); renderPanel(); }
 function selectStretch(name, idx, anchor) { selSet = [{ name, idx, anchor }]; sel = { name, idx, anchor }; selStretch = { name, idx }; refreshSelUI(); } // a fresh single selection (streets list, drives)
 function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tapping a selected stretch removes just it; the anchor follows the last remaining selection
   const i = selSet.findIndex(en => en.name === name && en.idx === idx);
@@ -2333,7 +2330,7 @@ function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tap
   sel = { name: top.name, idx: top.idx, anchor: top.anchor }; selStretch = { name: top.name, idx: top.idx };
   refreshSelUI();
 }
-function deselect() { sel = null; selStretch = null; selSet = []; clearChips(); updateSelBar(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
+function deselect() { sel = null; selStretch = null; selSet = []; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
 map.on('click', e => {
   if (Date.now() < swallowClickUntil) return;
   const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
@@ -2389,19 +2386,33 @@ function markUndone(name) {
   toast('Unmarked ' + name);
 }
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
-function renderPanel() {
-  const p = $('info');
+function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header strip and the multi-select pill are the same pop-up now - pill glass, every action inside, content follows the selection
+  const p = $('selPop');
   if (!sel) { p.classList.add('hidden'); return; }
   p.classList.remove('hidden');
-  $('selName').textContent = sel.name;
-  const total = STRETCH[sel.name].parts.length;
-  const val = pieces[sel.name][sel.idx];
-  const sideTxt = s => (val & (s ? 2 : 1)) ? 'done' : 'to do';
-  $('selStatus').textContent = 'Stretch ' + (sel.idx + 1) + ' of ' + total + ' · sides: ' + sideTxt(0) + ' / ' + sideTxt(1) + (streetComplete(sel.name) ? ' · STREET COMPLETE' : '');
-  p.style.setProperty('--accent', MAIN.has(sel.name) ? YELLOW : RED);
+  const multi = selSet.length >= 2;
+  const streetsIn = new Set(selSet.map(en => en.name)).size;
+  const oneStreet = streetsIn === 1;
+  p.style.setProperty('--accent', oneStreet ? (MAIN.has(sel.name) ? YELLOW : RED) : 'transparent');
+  if (!multi) {
+    $('selName').textContent = sel.name;
+    const total = STRETCH[sel.name].parts.length;
+    const val = pieces[sel.name][sel.idx];
+    const sideTxt = sd => (val & (sd ? 2 : 1)) ? 'done' : 'to do';
+    $('selStatus').textContent = 'Stretch ' + (sel.idx + 1) + ' of ' + total + ' · sides: ' + sideTxt(0) + ' / ' + sideTxt(1) + (streetComplete(sel.name) ? ' · STREET COMPLETE' : '');
+  } else {
+    $('selName').textContent = selSet.length + ' sections selected';
+    $('selStatus').textContent = oneStreet ? sel.name + ' · one side tap marks them all' : 'Across ' + streetsIn + ' streets · one side tap marks them all';
+  }
+  $('selNote').style.display = oneStreet ? '' : 'none'; // notes belong to a street: offered whenever the selection is a single street
+  $('selAllBtn').style.display = multi ? '' : 'none';
+  $('selClearBtn').style.display = multi ? '' : 'none';
   const b = $('selBtn');
-  if (streetComplete(sel.name)) { b.textContent = 'Mark not done'; b.className = 'notdone'; b.disabled = false; }
-  else { b.textContent = 'Mark completed'; b.className = ''; b.disabled = false; }
+  b.style.display = oneStreet ? '' : 'none'; // whole-street marking likewise
+  if (oneStreet) {
+    if (streetComplete(sel.name)) { b.textContent = 'Mark not done'; b.className = 'notdone'; b.disabled = false; }
+    else { b.textContent = 'Mark completed'; b.className = ''; b.disabled = false; }
+  }
 }
 $('selBtn').addEventListener('click', () => { if (!sel || !tapGuard('selBtn')) return; markStreet(sel.name, !streetComplete(sel.name)); });
 $('selNote').addEventListener('click', () => { if (!sel || !tapGuard('selNote')) return; openNote(sel.name); });
@@ -2429,10 +2440,11 @@ function renderStreets() { // production row design: tap a street's name area to
   arr.forEach(n => {
     const d = document.createElement('div');
     d.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
-    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nm"></div><div class="nt"></div></div><div class="tm"></div><button class="sbtn smap" title="Show on map">📍</button>';
+    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nm"></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div><button class="sbtn smap" title="Show on map"></button>';
     d.querySelector('.nm').textContent = n;
     const ntEl = d.querySelector('.nt');
-    const paintNt = () => { const t = noteTextOf(n); ntEl.textContent = t ? '📝 ' + t : ''; ntEl.style.display = t ? '' : 'none'; };
+    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; // Pack D glyphs (Beta 1.30) in place of the emoji
+    const paintNt = () => { const t = noteTextOf(n); d.querySelector('.ntTxt').textContent = t || ''; ntEl.style.display = t ? '' : 'none'; };
     paintNt();
     const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
     d.querySelector('.tm').textContent = (notes[n] && notes[n].some(f => f.k !== 'note') ? '⚑ ' : '') + (doneAt ? 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')' : '');
@@ -2469,7 +2481,14 @@ function renderStreets() { // production row design: tap a street's name area to
   });
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
-function closeSheets() { [$('sheet'), $('pacePanel')].forEach(s => { s.classList.remove('open'); s.classList.remove('full'); s.style.height = ''; s.style.maxHeight = ''; }); }
+function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the height the sheet has at this moment for the whole slide-down, and clear it only after the motion ends. Clearing it instantly (the old way) snapped the sheet to its default height mid-close, which is why closing felt broken while opening felt fine.
+  if (!s.classList.contains('open')) { s.classList.remove('full'); return; }
+  const h = s.offsetHeight;
+  s.style.height = h + 'px'; s.style.maxHeight = 'none';
+  s.classList.remove('open'); s.classList.remove('full'); s.classList.remove('snapping'); // the base (closing) transition and curve own the motion from here
+  setTimeout(() => { if (!s.classList.contains('open')) { s.style.height = ''; s.style.maxHeight = ''; } }, 480);
+}
+function closeSheets() { [$('sheet'), $('pacePanel')].forEach(closeSheetEl); }
 // Draggable sheets (Andrew, Beta 1.9 spec; refined 1.10 flick; refined 1.13 touch zone): the drag/flick touch
 // zone is the panel's EMPTY TOP STRIP - the grab handle plus the title row - a comfortable area with no
 // controls except Close (a flick starting on a button never starts a drag). The content area below is pure
@@ -2532,20 +2551,20 @@ function makeSheetDraggable(sheet) {
       if (flick > 0) { sheet.style.height = (vh * SHEET_FULL_VH) + 'px'; sheet.classList.add('full'); } // up: fill (already full = stay)
       else if (isFull) { sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.classList.remove('full'); } // down from full: back to default
       else { closeSheets(); return; } // down from default: close
-      setTimeout(() => sheet.classList.remove('snapping'), 300);
+      setTimeout(() => sheet.classList.remove('snapping'), 470);
       return;
     }
     if (h < defH * 0.55) { closeSheets(); return; }
     if (h > (defH + vh * SHEET_FULL_VH) / 2) { sheet.style.height = (vh * SHEET_FULL_VH) + 'px'; sheet.classList.add('full'); }
     else { sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.classList.remove('full'); }
-    setTimeout(() => sheet.classList.remove('snapping'), 260);
+    setTimeout(() => sheet.classList.remove('snapping'), 470);
   };
   sheet.addEventListener('pointerup', end);
   sheet.addEventListener('pointercancel', end);
 }
 makeSheetDraggable($('sheet'));
 makeSheetDraggable($('pacePanel'));
-$('streetsBtn').addEventListener('click', () => { if (!tapGuard('streetsBtn')) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { renderStreets(); $('sheet').classList.add('open'); } });
+$('streetsBtn').addEventListener('click', () => { if (!tapGuard('streetsBtn')) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); } });
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
 $('paceBtn').addEventListener('click', () => { if (!tapGuard('paceBtn')) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
@@ -2615,8 +2634,8 @@ function renderPace() {
   const hh = $('histHead'); if (hh) hh.addEventListener('click', () => { histOpen = !histOpen; renderPace(); });
   $('pacePad').querySelectorAll('.histRow').forEach(r => r.addEventListener('click', () => openClean(+r.dataset.i)));
 }
-function openPace() { deselect(); closeSheets(); renderPace(); $('pacePanel').classList.add('open'); }
-function closePace() { $('pacePanel').classList.remove('open'); }
+function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; renderPace(); $('pacePanel').classList.add('open'); }
+function closePace() { closeSheetEl($('pacePanel')); } // same animated close as every sheet (Beta 1.30)
 
 // ===== CLEAN DETAIL (production v5.53 model): one archived clean inside the list sheet - totals, its streets
 // in mark order with per-street times, its notes, noted-but-not-cleaned group, two-tap delete. Back and Delete
@@ -3238,11 +3257,14 @@ const ICONS = { // Pack D "iOS Filled" (Andrew's pick, Beta 1.28): solid silhoue
   home: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 3.4 2.6 11.8h2.8V21h13.2v-9.2h2.8zM10.2 21v-6h3.6v6z"/></svg>',
   gps: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M12 2.6 19.6 20.6 12 17l-7.6 3.6z"/></svg>',
   gear: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M8.98 4.70 L9.66 1.87 L14.34 1.87 L15.02 4.70 L15.02 4.70 L17.51 3.18 L20.82 6.49 L19.30 8.98 L19.30 8.98 L22.13 9.66 L22.13 14.34 L19.30 15.02 L19.30 15.02 L20.82 17.51 L17.51 20.82 L15.02 19.30 L15.02 19.30 L14.34 22.13 L9.66 22.13 L8.98 19.30 L8.98 19.30 L6.49 20.82 L3.18 17.51 L4.70 15.02 L4.70 15.02 L1.87 14.34 L1.87 9.66 L4.70 8.98 L4.70 8.98 L3.18 6.49 L6.49 3.18 L8.98 4.70 ZM12 8.70 a3.30 3.30 0 1 0 0.001 0 Z"/></svg>', /* Pack D language, drawn for the Settings tab (Beta 1.29) */
+  pin: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 2.8c-3.86 0-7 3.13-7 7 0 5.25 7 11.2 7 11.2s7-5.95 7-11.2c0-3.87-3.14-7-7-7zM12 7a2.8 2.8 0 1 0 .001 0z"/></svg>', /* Pack D language (Beta 1.30): the Streets row jump-to pin */
+  note: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M6.5 2.8h7.2l4.8 4.8v13.6H6.5zM9.3 12.2h5.9v2H9.3zM9.3 16h5.9v2H9.3z"/></svg>', /* Pack D language (Beta 1.30): the note glyph for rows and the selection pop-up */
   exp: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M11 3h2v9.2l2.4-2.4 1.5 1.5L12 16.2l-4.9-4.9 1.5-1.5L11 12.2z"/><path fill="currentColor" stroke="none" d="M4.4 15.6h3.4v2.6h8.4v-2.6h3.4V21H4.4z"/></svg>'
 };
 $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace;
 ['updBtn', 'homeBtn', 'gpsBtn', 'exportBtn', 'clearBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ updBtn: 'upd', homeBtn: 'home', gpsBtn: 'gps', exportBtn: 'exp', clearBtn: 'clear' }[id]]; });
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
+$('selNote').innerHTML = ICONS.note;
 $('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; $('setMenu').classList.toggle('open'); }); // the Settings pop-up (Beta 1.29): rises from the bar on the shared menu motion; picking a row closes it
 ['updBtn', 'exportBtn'].forEach(id => $(id).addEventListener('click', () => $('setMenu').classList.remove('open')));
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
@@ -3250,11 +3272,11 @@ $('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; $
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
 document.addEventListener('pointerdown', e => {
   const anySheet = $('sheet').classList.contains('open') || $('pacePanel').classList.contains('open');
-  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal')) closeSheets();
+  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal')) { closeSheets(); swallowClickUntil = Date.now() + 400; } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it
   // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
-  if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) $('suggest').classList.add('hidden');
-  if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) $('stale').classList.add('hidden');
-  if ($('setMenu').classList.contains('open') && !e.target.closest('#setMenu') && !e.target.closest('#setBtn')) $('setMenu').classList.remove('open'); // the Settings pop-up is a menu too: a tap anywhere else puts it away
+  if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); swallowClickUntil = Date.now() + 400; }
+  if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); swallowClickUntil = Date.now() + 400; }
+  if ($('setMenu').classList.contains('open') && !e.target.closest('#setMenu') && !e.target.closest('#setBtn')) { $('setMenu').classList.remove('open'); swallowClickUntil = Date.now() + 400; } // the Settings pop-up is a menu too: a tap anywhere else puts it away - and that tap is spent, not passed to the map
 });
 ['finModal', 'noteModal', 'xport'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 function applyNight() { document.body.classList.toggle('night', isNight()); $('nightBtn').querySelector('.tabIco').innerHTML = isNight() ? ICONS.sun : ICONS.moon; $('nightBtn').querySelector('.tabLbl').textContent = isNight() ? 'Day' : 'Night'; } // the tab names where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun) - icon and label flip together
