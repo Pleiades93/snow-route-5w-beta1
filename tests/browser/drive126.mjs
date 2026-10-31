@@ -148,7 +148,19 @@ ok('F2 camera follows with location on and NO run started | centre ' + JSON.stri
 // and the glide aims a little ahead while velocity bleeds off, so poll for the settled
 // state itself - a single read raced the convergence and flaked at 52-58 px.
 let DOT = null;
-const dotSettled = await poll120(`(() => { const p = projLL(dispPos); const c = map.getCanvas(); return Math.abs(p.x - c.clientWidth / 2) < c.clientWidth * 0.12 && Math.abs(p.y - c.clientHeight / 2) < c.clientHeight * 0.12; })()`, v => v, 10000);
+// waits-hardening: an earlier version polled for "inside the
+// band within 10s" kept timing out mid-convergence on slow runners and reported a
+// dot still ~70px out - the failure was the WAIT, not the position. Settle is now
+// detected as STILLNESS (3 consecutive samples <=2px apart, 30s+ ceiling); the band
+// itself is judged once, on the settled value, with the original 12% thresholds -
+// a dot that settles off-centre still fails, with its true settled numbers.
+let prevP = null, stillReads = 0, dotSettled = false;
+for (let i = 0; i < 100 && !dotSettled; i++) {
+  const P = JSON.parse(await ev(`(() => { const p = projLL(dispPos); return JSON.stringify({ x: p.x, y: p.y }); })()`));
+  if (prevP && Math.abs(P.x - prevP.x) <= 2 && Math.abs(P.y - prevP.y) <= 2) { stillReads++; if (stillReads >= 3) dotSettled = true; } else stillReads = 0;
+  prevP = P;
+  if (!dotSettled) await sleep(300);
+}
 DOT = JSON.parse(await ev(`(() => { const p = projLL(dispPos); const c = map.getCanvas(); return JSON.stringify({ dx: Math.abs(p.x - c.clientWidth / 2), dy: Math.abs(p.y - c.clientHeight / 2), w: c.clientWidth, h: c.clientHeight }); })()`));
 ok('F2 the dot settles kind of in the centre of the screen | dot ' + JSON.stringify(DOT), dotSettled === true && DOT.dx < DOT.w * 0.12 && DOT.dy < DOT.h * 0.12);
 await ev(`(() => { watchId = null; return true; })()`);
