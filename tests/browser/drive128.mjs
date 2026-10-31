@@ -173,12 +173,18 @@ ok('M6 tapping empty map clears the selection and hides the pill | ' + JSON.stri
 await ev(`(() => { selectStretch('Velmar', 0, [${MIDS[0][0]}, ${MIDS[0][1]}]); return true; })()`); await sleep(300);
 await ev(`document.querySelectorAll('.sideChip .chipBtn')[0].click()`); await sleep(400);
 SS = await selState();
-ok('M7 single-select: the chip toggles only the one stretch and no pill appears | ' + JSON.stringify(SS),
-  SS.n === 1 && SS.bar === false && SS.pieces[0] === 3 && SS.pieces[1] === 2 && SS.pieces[2] === 2);
+ok('M7 single-select: the chip toggles only the one stretch and the merged pop-up shows the street (one pop-up for every selection since 1.30) | ' + JSON.stringify(SS),
+  SS.n === 1 && SS.bar === true && SS.txt === 'Velmar' && SS.pieces[0] === 3 && SS.pieces[1] === 2 && SS.pieces[2] === 2);
 
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
-await tapAt([MIDS[0][0] + 0.05, MIDS[0][1] + 0.05]); // a real tap out on the map
+const tapPx = async (x, y) => { // a real tap at raw viewport pixels (the open sheet covers the centre, so tapAt's centred tap would land on the sheet itself)
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+  await sleep(60);
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+  await sleep(120);
+};
+await tapPx(30, 200); // open map, above the sheet, clear of the header and the pop-up
 const M8 = JSON.parse(await ev(`(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), n: selSet.length }))()`));
 ok('M8 tapping away closes the sheet AND the same tap never reaches the map (selection intact) | ' + JSON.stringify(M8),
   M8.sheetOpen === false && M8.n === 1);
