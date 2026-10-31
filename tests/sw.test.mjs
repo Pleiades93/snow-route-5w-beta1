@@ -81,7 +81,7 @@ check('style offline + only shell cached returns error, not HTML', r.type === 'e
 store.clear(); putThrows = true;
 const tileReq = new Request('https://server.arcgisonline.com/tile/15/1/2');
 fetchImpl = async () => new Response('TILE', { status: 200 });
-r = await cacheFirst(tileReq, 'snow5wbeta1-tiles-v1');
+r = await cacheFirst(tileReq, 'snowroute-tiles-v1');
 check('cache write fails -> network response still returned', (await r.text()) === 'TILE');
 putThrows = false;
 
@@ -98,10 +98,10 @@ check('SEC-7 slow response gets cached', store.has(req.url));
 store.clear();
 const tileReq2 = new Request('https://server.arcgisonline.com/tile/15/3/4');
 fetchImpl = async () => new Response('ERR', { status: 503 });
-r = await cacheFirst(tileReq2, 'snow5wbeta1-tiles-v1');
+r = await cacheFirst(tileReq2, 'snowroute-tiles-v1');
 check('SEC-6d tile 503 returned, not cached', r.status === 503 && !store.has(tileReq2.url));
 fetchImpl = async () => new Response('TILE-OK', { status: 200 });
-r = await cacheFirst(tileReq2, 'snow5wbeta1-tiles-v1');
+r = await cacheFirst(tileReq2, 'snowroute-tiles-v1');
 check('SEC-6d tile 200 returned and cached', (await r.text()) === 'TILE-OK' && store.has(tileReq2.url));
 
 // 10. NEW-02 (v5.51): a failing cache write on the netFirst path must not sink

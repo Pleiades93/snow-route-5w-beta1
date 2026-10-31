@@ -11,20 +11,20 @@ sanitizers on 2026-10-29.
 
 | Key | Content | Shape |
 |-----|---------|-------|
-| `snow5w.v2` | Completed streets (derived cache) | JSON array of street names. Re-derived from `snow5w.v5.sides` at every load; a non-array value is ignored, never fatal (audit F-3). |
-| `snow5w.v2.times` | Completion time per street | JSON object `{street: ISO time}`. |
-| `snow5w.v2.history` | Archived cleans, oldest first, max 10 | JSON array of history entries (below). Load sanitizer drops malformed entries. |
-| `snow5w.v2.night` | Night-mode flag | String flag. |
-| `snow5w.v4.notes` | Per-street notes and flags | JSON object `{street: [ {k, at, text?}, … ]}`; `k` is `note` or a flag kind (`car`, `hazard`, `missed`, `salt`). |
-| `snow5w.v4.via` | How each street was marked | JSON object `{street: string}`. |
-| `snow5w.v4.trail` | GPS trail of the current run | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
-| `snow5w.v4.cov` | Coverage sample indexes per street | JSON object `{street: [integers]}`; each index must be an integer in `[0, samples)` — enforced at load (audit F-2). |
-| `snow5w.v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
-| `snow5w.v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
-| `snow5w.v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
-| `snow5w.v5.export` | Last export summary (local only) | Not backed up. |
-| `snow5w.v5.preload` | Preload record `{at, saved, total}` (local only) | Not backed up. |
-| `snow5w.prep.v1` | Offline-prep flag (local only) | Not backed up. |
+| `snowroute.v2` | Completed streets (derived cache) | JSON array of street names. Re-derived from `snowroute.v5.sides` at every load; a non-array value is ignored, never fatal (audit F-3). |
+| `snowroute.v2.times` | Completion time per street | JSON object `{street: ISO time}`. |
+| `snowroute.v2.history` | Archived cleans, oldest first, max 10 | JSON array of history entries (below). Load sanitizer drops malformed entries. |
+| `snowroute.v2.night` | Night-mode flag | String flag. |
+| `snowroute.v4.notes` | Per-street notes and flags | JSON object `{street: [ {k, at, text?}, … ]}`; `k` is `note` or a flag kind (`car`, `hazard`, `missed`, `salt`). |
+| `snowroute.v4.via` | How each street was marked | JSON object `{street: string}`. |
+| `snowroute.v4.trail` | GPS trail of the current run | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
+| `snowroute.v4.cov` | Coverage sample indexes per street | JSON object `{street: [integers]}`; each index must be an integer in `[0, samples)` — enforced at load (audit F-2). |
+| `snowroute.v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
+| `snowroute.v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
+| `snowroute.v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
+| `snowroute.v5.export` | Last export summary (local only) | Not backed up. |
+| `snowroute.v5.preload` | Preload record `{at, saved, total}` (local only) | Not backed up. |
+| `snowroute.prep.v1` | Offline-prep flag (local only) | Not backed up. |
 
 ## History entry
 
@@ -36,7 +36,7 @@ non-full runs first (full = all 34 streets).
 
 ## Backup envelope
 
-`{app: 'snow5w-backup', v: 1, at, data}` where `data` maps each of the 11
+`{app: 'snowroute-backup', v: 1, at, data}` where `data` maps each of the 11
 backup keys (all rows above except the three local-only keys) to its raw
 stored string. **Missing-key policy:** a key absent from `data` leaves the
 current value untouched on restore. A legacy backup whose done value is a

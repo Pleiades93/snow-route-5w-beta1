@@ -109,12 +109,12 @@ const seedReload = async (obj) => {
 };
 await sleep(3000);
 // T1 NEW-01 success: clear persists across reload
-await seedReload({ 'snow5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1767225700]]' });
+await seedReload({ 'snowroute.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1767225700]]' });
 let A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
 ok('T1 trail seeded (2 pts)', A.tl === 2);
 await ev(`(() => { $('xClr').click(); return true; })()`); await sleep(700);
 await ev(`(() => { $('xClr').click(); return true; })()`); await sleep(400);
-A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snow5w.v4.trail'), toast: $('toast').textContent }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.v4.trail'), toast: $('toast').textContent }))()`));
 ok('T1 clear writes [] to storage', A.ls === '[]');
 ok('T1 toast says Trail cleared', A.toast === 'Trail cleared');
 await ev(`(() => { location.reload(); return true; })()`); await sleep(3000);
@@ -123,22 +123,22 @@ ok('T1 clear survives reload (no resurrection)', A.tl === 0);
 // T2 NEW-01 failure: honest toast, pending flag, recovery persists
 await ev(`(() => { trail.push([43.81,-79.56,1767225600],[43.82,-79.57,1767225700]); saveTrail();
   window.__origSI = Storage.prototype.setItem;
-  Storage.prototype.setItem = function(k, v) { if (k === 'snow5w.v4.trail') throw new Error('quota'); return window.__origSI.call(this, k, v); };
+  Storage.prototype.setItem = function(k, v) { if (k === 'snowroute.v4.trail') throw new Error('quota'); return window.__origSI.call(this, k, v); };
   return true; })()`);
 await ev(`(() => { $('xClr').click(); return true; })()`); await sleep(700);
 await ev(`(() => { $('xClr').click(); return true; })()`); await sleep(400);
-A = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: trailDirty, ls: localStorage.getItem('snow5w.v4.trail') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: trailDirty, ls: localStorage.getItem('snowroute.v4.trail') }))()`));
 ok('T2 toast reports the save failure honestly', /saving failed/.test(A.toast));
 ok('T2 clear stays pending (trailDirty)', A.dirty === true);
 ok('T2 stored trail untouched by failed clear', A.ls !== '[]');
 await ev(`(() => { Storage.prototype.setItem = window.__origSI; flushAux(true); return true; })()`); await sleep(300);
-A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snow5w.v4.trail'), dirty: trailDirty }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.v4.trail'), dirty: trailDirty }))()`));
 ok('T2 after recovery the pending clear persists', A.ls === '[]' && A.dirty === false);
 // T3 NEW-03: legacy import drops inherited names
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
-await ev(`(() => { $('xText').value = JSON.stringify({ app: 'snow5w-backup', v: 1, data: { 'snow5w.v2': JSON.stringify({ constructor: true, Velmar: true, __proto__: true }) } }); doRestore(); return true; })()`);
+await ev(`(() => { $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v2': JSON.stringify({ constructor: true, Velmar: true, __proto__: true }) } }); doRestore(); return true; })()`);
 await sleep(300);
-A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snow5w.v2') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.v2') }))()`));
 ok('T3 legacy migration keeps only real streets', A.ls === '["Velmar"]');
 // Hardened (Beta 1.15): this read crashed 1.14 attempt 1 - after doRestore's reload the app's state can
 // lag the drive's fixed sleep on a slow runner, and the raw JSON.parse(await ev(...)) idiom dies on the
@@ -148,7 +148,7 @@ ok('T3 legacy migration keeps only real streets', A.ls === '["Velmar"]');
 // what was actually seen (stored value + last sample + sample count) into the result either way.
 A = {}; let samples = 0;
 for (let i = 0; i < 48 && !(A.n === 1 && A.has); i++) {
-  const raw = await ev(`(() => { try { return JSON.stringify({ n: doneSet.size, has: doneSet.has('Velmar'), ls: localStorage.getItem('snow5w.v2') }); } catch (e) { return ''; } })()`);
+  const raw = await ev(`(() => { try { return JSON.stringify({ n: doneSet.size, has: doneSet.has('Velmar'), ls: localStorage.getItem('snowroute.v2') }); } catch (e) { return ''; } })()`);
   if (typeof raw === 'string' && raw) { try { A = JSON.parse(raw); samples++; } catch { /* keep waiting */ } }
   if (!(A.n === 1 && A.has)) await sleep(250);
 }
@@ -157,11 +157,11 @@ ok('T3 after reload doneSet is exactly {Velmar}', A.n === 1 && A.has);
 // T4 ISSUE-02: snapshot read failure aborts honestly, nothing written, no throw
 A = JSON.parse(await ev(`(() => { window.__origGI = Storage.prototype.getItem;
   Storage.prototype.getItem = function() { throw new Error('denied'); };
-  $('xText').value = JSON.stringify({ app: 'snow5w-backup', v: 1, data: { 'snow5w.v2': '["Angie"]' } });
+  $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v2': '["Angie"]' } });
   let threw = false; try { doRestore(); } catch (e) { threw = true; }
   const toast = $('toast').textContent;
   Storage.prototype.getItem = window.__origGI;
-  return JSON.stringify({ threw, toast, ls: localStorage.getItem('snow5w.v2') }); })()`));
+  return JSON.stringify({ threw, toast, ls: localStorage.getItem('snowroute.v2') }); })()`));
 ok('T4 doRestore does not throw on snapshot failure', A.threw === false);
 ok('T4 toast reports the abort honestly', /nothing was changed/.test(A.toast));
 ok('T4 current data untouched', A.ls === '["Velmar"]');

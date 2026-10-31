@@ -216,7 +216,7 @@ try {
   okS('W6 handoff: new shell cache in, old shell cache deleted', await until(async () => await ev(`(async () => { const ks = await caches.keys(); return ks.includes('${V2CACHE}') && !ks.includes('${V1CACHE}'); })()`), 25000));
   okS('W7 tiles cache survives the handoff, seeded tile intact', await ev(`(async () => { const c = await caches.open('${TILECACHE}'); const r = await c.match('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/15/100/200'); return !!r && (await r.text()) === 'TILEBYTES'; })()`));
   okS('W8 route progress survives the handoff', await ev(`pieces.Velmar[0] === 1`));
-  okS('W9 post-update confirmation was consumed (no stale update flag)', await ev(`sessionStorage.getItem('snow5w.updatedTo') === null`));
+  okS('W9 post-update confirmation was consumed (no stale update flag)', await ev(`sessionStorage.getItem('snowroute.updatedTo') === null`));
   okS('W10 the new shell serves the new page from cache storage', await ev(`(async () => { const c = await caches.open('${V2CACHE}'); const r = await c.match('http://127.0.0.1:8931/'); return !!r && (await r.text()).includes('${V2LABEL}'); })()`));
 } catch (e) {
   R.fatal = String(e && e.message || e);

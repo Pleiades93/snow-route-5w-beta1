@@ -4,6 +4,16 @@ User-facing changes and important reliability fixes. Versions are the
 in-app labels (header, under the app name). Since Beta 1.36 the label is
 just "Beta X.Y" and the app is called Snow Route Beta.
 
+## Beta 1.38 — 2026-10-31
+The rename goes all the way down: the app's internal storage names, its
+offline-map storage, and the backup file's ID stamp now use the Snow
+Route name too, so the app is fully separate from the old app's storage
+(they silently shared it before). Nothing visible changes. Saved data
+under the old names is not carried over — there was none to carry (no
+cleans recorded, no backups made yet) — and the old offline-map storage
+is cleaned off the device on first update; offline maps just need one
+fresh download.
+
 ## Beta 1.37 — 2026-10-31
 The rename reaches everything else: the map's route label, the install
 description, and this repo's own docs now say Snow Route, and the GitHub

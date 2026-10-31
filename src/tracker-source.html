@@ -196,7 +196,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.37</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.38</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -260,7 +260,7 @@ const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
 const MAIN = new Set(['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark']);
 const SPOT = { 'Columbus': [1, 0.47], 'Mellings': [1, 0.55], 'Valeria': [1, 0.45], 'Santa Barbara': [3, 0.40], 'Kingsnorth': [0, 0.57], 'Bell Harbour': [0, 0.45], 'Romeo': [-1, 0.40], 'Astona': [-1, 0.60], 'Bourbon': [-1, 0.55], 'Fifth': [-1, 0.55] };
 const TRAIL_MAX = 8000;
-const LS = { done: 'snow5w.v2', times: 'snow5w.v2.times', hist: 'snow5w.v2.history', night: 'snow5w.v2.night', notes: 'snow5w.v4.notes', via: 'snow5w.v4.via', trail: 'snow5w.v4.trail', cov: 'snow5w.v4.cov', start: 'snow5w.v5.start', flip: 'snow5w.v5.flip', sides: 'snow5w.v5.sides', exp: 'snow5w.v5.export', pre: 'snow5w.v5.preload', prep: 'snow5w.prep.v1' };
+const LS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', night: 'snowroute.v2.night', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', exp: 'snowroute.v5.export', pre: 'snowroute.v5.preload', prep: 'snowroute.prep.v1' };
 const BACKUP_KEYS = [LS.done, LS.times, LS.hist, LS.night, LS.notes, LS.via, LS.trail, LS.cov, LS.start, LS.flip, LS.sides];
 
 function distM(a, b) { const dx = (a[1] - b[1]) * MLNG, dy = (a[0] - b[0]) * MLAT; return Math.hypot(dx, dy); }
@@ -3160,7 +3160,7 @@ $('xRes').addEventListener('click', () => showX('restore'));
 $('xCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('xText').value); toast('Copied'); } catch (e) { $('xText').select(); toast('Select and copy manually'); } });
 $('xShare').addEventListener('click', async () => { if (navigator.share) { try { await navigator.share({ text: $('xText').value }); } catch (e) { /* dismissed */ } } else toast('Share is not offered here — use Copy'); });
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
-function backupObj() { const data = {}; for (const k of BACKUP_KEYS) { const v = lsGet(k); if (v != null) data[k] = v; } return { app: 'snow5w-backup', v: 1, at: new Date().toISOString(), data }; }
+function backupObj() { const data = {}; for (const k of BACKUP_KEYS) { const v = lsGet(k); if (v != null) data[k] = v; } return { app: 'snowroute-backup', v: 1, at: new Date().toISOString(), data }; }
 function buildBackup() { return JSON.stringify(backupObj(), null, 1); }
 function downloadBackup() { dl(new Blob([buildBackup()], { type: 'application/json' }), 'route5w-backup.json'); toast('Backup downloaded'); }
 let clrArmed = false, clrTimer = 0;
@@ -3175,7 +3175,7 @@ $('xClr').addEventListener('click', () => {
   if (xMode === 'gpx') showX('gpx');
 });
 function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure
-  if (!parsed || parsed.app !== 'snow5w-backup' || !parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return; }
+  if (!parsed || parsed.app !== 'snowroute-backup' || !parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return; }
   if (parsed.v !== 1) { toast('Unsupported backup version (' + String(parsed.v) + ') — nothing was changed', 3200); return; }
   const JSON_SHAPE = { [LS.done]: 'arr', [LS.times]: 'obj', [LS.hist]: 'arr', [LS.notes]: 'obj', [LS.via]: 'obj', [LS.trail]: 'arr', [LS.cov]: 'obj', [LS.sides]: 'obj' };
   const entries = [];

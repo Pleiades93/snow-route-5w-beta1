@@ -153,7 +153,7 @@ try {
   ok('P5 zero CSP violations from the app itself', cspLog().length === 0);
   await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(500);
   ok('P6 marking works under CSP', await ev(`pieces.Velmar[0] === 1`));
-  ok('P7 backup builds under CSP', await ev(`buildBackup().includes('snow5w-backup')`));
+  ok('P7 backup builds under CSP', await ev(`buildBackup().includes('snowroute-backup')`));
   const before = cspLog().length;
   await ev(`(function(){ const s = document.createElement('script'); s.textContent = 'window.__cspPwn = 1;'; document.head.appendChild(s); return true; })()`);
   await sleep(700);

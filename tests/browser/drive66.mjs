@@ -124,13 +124,13 @@ ok('B2 unsupported version rejected', (await toast()).includes('Unsupported back
 const B2s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
 ok('B2 state untouched', JSON.stringify(B2s) === '["Columbus","Galloway"]');
 
-await ev(`(() => { const p = JSON.parse(window.__good); p.data['snow5w.v2.times'] = 'not json'; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);
+await ev(`(() => { const p = JSON.parse(window.__good); p.data['snowroute.v2.times'] = 'not json'; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);
 await sleep(400);
 ok('B3 corrupt value rejected', (await toast()).includes('not valid JSON'));
 const B3s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
 ok('B3 state untouched', JSON.stringify(B3s) === '["Columbus","Galloway"]');
 
-await ev(`(() => { window.__origSet = Storage.prototype.setItem; Storage.prototype.setItem = function(k, v) { if (k === 'snow5w.v2.history') throw new Error('quota'); return window.__origSet.call(this, k, v); }; $('xText').value = window.__good; doRestore(); return true; })()`);
+await ev(`(() => { window.__origSet = Storage.prototype.setItem; Storage.prototype.setItem = function(k, v) { if (k === 'snowroute.v2.history') throw new Error('quota'); return window.__origSet.call(this, k, v); }; $('xText').value = window.__good; doRestore(); return true; })()`);
 await sleep(400);
 ok('B5 mid-write failure reported', (await toast()).includes('Restore failed'));
 const B5s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
