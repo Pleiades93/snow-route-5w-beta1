@@ -106,9 +106,9 @@ await sleep(3200);
 
 // ---- Phase A: corrupt stored data is sanitized on load ----
 await ev(`(() => {
-  localStorage.setItem('snow5w.v2', JSON.stringify(['Columbus']));
-  localStorage.setItem('snow5w.v2.times', JSON.stringify({ Columbus: '2026-10-26T12:00:00.000Z', Galloway: 'not-a-date', Narnia: '2026-10-26T12:00:00.000Z' }));
-  localStorage.setItem('snow5w.v2.history', JSON.stringify([
+  localStorage.setItem('snowroute.v2', JSON.stringify(['Columbus']));
+  localStorage.setItem('snowroute.v2.times', JSON.stringify({ Columbus: '2026-10-26T12:00:00.000Z', Galloway: 'not-a-date', Narnia: '2026-10-26T12:00:00.000Z' }));
+  localStorage.setItem('snowroute.v2.history', JSON.stringify([
     { at: '2026-10-20T12:00:00.000Z', items: { Velmar: '2026-10-20T12:30:00.000Z' } },
     { at: 'junk', items: {} },
     { at: '2026-10-21T12:00:00.000Z', items: { Columbus: '2026-10-21T12:30:00.000Z', Bad: '2026-10-21T12:30:00.000Z', Velmar: 'junk-time' } },

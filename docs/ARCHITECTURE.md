@@ -70,10 +70,10 @@ marking is always manual.
 ## Offline
 
 `src/sw.js` (deployed as `sw.js`): integrity-checked core (the two MapLibre
-files) in the shell cache `snow5wbeta1-shell-v1`; navigations network-first
+files) in the shell cache `snowroute-shell-v1`; navigations network-first
 with cache fallback; map styles network-first into the tiles cache
-`snow5wbeta1-tiles-v1` (cap 3,000); other map resources cache-first.
-Activate deletes only `snow5wbeta1-` caches — disjoint from production's
+`snowroute-tiles-v1` (cap 3,000); other map resources cache-first.
+Activate deletes only `snowroute-` caches (plus the two pre-rename beta cache names, once) — disjoint from production's
 `snow5w-` prefix, so the two apps can share an origin safely. An in-app
 preload ("Download route maps") warms styles, sprites, glyphs and tiles to
 zoom 14 over the route box. Since Beta 1.17 (Stage 2), the first-ever boot

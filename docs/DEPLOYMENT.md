@@ -21,7 +21,7 @@ hand-edit `index.html` or the root `sw.js`.
 
 1. Edit `src/tracker-source.html` (and `src/sw.js` when the worker
    changes). Bump the version label (`#ver`, under the title) — and, if the
-   worker changed, its cache name (`snow5w-shell-vNNN`).
+   worker changed, its cache name (`snowroute-shell-vN`).
 2. Run the build and the tests (`docs/TESTING.md`), plus the release
    regression drives.
 3. Test the source build where it will be used; confirm it is good.

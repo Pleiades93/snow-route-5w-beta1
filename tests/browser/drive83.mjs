@@ -109,17 +109,17 @@ const seedReload = async (obj) => {
 };
 await sleep(3000);
 // P1 SEC-3: prototype names must not enter doneSet / doneTimes
-await seedReload({ 'snow5w.v2': '["constructor","Velmar"]', 'snow5w.v2.times': '{"Velmar":"2026-01-05T12:00:00.000Z","constructor":"2026-01-05T12:00:00.000Z"}' });
+await seedReload({ 'snowroute.v2': '["constructor","Velmar"]', 'snowroute.v2.times': '{"Velmar":"2026-01-05T12:00:00.000Z","constructor":"2026-01-05T12:00:00.000Z"}' });
 let A = JSON.parse(await ev(`(() => JSON.stringify({ n: doneSet.size, hdr: $('count').textContent, tc: Object.keys(doneTimes).length }))()`));
 ok('SEC-3 doneSet excludes "constructor" (size 1)', A.n === 1);
 ok('SEC-3 header reads 1 of 34', /1 of 34/.test(A.hdr));
 ok('SEC-3 doneTimes excludes "constructor"', A.tc === 1);
 // P2 SEC-9b: numeric time is dropped
-await seedReload({ 'snow5w.v2': '["Velmar"]', 'snow5w.v2.times': '{"Velmar": 12345}' });
+await seedReload({ 'snowroute.v2': '["Velmar"]', 'snowroute.v2.times': '{"Velmar": 12345}' });
 A = JSON.parse(await ev(`(() => JSON.stringify({ tc: Object.keys(doneTimes).length }))()`));
 ok('SEC-9b numeric doneTimes dropped', A.tc === 0);
 // P3 SEC-2: malformed notes cannot kill the export panel
-await seedReload({ 'snow5w.v2': '["Angie","Velmar"]', 'snow5w.v4.notes': '{"Velmar":"x","Angie":[{"k":"deep","at":"2026-01-05T12:00:00.000Z"}]}' });
+await seedReload({ 'snowroute.v2': '["Angie","Velmar"]', 'snowroute.v4.notes': '{"Velmar":"x","Angie":[{"k":"deep","at":"2026-01-05T12:00:00.000Z"}]}' });
 const e0 = exc();
 await ev(`(() => { showX('summary'); return true; })()`);
 await sleep(500);
@@ -129,7 +129,7 @@ ok('SEC-2 valid flag still renders', A.hasFlag);
 ok('SEC-2 string notes entry deleted at load', A.velmarNotes === undefined);
 ok('SEC-2 no exception from showX', exc() === e0);
 // P4 SEC-9a: absurd trail timestamp dropped, GPX export survives
-await seedReload({ 'snow5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1e300]]' });
+await seedReload({ 'snowroute.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1e300]]' });
 A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
 ok('SEC-9a out-of-range trail point dropped', A.tl === 1);
 const e1 = exc();
@@ -140,17 +140,17 @@ ok('SEC-9a GPX panel opens with trkpt', A.open && A.gpx);
 ok('SEC-9a no exception from GPX export', exc() === e1);
 // P5 SEC-4: restore survives its own pagehide flush
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
-await ev(`(() => { trail.push([43.9, -79.9, 1767225600]); trailDirty = true; $('xText').value = JSON.stringify({ app: 'snow5w-backup', v: 1, data: { 'snow5w.v4.trail': '[[43.8,-79.5,1767225600]]' } }); doRestore(); flushAux(true); return true; })()`);
+await ev(`(() => { trail.push([43.9, -79.9, 1767225600]); trailDirty = true; $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v4.trail': '[[43.8,-79.5,1767225600]]' } }); doRestore(); flushAux(true); return true; })()`);
 await sleep(300);
-A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snow5w.v4.trail') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.v4.trail') }))()`));
 ok('SEC-4 flush after restore does NOT clobber restored trail', A.ls === '[[43.8,-79.5,1767225600]]');
 await sleep(1500);   // the restore's reload lands
 A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length, lat: trail.length ? trail[0][0] : null }))()`));
 ok('SEC-4 after reload, trail is the restored one', A.tl === 1 && A.lat === 43.8);
 // P6 SEC-6a: a fully failed prep does not mark itself done
-await ev(`(() => { localStorage.removeItem('snow5w.prep.v1'); window.Image = class { set src(v) { setTimeout(() => this.onerror && this.onerror(), 5); } }; prepOfflineMaps(); return true; })()`);
+await ev(`(() => { localStorage.removeItem('snowroute.prep.v1'); window.Image = class { set src(v) { setTimeout(() => this.onerror && this.onerror(), 5); } }; prepOfflineMaps(); return true; })()`);
 await sleep(2500);
-A = JSON.parse(await ev(`(() => JSON.stringify({ prep: localStorage.getItem('snow5w.prep.v1') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ prep: localStorage.getItem('snowroute.prep.v1') }))()`));
 ok('SEC-6a failed prep leaves PREP_KEY unset (will retry)', A.prep === null);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));
 console.log(JSON.stringify(R, null, 1));

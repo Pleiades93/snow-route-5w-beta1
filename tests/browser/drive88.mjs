@@ -122,7 +122,7 @@ await ev(`(() => { document.querySelector('.noteEd textarea').blur(); return tru
 ok('K2 keyboard down: the sheet returns to normal motion', await ev(`document.body.classList.contains('kb')`) === false);
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Driveway at #12 blocked by car'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 await sleep(800);
-A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snow5w.v4.notes') || '', hint: document.querySelector('.noteEd .nhint').textContent, nt: noteTextOf('Velmar') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.v4.notes') || '', hint: document.querySelector('.noteEd .nhint').textContent, nt: noteTextOf('Velmar') }))()`));
 ok('P1 note auto-saves to storage (no Save button)', A.ls.includes('blocked by car') && A.nt.includes('blocked by car'));
 ok('P1 editor confirms the save', /Saved/.test(A.hint));
 await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Angie')]; r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
@@ -156,7 +156,7 @@ await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; 
 A = JSON.parse(await ev(`(() => JSON.stringify({ armed: $('cleanView').querySelector('.cvDel').textContent, h: history.length }))()`));
 ok('P4 first tap arms the delete', /confirm/.test(A.armed) && A.h === 1);
 await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); await sleep(300);
-A = JSON.parse(await ev(`(() => JSON.stringify({ h: history.length, ls: localStorage.getItem('snow5w.v2.history'), cvHidden: $('cleanView').classList.contains('hidden') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ h: history.length, ls: localStorage.getItem('snowroute.v2.history'), cvHidden: $('cleanView').classList.contains('hidden') }))()`));
 ok('P4 second tap deletes the clean and persists', A.h === 0 && A.ls === '[]' && A.cvHidden);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));
 console.log(JSON.stringify(R, null, 1));

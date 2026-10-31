@@ -66,7 +66,7 @@ and the deterministic browser drives (`tests/browser/run.mjs`).
 
 ## 4. Data protection and backward compatibility
 
-- Storage keys and the backup envelope (`{app:'snow5w-backup', v:1, at, data}`) are
+- Storage keys and the backup envelope (`{app:'snowroute-backup', v:1, at, data}`) are
   a contract with production v5.81 and with every existing beta install. Changing
   any key, shape, or the missing-key policy requires: a documented schema note,
   an explicit migration, migration tests (synthetic AND captured-data), and

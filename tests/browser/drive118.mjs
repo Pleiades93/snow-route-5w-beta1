@@ -177,7 +177,7 @@ ok('T6 unverifiable rollback is reported honestly', /could NOT be fully put back
 // T7 (suite 3): nested-invalid history in a backup is sanitized on load, valid entries keep their meaning
 {
   const iso = new Date(Date.now() - 86400000).toISOString();
-  await ev(`(() => { const bad = { app: 'snow5w-backup', v: 1, data: { [LS.hist]: JSON.stringify([
+  await ev(`(() => { const bad = { app: 'snowroute-backup', v: 1, data: { [LS.hist]: JSON.stringify([
     { at: '${iso}', items: { Velmar: '${iso}' } },
     { at: 'not-a-date', items: { Velmar: null } },
     { at: '${iso}', items: { NopeStreet: null, Velmar: 'garbage-time' } },

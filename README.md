@@ -7,7 +7,7 @@ truck, in the dark, with gloves-adjacent tapping and spotty signal.
 
 ## Live
 
-- **GitHub Pages (main host):** https://pleiades93.github.io/snow-route-5w-tracker/
+- **GitHub Pages:** https://pleiades93.github.io/snow-route-beta/
 
 ## What it does
 

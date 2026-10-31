@@ -2,9 +2,9 @@
 // signal, and re-uses map data already fetched (vector styles/tiles/glyphs from
 // OpenFreeMap + CARTO, Esri fallback tiles, CDN libraries). Host this file in
 // the SAME folder as index.html, over https. Without it the page still works
-// online. Pattern carried from the v6 worker; the activate step deletes the
-// v6 worker's caches (snow5w-v6, snow5w-tiles-v2) so no stale v6 page survives.
-const CACHE = 'snow5wbeta1-shell-v1', TILES = 'snow5wbeta1-tiles-v1', MAX_TILES = 3000;   // BETA identity: own cache names - production and beta share an origin (same Pages domain), and 'snow5wbeta1-' does not match production's 'snow5w-' cleanup prefix (hyphen position), so neither app's worker can delete the other's caches
+// online. The activate step deletes this app's older caches (and, once, the
+// pre-rename beta caches) so no stale page survives an update.
+const CACHE = 'snowroute-shell-v1', TILES = 'snowroute-tiles-v1', MAX_TILES = 3000;   // App identity: own cache names - production and this app share an origin (same Pages domain), and 'snowroute-' does not match production's 'snow5w-' cleanup prefix, so neither app's worker can delete the other's caches
 // SEC-1 (external audit, 2026-10-27): the library files are cached ONLY
 // through integrity-checked fetches. The old c.add(url) stored ANY ok
 // response - a captive-portal page cached as leaflet.js would then be
@@ -27,7 +27,7 @@ self.addEventListener('install', e => {
   }).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('snow5wbeta1-') && k !== CACHE && k !== TILES).map(k => caches.delete(k))))
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => (k.startsWith('snowroute-') || k === 'snow5wbeta1-shell-v1' || k === 'snow5wbeta1-tiles-v1') && k !== CACHE && k !== TILES)   // the two exact legacy names are the one-time cleanup of the pre-rename beta caches.map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 async function netFirst(r, cacheName) {   // fresh when the network answers fast, cached otherwise

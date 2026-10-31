@@ -154,7 +154,7 @@ ok('F2 the dot settles kind of in the centre of the screen | dot ' + JSON.string
 await ev(`(() => { watchId = null; return true; })()`);
 
 // Night labels: reload into night mode and read the basemap text paint back.
-await ev(`(() => { localStorage.setItem('snow5w.v2.night', '1'); location.reload(); return true; })()`);
+await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); location.reload(); return true; })()`);
 await sleep(3000);
 ok('F3 night boot with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true && document.body.classList.contains('night')`, v => v, 30000));
 const NL = JSON.parse(await ev(`(() => { const out = []; for (const L of map.getStyle().layers) { if (L.type === 'symbol' && L['source-layer'] && L.layout && L.layout['text-field']) out.push({ id: L.id, col: map.getPaintProperty(L.id, 'text-color'), hw: map.getPaintProperty(L.id, 'text-halo-width') }); } return JSON.stringify(out); })()`));

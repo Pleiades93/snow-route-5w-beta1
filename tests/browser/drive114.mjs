@@ -125,10 +125,10 @@ const noValidTimes = async (n) => ev(`(function(){ const T = pieceTimes[${JSON.s
 
 try {
   await ev(`localStorage.clear(); true`);
-  await setLS('snow5w.v2', '["Velmar"]');
-  await setLS('snow5w.v2.times', JSON.stringify({ Velmar: VTIME }));
-  await setLS('snow5w.v5.sides', JSON.stringify({ Woolacott: [3, 1, 0] }));   // BARE v5.77 format: no {p,t} wrapper, no times
-  await setLS('snow5w.v2.history', JSON.stringify([{ at: '2026-10-20T12:30:00.000Z', items: { Velmar: VTIME }, via: 'tap', notes: {}, km: 1.7, startedAt: '2026-10-20T10:45:00.000Z' }]));
+  await setLS('snowroute.v2', '["Velmar"]');
+  await setLS('snowroute.v2.times', JSON.stringify({ Velmar: VTIME }));
+  await setLS('snowroute.v5.sides', JSON.stringify({ Woolacott: [3, 1, 0] }));   // BARE v5.77 format: no {p,t} wrapper, no times
+  await setLS('snowroute.v2.history', JSON.stringify([{ at: '2026-10-20T12:30:00.000Z', items: { Velmar: VTIME }, via: 'tap', notes: {}, km: 1.7, startedAt: '2026-10-20T10:45:00.000Z' }]));
   await reload();
 
   ok('M1 partial pieces preserved exactly', await ev(`JSON.stringify(pieces.Woolacott) === '[3,1,0]'`));
