@@ -230,7 +230,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.52</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.54</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3516,13 +3516,34 @@ if ('serviceWorker' in navigator) {
 // and menus off-screen - and it does not pan back. Track the visible screen in CSS vars
 // (--vvt top offset, --vvh height, --vvb hidden strip below) that the chrome is anchored
 // to, and cancel any leftover page pan once no text field is focused.
+// Beta 1.54 (Andrew's deep-dive, 2026-11-01): SETTLED-SIZE ANCHOR. The old code sized
+// everything from whatever the phone LAST reported as the visible height - and iOS
+// sometimes reports a too-short height and then says nothing more: at cold start
+// (his ~2-in-10 launches with a strip under the bottom bar) and after the keyboard
+// closes (the strip would return until the app was relaunched once or twice). The
+// app now remembers the true height (fullH: the tallest report with no keyboard up;
+// in a home-screen install the web view IS the full screen, so screen.height is
+// knowable from the first frame) and, when a short report arrives with no keyboard
+// up, trusts the settled size instead - a stuck report can no longer paint a strip.
+// While the keyboard is up, the top/bottom offsets hold the values captured as it
+// opened (kbPin) and only the usable height follows the live report, so the menus
+// stop chasing the keyboard's motion.
+let fullH = 0, kbPin = null;
+const inStandalone = () => !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
 function syncViewport() {
   try {
     const vv = window.visualViewport; if (!vv) return;
     const de = document.documentElement;
-    de.style.setProperty('--vvt', vv.offsetTop + 'px');
-    de.style.setProperty('--vvh', vv.height + 'px');
-    de.style.setProperty('--vvb', Math.max(0, window.innerHeight - vv.offsetTop - vv.height) + 'px');
+    const kb = document.body.classList.contains('kb');
+    if (!kb && vv.height > fullH) fullH = vv.height;
+    if (!kb && inStandalone() && window.innerHeight >= window.innerWidth && window.screen.height > fullH) fullH = window.screen.height;
+    let t, h, b;
+    if (kb) { t = kbPin ? kbPin.t : vv.offsetTop; h = vv.height; b = kbPin ? kbPin.b : Math.max(0, window.innerHeight - vv.offsetTop - vv.height); }
+    else if (inStandalone() && fullH && vv.height < fullH - 2) { t = 0; h = fullH; b = Math.max(0, window.innerHeight - fullH); }
+    else { t = vv.offsetTop; h = vv.height; b = Math.max(0, window.innerHeight - t - h); }
+    de.style.setProperty('--vvt', t + 'px');
+    de.style.setProperty('--vvh', h + 'px');
+    de.style.setProperty('--vvb', b + 'px');
     const ae = document.activeElement;
     if ((!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
     if (typeof map !== 'undefined' && map) { const mc = map.getContainer(); const mw = mc.clientWidth, mh = mc.clientHeight; if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw; syncViewport._h = mh; map.resize(); } } // Beta 1.50 (audit P10): this fires on every visual-viewport scroll tick - only pay for a map resize when the container actually changed size
@@ -3533,8 +3554,42 @@ window.addEventListener('resize', syncViewport);
 // Beta 1.31: the keyboard state - while ANY text field has focus, the sheets stop resizing and
 // animating (body.kb rules in the stylesheet). This is what made note editing feel broken:
 // the sheet kept re-animating its height against the keyboard's own motion on every viewport tick.
-document.addEventListener('focusin', e => { if (e.target.matches('textarea, input')) document.body.classList.add('kb'); });
-document.addEventListener('focusout', e => { if (e.target.matches('textarea, input')) document.body.classList.remove('kb'); });
+// Beta 1.54: the keyboard lifecycle. Opening: capture the chrome offsets BEFORE the
+// keyboard moves anything (focusin fires first) - syncViewport holds them while typing.
+// Closing: do NOT drop the frozen state the moment the field blurs (1.31 did, while the
+// keyboard was still sliding away and the reported height still growing - the sheet's
+// animation switched back on against a moving target and 'reanimated up like opening
+// for the first time', Andrew 2026-11-01). Instead wait until the reported height
+// SETTLES (back at the settled size, or unchanged across samples, capped ~1.5s), then
+// release in one clean state change and re-measure. Every wait terminates.
+let kbSettle = null;
+document.addEventListener('focusin', e => {
+  if (!e.target.matches('textarea, input')) return;
+  if (kbSettle) { clearInterval(kbSettle); kbSettle = null; }
+  if (!document.body.classList.contains('kb')) { const de = document.documentElement; kbPin = { t: parseFloat(de.style.getPropertyValue('--vvt')) || 0, b: parseFloat(de.style.getPropertyValue('--vvb')) || 0 }; }
+  document.body.classList.add('kb');
+});
+document.addEventListener('focusout', e => {
+  if (!e.target.matches('textarea, input')) return;
+  setTimeout(() => {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) return;   // moved to another field - still typing
+    if (!document.body.classList.contains('kb')) return;
+    if (kbSettle) clearInterval(kbSettle);
+    let lastH = -1, stable = 0; const t0 = Date.now();
+    const step = () => {
+      const ae2 = document.activeElement;
+      if (ae2 && (ae2.tagName === 'TEXTAREA' || ae2.tagName === 'INPUT')) { clearInterval(kbSettle); kbSettle = null; return; }
+      const vv = window.visualViewport; const h = vv ? vv.height : 0;
+      if (h === lastH) stable++; else { stable = 0; lastH = h; }
+      if (stable >= 2 || (fullH && h >= fullH - 2) || Date.now() - t0 > 1500) {
+        clearInterval(kbSettle); kbSettle = null; kbPin = null;
+        document.body.classList.remove('kb'); syncViewport(); setTimeout(syncViewport, 350);
+      }
+    };
+    kbSettle = setInterval(step, 100); step();
+  }, 0);
+});
 document.addEventListener('focusout', () => setTimeout(syncViewport, 60));
 syncViewport();
 // Beta 1.51: iOS sometimes hands a home-screen app a too-short screen height
@@ -3546,7 +3601,7 @@ syncViewport();
 // every moment the size is known to have settled: page shown or resumed,
 // return to the front, rotation, and a short ladder of post-boot re-checks.
 window.addEventListener('pageshow', syncViewport);
-window.addEventListener('orientationchange', () => setTimeout(syncViewport, 250));
+window.addEventListener('orientationchange', () => { fullH = 0; kbPin = null; setTimeout(syncViewport, 250); }); // Beta 1.54: the settled size belongs to the old rotation - forget it and let it re-derive
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncViewport(); });
 [400, 1200, 3000, 6500].forEach(ms => setTimeout(syncViewport, ms));
 let __tailDone = false;
