@@ -4,6 +4,10 @@ User-facing changes and important reliability fixes. Versions are the
 in-app labels (header, under the app name). Since Beta 1.36 the label is
 just "Beta X.Y" and the app is called Snow Route Beta.
 
+## Beta 1.51 — 2026-10-31
+
+Two fixes from Andrew's phone. (1) THE FLOATING BOTTOM BAR: on some launches the app was handed a slightly too-short screen height by the phone and never measured again, so the bottom bar floated with a pale (day) or dark (night) band under it — and reopening the app often just resumed the same frozen page, which is why a reopen only sometimes helped. The app now re-measures the screen at every moment the size is known to have settled: when the page is shown or resumed, when it comes back to the front, on rotation, and in a few automatic re-checks during the first seconds after launch. Measuring costs nothing when the size was already right. (2) The title and version in the top-left sit a little lower (Andrew's ask).
+
 ## Beta 1.50 — 2026-10-31
 
 PERFORMANCE TEST ROUND — the outside audit's Groups A and B, built as one removable layer over Beta 1.49. Nothing about how the app looks or behaves is supposed to change; it should just feel lighter: selecting a street no longer re-sends the whole route's data to the map, only the selection; the two side arrows are no longer rebuilt from scratch on every map movement, only when their picture actually changes; the selection's breathing glow pauses while the app isn't on screen instead of repainting twenty times a second into the void; marking a street updates its row in the list instead of rebuilding all 34 rows; the map is only told to resize when its size truly changed; and the offline map download now fetches five files at a time instead of strictly one by one (same 894 files, same honest saved-count), with the behind-the-scenes cache tidying itself in batches instead of after every single tile. If anything feels worse than 1.49, say so — this entire round comes off in one step and 1.49 (with its GPS and beam fixes) stays.
