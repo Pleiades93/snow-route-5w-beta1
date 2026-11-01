@@ -154,10 +154,10 @@ globalThis.caches = { async open() { return tileCacheMock; } };
 delete cacheFirst._n; // simulate a fresh worker
 fetchImpl = async () => new Response('TILE-NEW', { status: 200 });
 r = await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/t/new'), 'snowroute-tiles-v1');
-check('1.57 seed: counter starts from the real cache size (24 stored + 1 put = 25)', cacheFirst._n === 25);
+check('1.57 seed: counter starts from the real cache size (seed reads the post-put cache: 25 stored, +1 = 26)', cacheFirst._n === 26);
 delete cacheFirst._n; // worker stopped and restarted by the platform
 await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/t/new2'), 'snowroute-tiles-v1');
-check('1.57 seed: after a restart the counter re-seeds from the real size (25 + 1 = 26)', cacheFirst._n === 26);
+check('1.57 seed: after a restart the counter re-seeds from the real size (26 stored, +1 = 27)', cacheFirst._n === 27);
 
 let fail = 0;
 for (const [n, ok] of results) { console.log((ok ? 'PASS' : 'FAIL') + '  ' + n); if (!ok) fail++; }
