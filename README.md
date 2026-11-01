@@ -28,12 +28,11 @@ truck, in the dark, with gloves-adjacent tapping and spotty signal.
   check live in the ⚙ settings fan at the **bottom right**.
 - Progress is stored **on the device only** (browser local storage). There is no
   server and no account; the backup/restore export is the way to move data.
-- Offline: after the first online open, the app quietly saves the route area's
-  Esri fallback tiles (day + night) and warms the vector style files, so a
-  later cold start with no signal still shows a map under the route. The
-  vector tiles themselves are cached as you view them. The one-time prep is
-  only marked done when tiles actually saved; a failed prep retries on the
-  next open.
+- Offline: the Settings panel's "Download offline maps" saves the area's
+  vector tiles (zooms 10-14, plus the route core at zoom 15), styles, glyphs
+  and sprites - 894 files - and reports the count it actually saved; tiles
+  are also cached as you view them, so a later cold start with no signal
+  still shows a map under the route.
 
 ## Backup & restore
 
@@ -56,13 +55,13 @@ truck, in the dark, with gloves-adjacent tapping and spotty signal.
 |---|---|
 | `src/tracker-source.html` | **The canonical application source — the only file where the app itself is edited** (raster basemap mode). Same app, same features as the deployment; see *Build & parity* below. |
 | `src/sw.js` | The authored service worker source (offline open + tile caching). Edited here; copied to the root by the build. |
-| `index.html` | **Generated** deployable build: vector basemap (OpenFreeMap by day, CARTO dark at night) via MapLibre GL under Leaflet, with automatic fallback to Esri raster tiles if the vector source fails. This is what GitHub Pages serves. Never hand-edit. |
+| `index.html` | **Generated** deployable build: MapLibre GL app with embedded Protomaps day/night styles over CARTO vector tiles. This is what GitHub Pages serves. Never hand-edit. |
 | `sw.js` | **Generated** copy of `src/sw.js`. Must sit beside `index.html` on an https host. Never hand-edit. |
 | `scripts/build-pages.py` | The repository-owned build: generates `index.html` + `sw.js` from `src/` and runs the parity and integrity checks. Standard library only. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch). |
 | `docs/` | `ARCHITECTURE.md`, `TESTING.md`, `DEPLOYMENT.md` — the detailed procedures. |
 | `manifest.json` | Home-screen install metadata (name, icons, full-screen launch). |
-| `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `icon-maskable-512.png` | App icons for the home screen (Beta 1.35: the Signal Asphalt design — glossy snowflake traced by an asphalt road — at every size; the maskable one is padded so round icon masks do not clip the snowflake or its road trace). |
+| `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `icon-maskable-512.png` | App icons for the home screen (the Signal Asphalt design — glossy snowflake traced by an asphalt road — at every size; the maskable one is padded so round icon masks do not clip the snowflake or its road trace). |
 
 ## Build & parity
 
@@ -95,5 +94,5 @@ This repo is the main source. GitHub Pages serves `index.html` straight from the
 beside it, everything works except the offline open; without `manifest.json`
 and the icons, the home-screen install just loses its name and icon.
 
-Map data © OpenStreetMap contributors; vector styles © OpenFreeMap / © CARTO;
-fallback imagery-style tiles © Esri.
+Map data © OpenStreetMap contributors; vector styles: Protomaps; basemap
+tiles: © CARTO.

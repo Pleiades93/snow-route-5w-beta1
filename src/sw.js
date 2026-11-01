@@ -1,13 +1,13 @@
 // Snow Route service worker: lets the page open with NO
-// signal, and re-uses map data already fetched (vector styles/tiles/glyphs from
-// OpenFreeMap + CARTO, Esri fallback tiles, CDN libraries). Host this file in
+// signal, and re-uses map data already fetched (CARTO vector tiles,
+// Protomaps glyphs/sprites/styles, CDN libraries). Host this file in
 // the SAME folder as index.html, over https. Without it the page still works
 // online. The activate step deletes this app's older caches (and, once, the
 // pre-rename beta caches) so no stale page survives an update.
 const CACHE = 'snowroute-shell-v1', TILES = 'snowroute-tiles-v1', MAX_TILES = 3000;   // App identity: own cache names - production and this app share an origin (same Pages domain), and 'snowroute-' does not match production's 'snow5w-' cleanup prefix, so neither app's worker can delete the other's caches
 // SEC-1 (external audit, 2026-10-27): the library files are cached ONLY
 // through integrity-checked fetches. The old c.add(url) stored ANY ok
-// response - a captive-portal page cached as leaflet.js would then be
+// response - a captive-portal page cached as maplibre-gl.js would then be
 // refused by the page's own SRI on every load and never refetched:
 // a permanent brick. The hashes below must match the page tags exactly;
 // build-pages.py asserts that on every build and fails on drift.
@@ -53,6 +53,11 @@ async function netFirst(r, cacheName) {   // fresh when the network answers fast
     return hit || Response.error();
   }
 }
+async function bumpTileCount(c) { // Beta 1.57 (second audit, item 2): the 1.50 batched-eviction counter lived only in worker memory - iOS stops the worker constantly, resetting it, so the trim check could go long stretches without ever firing and the tile cache drifted past its cap. On the first tile put after a wake, seed the counter from the cache's REAL size; the batching (and its performance point) is unchanged.
+  if (cacheFirst._n === undefined) { try { cacheFirst._n = (await c.keys()).length; } catch (e) { cacheFirst._n = 0; } }
+  cacheFirst._n++;
+  if (cacheFirst._n % 25 === 0) { const ks = await c.keys(); for (let i = 0; i < ks.length - MAX_TILES; i++) await c.delete(ks[i]); }
+}
 async function cacheFirst(r, cacheName) {
   const c = await caches.open(cacheName);
   const hit = await c.match(r.url || r);
@@ -66,8 +71,7 @@ async function cacheFirst(r, cacheName) {
       if (res && res.ok) {
         try {
           await c.put(r.url, res.clone());
-          cacheFirst._n = (cacheFirst._n || 0) + 1; // Beta 1.50 (audit P08): counting the whole cache after EVERY tile put made bulk caching crawl - check in batches of 25 puts and trim back to the cap (overshoot between checks is at most 24 tiles)
-          if (cacheFirst._n % 25 === 0) { const ks = await c.keys(); for (let i = 0; i < ks.length - MAX_TILES; i++) await c.delete(ks[i]); }
+          await bumpTileCount(c); // Beta 1.50/1.57: batched eviction check (see bumpTileCount)
         } catch (e) {}
       }
       return res;
@@ -77,13 +81,10 @@ async function cacheFirst(r, cacheName) {
   }
   try {
     const res = await fetch(r);
-    if (res && (res.ok || res.type === 'opaque')) {
+    if (res && res.ok) { // Beta 1.57 (second audit, item 3): opaque responses are no longer cached here - their status is unknowable, so an error page could be stored as if it were the asset (the tile branch has refused them since SEC-6d; MapLibre arrives via CORS + SRI, so nothing legitimate needs this)
       try {
         await c.put(r.url || r, res.clone());
-        if (cacheName === TILES) {
-          cacheFirst._n = (cacheFirst._n || 0) + 1; // Beta 1.50 (audit P08): batched eviction check, as above
-          if (cacheFirst._n % 25 === 0) { const ks = await c.keys(); for (let i = 0; i < ks.length - MAX_TILES; i++) await c.delete(ks[i]); }
-        }
+        if (cacheName === TILES) await bumpTileCount(c); // Beta 1.50/1.57: batched eviction check, as above
       } catch (e) {}   // a failed cache write must not sink a good network response
     }
     return res;

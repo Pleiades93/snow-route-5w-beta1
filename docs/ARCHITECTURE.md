@@ -32,10 +32,11 @@ naming all three map hosts). Generated files are never hand-edited.
 
 ## The map
 
-- GL JS 4.7.1 from CDN with SRI. Day style: VersaTiles Colorful
-  (`tiles.versatiles.org`); night style: CARTO Dark Matter
-  (`basemaps.cartocdn.com`, tiles served from `tiles.basemaps.cartocdn.com` —
-  all three hosts are in the stamped CSP, gate-verified).
+- GL JS 4.7.1 from CDN with SRI. Both styles are EMBEDDED Protomaps styles
+  (generated in-repo as PM_DAY / PM_NIGHT); vector tiles for both come from
+  `tiles.basemaps.cartocdn.com`, glyphs and sprites from
+  `protomaps.github.io` — those two hosts are in the stamped CSP,
+  gate-verified.
 - The basemap keeps ALL of its own labels, restyled to one font/size system
   across both styles (the engine's stack hook); route street names come from
   the app's own label layers (point labels below GL zoom 16.2, line labels

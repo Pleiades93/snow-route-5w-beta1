@@ -139,6 +139,26 @@ check('B07 SWR binds refresh with waitUntil', !!wu && typeof wu.then === 'functi
 await wu;
 check('B07 refresh updates the cache', (await store.get(sprReq.url).text()) === 'SPRITE-NEW');
 
+// 13. Beta 1.57 (second audit, item 2): the tile-eviction counter is seeded
+// from the cache's REAL size on the first tile put after a worker wake, so
+// the platform stopping the worker can no longer quietly disable the trim.
+const tileStore = new Map();
+for (let i = 0; i < 24; i++) tileStore.set('https://tiles.basemaps.cartocdn.com/t/' + i, new Response('T'));
+const tileCacheMock = {
+  async match(r) { const u = typeof r === 'string' ? r : r.url; return tileStore.get(u); },
+  async put(r, res) { const u = typeof r === 'string' ? r : r.url; tileStore.set(u, res); },
+  async keys() { return [...tileStore.keys()].map(u => ({ url: u })); },
+  async delete(r) { const u = typeof r === 'string' ? r : r.url; return tileStore.delete(u); }
+};
+globalThis.caches = { async open() { return tileCacheMock; } };
+delete cacheFirst._n; // simulate a fresh worker
+fetchImpl = async () => new Response('TILE-NEW', { status: 200 });
+r = await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/t/new'), 'snowroute-tiles-v1');
+check('1.57 seed: counter starts from the real cache size (24 stored + 1 put = 25)', cacheFirst._n === 25);
+delete cacheFirst._n; // worker stopped and restarted by the platform
+await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/t/new2'), 'snowroute-tiles-v1');
+check('1.57 seed: after a restart the counter re-seeds from the real size (25 + 1 = 26)', cacheFirst._n === 26);
+
 let fail = 0;
 for (const [n, ok] of results) { console.log((ok ? 'PASS' : 'FAIL') + '  ' + n); if (!ok) fail++; }
 process.exit(fail ? 1 : 0);
