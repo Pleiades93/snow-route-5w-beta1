@@ -231,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.61</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.62</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -281,7 +281,6 @@
   <button id="xPre">Download offline maps</button>
 </div><div id="xPreStat"></div></div></div>
 <div id="toast"></div>
-<div id="diag" style="display:none; position:fixed; left:8px; bottom:120px; z-index:3000; background:rgba(0,0,0,.85); color:#7dff9a; font:10px/1.5 ui-monospace, Menlo, monospace; padding:6px 8px; border-radius:6px; pointer-events:none; white-space:pre-wrap; max-width:92vw"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 <script>
 // ===== ROUTE DATA (the physical route — verbatim from production) =====
@@ -3573,7 +3572,6 @@ if ('serviceWorker' in navigator) {
 // 2026-11-01). The pin is OUT: offsets follow the live report while typing, as
 // before; the settled anchor and the settle-release remain.
 let fullH = 0;
-let nudgeCount = 0, nudgeRecovered = 0, lastNudgeAt = 0; // Beta 1.58: recovery-nudge bookkeeping (see maybeNudge)
 const inStandalone = () => !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
 function syncViewport() {
   try {
@@ -3583,44 +3581,14 @@ function syncViewport() {
     if (kb) return; // Beta 1.61: while typing, the layout variables stay frozen at their pre-keyboard values - the keyboard overlays the app instead of resizing it. The live-chase (1.55) re-fit the sheets on every keyboard animation tick and the note menus flickered and jumped (Andrew, 2026-11-01). The settle sampler reads the live report directly and this function republishes everything when the keyboard leaves.
     if (!kb && vv.height > fullH) fullH = vv.height;
     if (!kb && inStandalone() && window.innerHeight >= window.innerWidth && window.screen.height > fullH) fullH = window.screen.height;
-    let t, h, b;
-    if (!kb && inStandalone() && fullH && vv.height < fullH - 2) { t = 0; h = fullH; b = Math.max(0, window.innerHeight - fullH); }
-    else { t = vv.offsetTop; h = vv.height; b = Math.max(0, window.innerHeight - t - h); }
+    const t = vv.offsetTop, h = vv.height, b = Math.max(0, window.innerHeight - t - h); // Beta 1.62: the live report rules, always. The 1.54 trust override (publishing the remembered full height when a report ran short) is retired together with the 1.58 nudges: since 1.60 the document-height floor is what guarantees the full stage - the browser's own sizing, not an app override - and the strip is device-confirmed gone.
     de.style.setProperty('--vvt', t + 'px');
     de.style.setProperty('--vvh', h + 'px');
     de.style.setProperty('--vvb', b + 'px');
     const ae = document.activeElement;
     if ((!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
     if (typeof map !== 'undefined' && map) { const mc = map.getContainer(); const mw = mc.clientWidth, mh = mc.clientHeight; if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw; syncViewport._h = mh; map.resize(); } } // Beta 1.50 (audit P10): this fires on every visual-viewport scroll tick - only pay for a map resize when the container actually changed size
-    maybeNudge();
   } catch (e) { /* map/viewport not up yet */ }
-}
-// Beta 1.58: the recovery nudge. Andrew's diagnostic screenshots (2026-11-01)
-// proved the cold-start strip is the STAGE arriving short: in the bad state
-// innerHeight, the visible area, the bottom bar's lower edge and the map's
-// lower edge ALL read 873 against a 932 physical screen - exactly the 59px
-// status-bar height - so iOS intermittently sizes the app's window short and
-// the app, laid out correctly inside it, cannot paint into screen it does
-// not own. What the app CAN do is notice (it knows the settled height) and
-// jolt the browser toward recomputing the stage: a one-frame root-height
-// toggle plus a scroll nudge, reached from every syncViewport (which runs at
-// launch, resume, and keyboard release - the moments the shrink appears).
-// Rate-limited and capped so a permanently short stage never churns; every
-// attempt and every recovery is counted into the diagnostic readout, so a
-// week of real launches gives a verdict with data, not another theory.
-function maybeNudge() {
-  if (!inStandalone() || document.body.classList.contains('kb')) return;
-  if (!fullH || window.innerHeight >= fullH - 2) return;
-  const now = Date.now();
-  if (now - lastNudgeAt < 2500 || nudgeCount >= 12) return;
-  lastNudgeAt = now;
-  nudgeCount++;
-  const de = document.documentElement;
-  de.style.height = '100.1%';
-  void de.offsetHeight;
-  de.style.height = '';
-  try { window.scrollTo(0, 1); window.scrollTo(0, 0); } catch (e) {}
-  setTimeout(() => { syncViewport(); if (window.innerHeight >= fullH - 2) nudgeRecovered++; }, 180);
 }
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', syncViewport); window.visualViewport.addEventListener('scroll', syncViewport); }
 window.addEventListener('resize', syncViewport);
@@ -3748,13 +3716,4 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }
   }, 120);
 })();
-// Beta 1.55 DIAGNOSTIC (temporary - remove when the cold-start strip is closed):
-// tap the version label 5 times to toggle a live viewport readout. Which of
-// screen / window / visible-area reports short while the strip shows decides
-// the fix; Andrew screenshots it in the bad state.
-(() => { const el = $('diag'), ver = $('ver'); if (!el || !ver) return; let taps = [];
-  ver.addEventListener('click', () => { const now = Date.now(); taps = taps.filter(t => now - t < 2000); taps.push(now); if (taps.length < 5) return; taps = [];
-    const on = el.style.display !== 'block'; el.style.display = on ? 'block' : 'none';
-    if (on) { const upd = () => { const vv = window.visualViewport; const tb = $('tabBar'), mb = $('map'); el.textContent = 'ih ' + window.innerHeight + ' iw ' + window.innerWidth + ' | vv h ' + (vv ? Math.round(vv.height) : '-') + ' top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' pTop ' + (vv ? Math.round(vv.pageTop) : '-') + ' sc ' + (vv ? vv.scale : '-') + ' | scr ' + screen.width + 'x' + screen.height + ' | docH ' + document.documentElement.clientHeight + ' bodyH ' + Math.round(document.body.getBoundingClientRect().height) + ' | tabB ' + (tb ? Math.round(tb.getBoundingClientRect().bottom) : '-') + ' mapB ' + (mb ? Math.round(mb.getBoundingClientRect().bottom) : '-') + ' | fullH ' + fullH + ' | vvh ' + document.documentElement.style.getPropertyValue('--vvh') + ' vvb ' + document.documentElement.style.getPropertyValue('--vvb') + ' | kb ' + document.body.classList.contains('kb') + ' sa ' + inStandalone() + ' | nudge ' + nudgeCount + '/' + nudgeRecovered; }; upd(); el._iv = setInterval(upd, 500); }
-    else if (el._iv) { clearInterval(el._iv); el._iv = null; } }); })();
 </script></body></html>
