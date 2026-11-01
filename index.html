@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-I1J8azrzFNYFdbJOIbsTAM2lSwGVcqtSwU0VTKZE9SXb5Ps3M+4sUwrwpXe12Per' https://cdn.jsdelivr.net; style-src-elem 'sha384-7Idu4DPgLETDLC3PrKmj59wb102FRwQ5tk6m1DB9dFh+wFgIDNlc3o4/KB/qTjgx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-5Fi8UtGzbU1bOgTQezTIVPjKnCkYBhOCmfHHIVE63mEO4HTTLZM25DQxjyGUmwfc' https://cdn.jsdelivr.net; style-src-elem 'sha384-7Idu4DPgLETDLC3PrKmj59wb102FRwQ5tk6m1DB9dFh+wFgIDNlc3o4/KB/qTjgx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -231,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.57</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.58</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3573,6 +3573,7 @@ if ('serviceWorker' in navigator) {
 // 2026-11-01). The pin is OUT: offsets follow the live report while typing, as
 // before; the settled anchor and the settle-release remain.
 let fullH = 0;
+let nudgeCount = 0, nudgeRecovered = 0, lastNudgeAt = 0; // Beta 1.58: recovery-nudge bookkeeping (see maybeNudge)
 const inStandalone = () => !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
 function syncViewport() {
   try {
@@ -3590,7 +3591,35 @@ function syncViewport() {
     const ae = document.activeElement;
     if ((!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
     if (typeof map !== 'undefined' && map) { const mc = map.getContainer(); const mw = mc.clientWidth, mh = mc.clientHeight; if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw; syncViewport._h = mh; map.resize(); } } // Beta 1.50 (audit P10): this fires on every visual-viewport scroll tick - only pay for a map resize when the container actually changed size
+    maybeNudge();
   } catch (e) { /* map/viewport not up yet */ }
+}
+// Beta 1.58: the recovery nudge. Andrew's diagnostic screenshots (2026-11-01)
+// proved the cold-start strip is the STAGE arriving short: in the bad state
+// innerHeight, the visible area, the bottom bar's lower edge and the map's
+// lower edge ALL read 873 against a 932 physical screen - exactly the 59px
+// status-bar height - so iOS intermittently sizes the app's window short and
+// the app, laid out correctly inside it, cannot paint into screen it does
+// not own. What the app CAN do is notice (it knows the settled height) and
+// jolt the browser toward recomputing the stage: a one-frame root-height
+// toggle plus a scroll nudge, reached from every syncViewport (which runs at
+// launch, resume, and keyboard release - the moments the shrink appears).
+// Rate-limited and capped so a permanently short stage never churns; every
+// attempt and every recovery is counted into the diagnostic readout, so a
+// week of real launches gives a verdict with data, not another theory.
+function maybeNudge() {
+  if (!inStandalone() || document.body.classList.contains('kb')) return;
+  if (!fullH || window.innerHeight >= fullH - 2) return;
+  const now = Date.now();
+  if (now - lastNudgeAt < 2500 || nudgeCount >= 12) return;
+  lastNudgeAt = now;
+  nudgeCount++;
+  const de = document.documentElement;
+  de.style.height = '100.1%';
+  void de.offsetHeight;
+  de.style.height = '';
+  try { window.scrollTo(0, 1); window.scrollTo(0, 0); } catch (e) {}
+  setTimeout(() => { syncViewport(); if (window.innerHeight >= fullH - 2) nudgeRecovered++; }, 180);
 }
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', syncViewport); window.visualViewport.addEventListener('scroll', syncViewport); }
 window.addEventListener('resize', syncViewport);
@@ -3694,6 +3723,6 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 (() => { const el = $('diag'), ver = $('ver'); if (!el || !ver) return; let taps = [];
   ver.addEventListener('click', () => { const now = Date.now(); taps = taps.filter(t => now - t < 2000); taps.push(now); if (taps.length < 5) return; taps = [];
     const on = el.style.display !== 'block'; el.style.display = on ? 'block' : 'none';
-    if (on) { const upd = () => { const vv = window.visualViewport; const tb = $('tabBar'), mb = $('map'); el.textContent = 'ih ' + window.innerHeight + ' iw ' + window.innerWidth + ' | vv h ' + (vv ? Math.round(vv.height) : '-') + ' top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' pTop ' + (vv ? Math.round(vv.pageTop) : '-') + ' sc ' + (vv ? vv.scale : '-') + ' | scr ' + screen.width + 'x' + screen.height + ' | docH ' + document.documentElement.clientHeight + ' bodyH ' + Math.round(document.body.getBoundingClientRect().height) + ' | tabB ' + (tb ? Math.round(tb.getBoundingClientRect().bottom) : '-') + ' mapB ' + (mb ? Math.round(mb.getBoundingClientRect().bottom) : '-') + ' | fullH ' + fullH + ' | vvh ' + document.documentElement.style.getPropertyValue('--vvh') + ' vvb ' + document.documentElement.style.getPropertyValue('--vvb') + ' | kb ' + document.body.classList.contains('kb') + ' sa ' + inStandalone(); }; upd(); el._iv = setInterval(upd, 500); }
+    if (on) { const upd = () => { const vv = window.visualViewport; const tb = $('tabBar'), mb = $('map'); el.textContent = 'ih ' + window.innerHeight + ' iw ' + window.innerWidth + ' | vv h ' + (vv ? Math.round(vv.height) : '-') + ' top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' pTop ' + (vv ? Math.round(vv.pageTop) : '-') + ' sc ' + (vv ? vv.scale : '-') + ' | scr ' + screen.width + 'x' + screen.height + ' | docH ' + document.documentElement.clientHeight + ' bodyH ' + Math.round(document.body.getBoundingClientRect().height) + ' | tabB ' + (tb ? Math.round(tb.getBoundingClientRect().bottom) : '-') + ' mapB ' + (mb ? Math.round(mb.getBoundingClientRect().bottom) : '-') + ' | fullH ' + fullH + ' | vvh ' + document.documentElement.style.getPropertyValue('--vvh') + ' vvb ' + document.documentElement.style.getPropertyValue('--vvb') + ' | kb ' + document.body.classList.contains('kb') + ' sa ' + inStandalone() + ' | nudge ' + nudgeCount + '/' + nudgeRecovered; }; upd(); el._iv = setInterval(upd, 500); }
     else if (el._iv) { clearInterval(el._iv); el._iv = null; } }); })();
 </script></body></html>
