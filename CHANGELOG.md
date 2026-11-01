@@ -1,5 +1,21 @@
 # Changelog
 
+## Beta 1.61 - 2026-11-01
+Keyboard overlay, at Andrew's direction: while a note field is focused,
+the keyboard now slides OVER the app instead of resizing it. The layout
+variables (--vvt/--vvh/--vvb) freeze at their pre-keyboard values for the
+whole typing session (syncViewport returns early while body.kb), and the
+sheets keep their pre-keyboard size and place (the 1.31 near-full-height
+sheet rule is gone). This replaces 1.55's live-tracking, whose per-tick
+re-fitting of the sheets against the keyboard's rise animation made both
+note menus flicker and jump (pre-dating 1.60; Andrew's readout caught the
+visible height chasing 932 -> 740 mid-animation). Field visibility -
+the problem 1.55's tracking was solving - is now handled inside the
+menu: once the keyboard's rise settles, ensureFieldVisible scrolls the
+sheet's own list so the field sits above the keyboard, or shifts the
+pop-up/modal card up by the overlap (cleared when the keyboard leaves).
+drive135's keyboard contract is rewritten to the freeze (V2c) plus a
+holds-against-the-tick-stream check (F1).
 ## Beta 1.60 - 2026-11-01
 The short-stage FIX, at the source: a document-height floor on the root
 element (min-height: min(100lvh, calc(100% + env(safe-area-inset-top)))).

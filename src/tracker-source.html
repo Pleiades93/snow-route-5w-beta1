@@ -128,7 +128,7 @@
   #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
   #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
   #sheetClose, #paceClose, #finNo, #noteNo, #xClose { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box */
-  body.kb .sheet { transition: none; max-height: calc(var(--vvh, 100dvh) * .98); } /* Beta 1.31: while the keyboard is up the sheet must not dance - no animated resizing, and it may use nearly all the VISIBLE height so the editor is never squashed under the keyboard */
+  body.kb .sheet { transition: none; } /* Beta 1.61 (was 1.31's near-full-visible-height rule): while the keyboard is up the sheet keeps its pre-keyboard size and place - the layout variables are frozen in syncViewport and the keyboard overlays the sheet; the field is surfaced by the sheet's own scroll (ensureFieldVisible). The 1.31/1.55 sizing chase after the shrinking visible height is what made note menus flicker and jump. */
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
   #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
   #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
@@ -231,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.60</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.61</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3580,6 +3580,7 @@ function syncViewport() {
     const vv = window.visualViewport; if (!vv) return;
     const de = document.documentElement;
     const kb = document.body.classList.contains('kb');
+    if (kb) return; // Beta 1.61: while typing, the layout variables stay frozen at their pre-keyboard values - the keyboard overlays the app instead of resizing it. The live-chase (1.55) re-fit the sheets on every keyboard animation tick and the note menus flickered and jumped (Andrew, 2026-11-01). The settle sampler reads the live report directly and this function republishes everything when the keyboard leaves.
     if (!kb && vv.height > fullH) fullH = vv.height;
     if (!kb && inStandalone() && window.innerHeight >= window.innerWidth && window.screen.height > fullH) fullH = window.screen.height;
     let t, h, b;
@@ -3633,11 +3634,41 @@ window.addEventListener('resize', syncViewport);
 // SETTLES (back at the settled size, or unchanged across samples, capped ~1.5s), then
 // release in one clean state change and re-measure. Every wait terminates.
 let kbSettle = null;
+let kbInSettle = null, kbShiftHost = null;
 document.addEventListener('focusin', e => {
   if (!e.target.matches('textarea, input')) return;
   if (kbSettle) { clearInterval(kbSettle); kbSettle = null; }
+  if (kbShiftHost) { kbShiftHost.style.transform = ''; kbShiftHost = null; }
   document.body.classList.add('kb');
+  // Beta 1.61: once the keyboard's rise settles, make sure the field is
+  // actually visible above it - by scrolling the menu's own list or
+  // shifting its card, never by resizing the layout (see syncViewport).
+  if (kbInSettle) clearInterval(kbInSettle);
+  let lastH = -1, stable = 0; const t0 = Date.now();
+  const step = () => {
+    const vv = window.visualViewport; const h = vv ? vv.height : 0;
+    if (h === lastH) stable++; else { stable = 0; lastH = h; }
+    if (stable >= 2 || Date.now() - t0 > 700) { clearInterval(kbInSettle); kbInSettle = null; ensureFieldVisible(); }
+  };
+  kbInSettle = setInterval(step, 80); step();
 });
+function ensureFieldVisible() { // Beta 1.61: the keyboard overlays the frozen layout, so a field it would cover is surfaced locally - the sheet's own list scrolls (instantly, as in 1.56) or the pop-up/modal card shifts up by the overlap; the shift is cleared when the keyboard leaves (startKbSettle's release, or the next focusin).
+  try {
+    const ae = document.activeElement; if (!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) return;
+    const vv = window.visualViewport; if (!vv) return;
+    const floor = vv.height - 8; // the visible bottom edge while the keyboard is up
+    const r = ae.getBoundingClientRect();
+    if (r.bottom <= floor && r.top >= 0) return;
+    const sb = $('sheetBody');
+    if (sb && sb.contains(ae)) {
+      if (r.bottom > floor) sb.scrollTop += (r.bottom - floor) + 12;
+      else if (r.top < sb.getBoundingClientRect().top) sb.scrollTop -= (sb.getBoundingClientRect().top - r.top) + 12;
+      return;
+    }
+    const host = ae.closest('#selPop, .modal .card');
+    if (host && r.bottom > floor) { const over = Math.ceil(r.bottom - floor) + 12; host.style.transform = 'translateY(' + (-over) + 'px)'; kbShiftHost = host; }
+  } catch (e) { /* visibility is best-effort; the layout never depends on it */ }
+}
 function startKbSettle() { // Beta 1.56: the settle sampler has ONE home - focusout and kbSync both start it here
   if (!document.body.classList.contains('kb')) return;
   if (kbSettle) clearInterval(kbSettle);
@@ -3649,6 +3680,7 @@ function startKbSettle() { // Beta 1.56: the settle sampler has ONE home - focus
     if (h === lastH) stable++; else { stable = 0; lastH = h; }
     if (stable >= 2 || (fullH && h >= fullH - 2) || Date.now() - t0 > 1500) {
       clearInterval(kbSettle); kbSettle = null;
+      if (kbShiftHost) { kbShiftHost.style.transform = ''; kbShiftHost = null; } // Beta 1.61: undo the field-visibility shift with the keyboard gone
       document.body.classList.remove('kb'); syncViewport(); setTimeout(syncViewport, 350);
     }
   };
