@@ -1,5 +1,40 @@
 # Changelog
 
+## Beta 1.60 - 2026-11-01
+The short-stage FIX, at the source: a document-height floor on the root
+element (min-height: min(100lvh, calc(100% + env(safe-area-inset-top)))).
+The strip investigation's final lead, from third-party iOS 26/27 reports:
+WebKit keeps a Home Screen app's layout viewport short while its document
+is no taller than that viewport, and grants the full screen once the
+document is at least screen-tall - which is also why ordinary (long,
+scrollable) websites never showed the defect. Proven on Andrew's iPhone
+(iOS 27.2) the same day with bare probe pages, fresh installs (the worst
+bucket): base probe innerHeight 873 at cold launch/resume/keyboard;
+probes with this rule (A) and with a screen-height JS floor (B) both held
+932 through all three. A is ported (pure CSS, effective from first
+layout). Beta 1.59's boot heal is RETIRED UNMERGED - with the sizing
+fixed at the source, a reload would only recreate the same document. The
+1.54-1.58 viewport machinery stays for now as inert fallback (it never
+engages at full size); its removal is a separate round once 1.60 has
+soaked on the phone. The diagnostic readout also stays until the strip
+has been absent across Andrew's 30-launch acceptance count. drive139
+pins the rule's presence, its document-tall precondition, and unchanged
+layout; the cure itself is WebKit behaviour and is phone-judged.
+## Beta 1.59 - 2026-11-01
+Boot heal for the short-stage launches. The strip investigation (same day)
+closed the root-cause question: iOS chooses the layout viewport's size
+before the page's first layout - intermittently 59pt short on this
+install, permanently short on fresh installs - and no page code can reach
+the missing strip (proven with a bare reproduction page; WebKit 313800).
+One mechanism remained untried and evidence-led: a fresh layout sometimes
+lands full (reopening the app fixes some bad launches), so when a launch
+is still short after the settle window the app now reloads ONCE, behind
+the splash, to re-roll the layout - standalone only, portrait only, never
+over an open clean, loop-guarded per launch. Every outcome is tallied in
+local storage and shown in the diagnostic readout as "heal A/R/S"
+(attempted / recovered / still short): if iOS locks the size per launch,
+R stays 0 and the mechanism comes back out. The 1.58 nudges stay for the
+mid-session (keyboard) cases. drive138 pins the heal.
 ## Beta 1.58 — 2026-11-01
 - **Fullscreen strip: classified, and now actively fought (with receipts).** The diagnostic screenshots settled the cause: in the bad state the window height, visible area, bottom bar's lower edge and map's lower edge *all* read 873 against a 932 physical screen — a shortfall of exactly 59px, the status-bar height. iOS intermittently sizes the installed app's window short; the app inside it is laid out correctly and cannot paint into screen it does not own. So instead of another layout layer, the app now *detects* the shortfall (it knows the settled height) and jolts the browser toward recomputing the window — a one-frame root-height toggle plus a scroll nudge — at the moments the shrink appears (launch, resume, keyboard close). Nudges are rate-limited (2.5s apart) and capped (12 per session), and the diagnostic readout now counts attempts/recoveries (`nudge A/R`), so real-world launches will show whether the jolts ever recover the full screen. The separate lever remains deleting and re-adding the home-screen shortcut, which refreshes the launch configuration iOS froze when it was first added.
 
