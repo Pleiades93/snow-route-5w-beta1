@@ -117,7 +117,7 @@ ok('P1 name tap opens the note editor', A.ed);
 // Beta 1.31: while the editor has focus (the phone keyboard is up) the sheet must hold still.
 await sleep(200);
 const KB = JSON.parse(await ev(`(() => { const cs = getComputedStyle($('sheet')); return JSON.stringify({ kb: document.body.classList.contains('kb'), dur: cs.transitionDuration, maxH: parseFloat(cs.maxHeight) }); })()`));
-ok('K1 keyboard up: sheet stops animating and may use the visible height | ' + JSON.stringify(KB), KB.kb === true && KB.dur === '0s' && KB.maxH > 800);
+ok('K1 keyboard up: sheet stops animating and KEEPS its pre-keyboard size (the 1.31 grow-to-visible-height rule is gone; the keyboard overlays) | ' + JSON.stringify(KB), KB.kb === true && KB.dur === '0s' && KB.maxH === 666); // Beta 1.61: 666 = the sheet's ordinary .74 x 900 max-height in this rig - unchanged by the keyboard (before 1.61 this asserted the old 1.31 contract, maxH > 800)
 await ev(`(() => { document.querySelector('.noteEd textarea').blur(); return true; })()`); await sleep(200);
 ok('K2 keyboard down: the sheet returns to normal motion', await ev(`document.body.classList.contains('kb')`) === false);
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Driveway at #12 blocked by car'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);

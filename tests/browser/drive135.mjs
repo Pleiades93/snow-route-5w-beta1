@@ -140,7 +140,13 @@ ok('V2b bottom offset at rest before the keyboard moves (0px) | ' + await ev(`do
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 560, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(450);
 const pin = JSON.parse(await ev(`JSON.stringify({ vvb: document.documentElement.style.getPropertyValue('--vvb'), vvh: document.documentElement.style.getPropertyValue('--vvh'), dur: getComputedStyle($('sheet')).transitionDuration, sb: $('sheet').getBoundingClientRect().bottom, ih: window.innerHeight })`));
-ok('V2c keyboard up: usable height follows the keyboard (560px), sheet frozen, and the sheet sits flush on the LIVE bottom offset (tracks live sizing - no pin) | ' + JSON.stringify(pin), pin.vvh === '560px' && pin.dur === '0s' && Math.abs(pin.sb - (pin.ih - parseFloat(pin.vvb))) <= 1); // Beta 1.55: 1.54 pinned the offsets while typing and hid the note box behind the keyboard on the phone. The rig cannot split window height from visible height the way iOS does, so this asserts the sheet tracks the live variables; the pin's ABSENCE is locked mechanically by the beta-kb-pin-absent registry probe
+ok('V2c keyboard up: the layout variables stay FROZEN at their pre-keyboard values (900px / 0px), the sheet does not resize or re-anchor, and no transition runs | ' + JSON.stringify(pin), pin.vvh === '900px' && pin.vvb === '0px' && pin.dur === '0s' && Math.abs(pin.sb - pin.ih) <= 1); // Beta 1.61: the keyboard overlays the frozen layout (Andrew's direction). 1.55's live-tracking chased the keyboard's animation ticks and the note menus flickered; the freeze replaces it, and field visibility is handled inside the menu (ensureFieldVisible), not by layout. The rig cannot split window height from visible height the way iOS does, so the sheet-bottom assertion is against the rig's own stage bottom.
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 540, deviceScaleFactor: 2, mobile: true }, S);
+await ev(`syncViewport(); syncViewport();`);
+await sleep(350);
+const frz = JSON.parse(await ev(`JSON.stringify({ vvb: document.documentElement.style.getPropertyValue('--vvb'), vvh: document.documentElement.style.getPropertyValue('--vvh') })`));
+ok('F1 the freeze holds against a stream of viewport ticks mid-typing | ' + JSON.stringify(frz), frz.vvh === '900px' && frz.vvb === '0px');
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 560, deviceScaleFactor: 2, mobile: true }, S);
 await ev(`document.querySelector('.noteEd textarea').blur()`);
 await sleep(120);
 ok('V3a freeze HOLDS just after blur while the height is still short (the 1.31 instant release is gone)', await ev(`document.body.classList.contains('kb')`));
