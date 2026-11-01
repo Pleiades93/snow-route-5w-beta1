@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-mgjqml0/90CepYOimvEFFwoobXj3eCpCWT5EnJtynA7LstiElKAFaokaG4osv2bs' https://cdn.jsdelivr.net; style-src-elem 'sha384-++kik9rUi+cRxaJmFPr7G+IpkL7js3qfKYd4RluUpT1anPpGfZvvncWJ9C2WvIxx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Z2u5iSqyOR9M/R2PSJk6aS78Hv6gbNbg/dH1KW6YPLg6pkHsJba7YGSIZ421za+R' https://cdn.jsdelivr.net; style-src-elem 'sha384-++kik9rUi+cRxaJmFPr7G+IpkL7js3qfKYd4RluUpT1anPpGfZvvncWJ9C2WvIxx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -232,7 +232,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.63</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.64</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -307,10 +307,9 @@ function ptSegM(p, a, b) { // metres from point p to segment a-b (the engine's h
   let t = L2 ? ((px - ax) * vx + (py - ay) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
   return Math.hypot(px - (ax + vx * t), py - (ay + vy * t));
 }
-function segLenM(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; }
 function fmtClock(d) { let h = d.getHours(), m = d.getMinutes(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + String(m).padStart(2, '0') + ' ' + ap; }
 function fmtDur(ms) { const s = Math.round(ms / 1000); if (s < 60) return s + 's'; const m = Math.floor(s / 60); if (m < 60) return m + ' min'; return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm'; }
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function segLenM(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; } // the APP-global segment length (plain distM) - workDoneM's progress math. NOT a duplicate of the paint engine's private segLenM inside the GLP closure, which sums jDistM for label/anchor geometry: different scope, different metric, both load-bearing (third audit's 'delete one' was wrong - removing this one broke the progress meter, drive141 F07b caught it)
 // Toast (native dialogs are banned)
 let toastTimer = 0;
 function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2400); }
@@ -392,6 +391,7 @@ const STREETSET = new Set(STREETNAMES);
 const _doneRaw = parseJ(lsGet(LS.done), []);
 let doneSet = new Set(Array.isArray(_doneRaw) ? _doneRaw.filter(n => typeof n === 'string' && STREETSET.has(n)) : []); // audit D2: a non-array value (legacy object, number) made new Set() throw and killed the boot; loadSides re-derives this from pieces below regardless
 let doneTimes = parseJ(lsGet(LS.times), {});
+if (!doneTimes || typeof doneTimes !== 'object' || Array.isArray(doneTimes)) doneTimes = {}; // Beta 1.64 (audit F07): normalize BEFORE the cleanup loop below - a stored JSON string made its `delete` throw under strict mode and killed the boot
 for (const k of Object.keys(doneTimes)) { if (typeof doneTimes[k] !== 'string' || isNaN(Date.parse(doneTimes[k]))) delete doneTimes[k]; }
 let doneVia = parseJ(lsGet(LS.via), {});
 if (!doneVia || typeof doneVia !== 'object' || Array.isArray(doneVia)) doneVia = {};
@@ -426,6 +426,13 @@ let coveredIdx = parseJ(lsGet(LS.cov), {});
 if (!coveredIdx || typeof coveredIdx !== 'object' || Array.isArray(coveredIdx)) coveredIdx = {};
 let pieces = {}, pieceTimes = {};
 function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return doneSet.has(n); return p.every(v => v === 3); }
+function sanitizePieceTimes(raw) { // Beta 1.64 (audit F07): only [stringOrNull, stringOrNull] pairs survive - a nested string used to reach applyPiece and throw under strict mode. Accepts the array shape the app writes and the numeric-keyed object a JSON round-trip of a sparse structure can produce.
+  const pair = pr => Array.isArray(pr) ? [typeof pr[0] === 'string' ? pr[0] : null, typeof pr[1] === 'string' ? pr[1] : null] : [null, null];
+  const out = [];
+  if (Array.isArray(raw)) { for (let i = 0; i < raw.length; i++) out[i] = pair(raw[i]); return out; }
+  if (raw && typeof raw === 'object') { for (const k of Object.keys(raw)) { const i = Number(k); if (Number.isInteger(i) && i >= 0) out[i] = pair(raw[k]); } return out; }
+  return out;
+}
 (function loadSides() {
   const raw = parseJ(lsGet(LS.sides), null);
   let P = null, T = {};
@@ -435,7 +442,7 @@ function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return 
     let arr = (P && Array.isArray(P[n]) && P[n].length === count) ? P[n].map(v => (v === 1 || v === 2 || v === 3) ? v : 0) : null; // audit G3: normalize side values to the 0..3 the app writes - a crafted 99 otherwise counted sides via bitwise reads while streetComplete (===3) disagreed
     if (!arr) arr = new Array(count).fill(doneSet.has(n) ? 3 : 0);
     pieces[n] = arr;
-    pieceTimes[n] = (T && T[n]) || {};
+    pieceTimes[n] = sanitizePieceTimes(T && T[n]);
   }
   // complete streets inherit their done-time on every side; doneSet is derived from pieces
   doneSet = new Set(STREETNAMES.filter(streetComplete));
@@ -1560,8 +1567,6 @@ function ptSegDistM(p, a, b) {
   let t = ((P[0] - A[0]) * vx + (P[1] - A[1]) * vy) / L2; t = Math.max(0, Math.min(1, t));
   return Math.hypot(P[0] - (A[0] + t * vx), P[1] - (A[1] + t * vy));
 }
-function distToStreetM(p, n) { const st = GEO[n].stitched; let d = 1e9; for (let i = 0; i < st.length - 1; i++) d = Math.min(d, ptSegDistM(p, st[i], st[i + 1])); return d; }
-function paintHalfAt(B, viB) { let h = SURF_HALF; GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= viB && viB <= ab[1] && pieces[B][i] === 3) h = BAND_HALF; }); return h; }   // a cut COVERS viB, not only ends there: double vertices sit inside a spanning cut (Blackburn [19,21] over the Columbus vertex) and the paint there is the spanning cut's
 function endCorners(pts, atStart, half) {
   const E = atStart ? pts[0] : pts[pts.length - 1];
   if (!E) return [];
@@ -1933,7 +1938,6 @@ function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
 
 const surfW = ['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 6.5, 17, 9.5, 18, 15, 19, 24];
 const BANDW = ['interpolate', ['linear'], ['zoom'], 15, 3, 16, 6, 17, 11, 18, 22, 19, 44];       // ~9.6 m of road width, tracking the geographic side offsets
-const BANDGLOW = ['interpolate', ['linear'], ['zoom'], 15, 10, 16, 14, 17, 20, 18, 32, 19, 56];
 const BANDCASE = ['interpolate', ['linear'], ['zoom'], 15, 5.5, 16, 9, 17, 15, 18, 27, 19, 50];
 const wPlus = (curve, d) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v + d : v);   // widen an interpolate width curve by d px at every stop (widths sit at even indices >= 4)
 const wScale = (curve, f) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v * f : v);   // scale an interpolate width curve (same index rule as wPlus)
@@ -2108,14 +2112,6 @@ function addStack() {
   glHideLabels(GLM);
   pushSources();
   applyGlow();
-}
-function setTreatment(t) {
-  treatment = t;
-  document.querySelectorAll('[data-treat]').forEach(b => b.classList.toggle('on', +b.dataset.treat === t));
-  if (!map || !GLM.getLayer('t0-centre')) return;
-  ['t0', 't1', 't2'].forEach((p, i) => {
-    GLM.getStyle().layers.filter(l => l.id.startsWith(p + '-')).forEach(l => GLM.setLayoutProperty(l.id, 'visibility', i === t ? 'visible' : 'none'));
-  });
 }
 // ---- selection glow (round 16 treatment on the r15 paint base;
 // the five style toggle buttons were removed at Andrew's order) ----
@@ -2944,7 +2940,7 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
-function startClean() { runStart = Date.now(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart) toast('Clean started · ' + fmtClock(new Date())); else toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); checkStale(); } // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+function startClean() { runStart = Date.now(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart) toast('Clean started · ' + fmtClock(new Date())); else toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); drawTrail(true); checkStale(); } // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; saveAll(); if (wasRunGps) stopGps(); updateCount(); syncWake(); toast('Start cancelled'); }
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
@@ -3105,7 +3101,8 @@ $('noteYes').addEventListener('click', () => {
 });
 
 // ===== GPS (checklist SS7) =====
-let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, camTimer = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
+// Beta 1.64 (audit R01): lastFixTs is the last accepted fix's OWN timestamp - a callback carrying an older one is stale
+let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastFixTs = 0, camTimer = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
 const SAMPLES = {};
 (function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
 for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count
@@ -3123,12 +3120,17 @@ function pushGps() {
   src.setData({ type: 'FeatureCollection', features: feats });
 }
 let gpsAccM = 0;
-function drawTrail() {
+let lastTrailDraw = 0, lastTrailPts = 0; // Beta 1.64: drawTrail throttle state (audit 3)
+function drawTrail(force) {
   const src = map.getSource('trail'); if (!src) return;
+  const t0s = runStart ? Math.floor(runStart / 1000) : 0; // Beta 1.64 (audit F05): only THIS clean's points draw as the active trail - the stored trail keeps every clean for the log and GPX; the display is run-scoped
+  const pts = runStart ? trail.filter(p => p[2] >= t0s) : [];
+  if (!force && performance.now() - lastTrailDraw < 3000 && pts.length - lastTrailPts < 5) return; // Beta 1.64 (audit 3): the rebuild is O(trail) up to 8000 points - redraw at most every 3 s, or once 5 undrawn points have accumulated, whichever comes first; forced draws (run start, trail clear) ignore the throttle
+  lastTrailDraw = performance.now(); lastTrailPts = pts.length;
   const feats = [];
-  if (runStart && trail.length > 1) {
-    let seg = [trail[0]];
-    for (let i = 1; i < trail.length; i++) { const gap = trail[i][2] - trail[i - 1][2] > 300 || distM(trail[i - 1], trail[i]) > 1000; if (gap) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); seg = [trail[i]]; } else seg.push(trail[i]); }
+  if (pts.length > 1) {
+    let seg = pts.length ? [pts[0]] : [];
+    for (let i = 1; i < pts.length; i++) { const gap = pts[i][2] - pts[i - 1][2] > 300 || distM(pts[i - 1], pts[i]) > 1000; if (gap) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); seg = [pts[i]]; } else seg.push(pts[i]); }
     if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } });
   }
   src.setData({ type: 'FeatureCollection', features: feats });
@@ -3217,26 +3219,30 @@ function setFacing(deg, w) {
   facingDeg = facingDeg === null ? deg : ((facingDeg + headDelta(facingDeg, deg) * (w || 0.3)) % 360 + 360) % 360;
   if (watchId != null && dispPos && (before === null || Math.abs(headDelta(before, facingDeg)) > 1.5)) pushGps();
 }
+let compassHandler = null, compassGen = 0; // Beta 1.64 (audit F08): the orientation handler is a stable reference so stopGps can actually remove it - it used to be a closure re-registered on every start and never removed
 function startCompass() {
   if (compassOn) return;
-  const onOri = e => {
+  if (!compassHandler) compassHandler = e => {
     let deg = null;
     if (typeof e.webkitCompassHeading === 'number') deg = e.webkitCompassHeading; // iOS: degrees clockwise from north, ready to use
     else if (e.absolute && typeof e.alpha === 'number') deg = (360 - e.alpha) % 360;
     if (deg === null || Date.now() - lastCourseAt < 3000) return; // while the course is fresh it outranks the compass
     setFacing(deg, 0.25);
   };
-  const listen = () => { compassOn = true; window.addEventListener('deviceorientationabsolute', onOri, true); window.addEventListener('deviceorientation', onOri, true); };
+  const gen = compassGen;
+  const listen = () => { if (gen !== compassGen) return; compassOn = true; window.addEventListener('deviceorientationabsolute', compassHandler, true); window.addEventListener('deviceorientation', compassHandler, true); };
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') listen(); }).catch(() => {});
   else listen();
 }
+function stopCompass() { compassGen++; if (compassHandler) { window.removeEventListener('deviceorientationabsolute', compassHandler, true); window.removeEventListener('deviceorientation', compassHandler, true); } compassOn = false; }
 function acceptFix(pos) {
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
   if (!Number.isFinite(ll[0]) || !Number.isFinite(ll[1]) || Math.abs(ll[0]) > 90 || Math.abs(ll[1]) > 180) return; // audit G1: never let a non-finite or off-Earth fix reach the smoothing, trail or coverage math
+  if (typeof pos.timestamp === 'number' && lastFixTs && pos.timestamp < lastFixTs) return; // Beta 1.64 (audit R01): a delayed or out-of-order callback must not move the dot, trail or coverage backwards
   if (acc > 65 && lastGood && now - lastGood.at < 10000) return;
   if (acc <= 65) lastGood = { ll, at: now };
   const speed = pos.coords.speed;
-  lastFixAt = now; gpsAccM = acc;
+  lastFixAt = now; if (typeof pos.timestamp === 'number') lastFixTs = pos.timestamp; gpsAccM = acc;
   const { est: sm, aim } = kfUpdate(ll, acc, now); // the filter subsumes the old deadband: sub-noise moves barely shift the estimate, so no fix needs swallowing
   const firstFix = !gpsPos;
   gpsPos = sm;
@@ -3281,7 +3287,7 @@ function gpsError(e) {
   if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak — still trying', 2600); }
 }
 function startGps(fromRun) {
-  if (watchId != null) { if (fromRun) gpsFromRun = true; return; }
+  if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
   gpsFromRun = !!fromRun; followPaused = false; startCompass();
   watchId = navigator.geolocation.watchPosition(acceptFix, gpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -3293,7 +3299,7 @@ function startGps(fromRun) {
 }
 function stopGps(silent) {
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer); clearInterval(camTimer);
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer); clearInterval(camTimer); stopCompass(); // Beta 1.64 (audit F08)
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
   $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden');
 }
@@ -3361,7 +3367,7 @@ let clrArmed = false, clrTimer = 0;
 $('xClr').addEventListener('click', () => {
   if (!clrArmed) { clrArmed = true; $('xClr').textContent = 'Sure?'; clrTimer = setTimeout(() => { clrArmed = false; $('xClr').textContent = 'Clear trail'; }, 5000); return; }
   clearTimeout(clrTimer); clrArmed = false; $('xClr').textContent = 'Clear trail';
-  trail = []; drawTrail();
+  trail = []; drawTrail(true);
   // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
   // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
   if (saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
