@@ -26,9 +26,10 @@ const origPut = cacheMock.put.bind(cacheMock);
 cacheMock.put = async (r, res) => { if (putThrows) throw new Error('quota'); return origPut(r, res); };
 
 const constLine = sw.split('\n').find(l => l.startsWith('const CACHE'));
-eval(constLine + '\n' + fnSrc + '\nglobalThis.netFirst = netFirst; globalThis.cacheFirst = cacheFirst;');
+eval(constLine + '\n' + fnSrc + '\nglobalThis.netFirst = netFirst; globalThis.cacheFirst = cacheFirst; globalThis.staleWhileRevalidate = staleWhileRevalidate;');
 const netFirst = globalThis.netFirst;
 const cacheFirst = globalThis.cacheFirst;
+const staleWhileRevalidate = globalThis.staleWhileRevalidate;
 
 const req = new Request('https://example.test/app/');
 const cachedResp = new Response('CACHED-SHELL', { status: 200 });
@@ -112,6 +113,31 @@ fetchImpl = async () => new Response('NETWORK-OK', { status: 200 });
 r = await netFirst(req, 'c');
 check('NEW-02 netFirst put fails -> network response still returned', (await r.text()) === 'NETWORK-OK');
 putThrows = false;
+
+// 11. Beta 1.48 (audit B03): a NAVIGATION whose network never answers at all
+// must fall back to the cached shell within a bounded time, not hang forever.
+// (Non-navigations keep the unbounded SEC-7 wait - case 8 still proves it.)
+store.clear(); store.set(req.url, cachedResp.clone());
+fetchImpl = () => new Promise(() => {});   // never settles
+const navReq = { url: req.url, mode: 'navigate' };
+const t0 = Date.now();
+r = await netFirst(navReq, 'c');
+check('B03 stalled navigation falls back to cache', (await r.text()) === 'CACHED-SHELL');
+check('B03 fallback is bounded (<20s)', Date.now() - t0 < 20000);
+
+// 12. Beta 1.48 (audit B07): SWR answers from cache at once AND binds the
+// background refresh to the fetch event's lifetime; the refresh lands.
+store.clear();
+const sprReq = new Request('https://protomaps.github.io/sprites/v4/light.json');
+store.set(sprReq.url, new Response('SPRITE-OLD', { status: 200 }));
+fetchImpl = async () => new Response('SPRITE-NEW', { status: 200 });
+let wu = null;
+const fakeEv = { waitUntil(p) { wu = p; } };
+r = await staleWhileRevalidate(sprReq, 'c', fakeEv);
+check('B07 SWR returns cached copy immediately', (await r.text()) === 'SPRITE-OLD');
+check('B07 SWR binds refresh with waitUntil', !!wu && typeof wu.then === 'function');
+await wu;
+check('B07 refresh updates the cache', (await store.get(sprReq.url).text()) === 'SPRITE-NEW');
 
 let fail = 0;
 for (const [n, ok] of results) { console.log((ok ? 'PASS' : 'FAIL') + '  ' + n); if (!ok) fail++; }
