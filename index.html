@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-RPdOCTDbffw+IJ9JqOcKi0dlBKsXLnbF+KmCRAT72+Ju/HpfClUk84IDV5o88ScV' https://cdn.jsdelivr.net; style-src-elem 'sha384-7Idu4DPgLETDLC3PrKmj59wb102FRwQ5tk6m1DB9dFh+wFgIDNlc3o4/KB/qTjgx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-I1J8azrzFNYFdbJOIbsTAM2lSwGVcqtSwU0VTKZE9SXb5Ps3M+4sUwrwpXe12Per' https://cdn.jsdelivr.net; style-src-elem 'sha384-7Idu4DPgLETDLC3PrKmj59wb102FRwQ5tk6m1DB9dFh+wFgIDNlc3o4/KB/qTjgx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -231,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.56</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.57</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -418,7 +418,7 @@ function saveHistory() { history = trimHistory(history); lsSet(LS.hist, JSON.str
 // Run start (production): epoch milliseconds, stored as a bare digit string (NOT JSON).
 let runStart = 0;
 try { runStart = +lsGet(LS.start) || 0; } catch (e) { runStart = 0; }
-function saveStart() { if (runStart) lsSet(LS.start, String(runStart)); else lsDel(LS.start); }
+function saveStart() { if (runStart) return lsSet(LS.start, String(runStart)); lsDel(LS.start); return true; } // Beta 1.57: reports its result like every other write, for the saveAll contract
 let trail = parseJ(lsGet(LS.trail), []);
 // Trail (production): [lat, lng, epochSeconds] triples; out-of-range or impossible points are dropped at load (SEC-9a bounds).
 trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
@@ -448,15 +448,31 @@ function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return 
 function isNight() { return lsGet(LS.night) === '1'; }
 function workDoneM() { let s = 0; for (const n of STREETNAMES) { const p = pieces[n]; STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); if (p[i] & 1) s += L; if (p[i] & 2) s += L; }); } return s; }
 function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].total * 2; return s; }
+// Beta 1.57 (Phase 2 storage integrity, external audit Section 7): saveAll has a
+// failure CONTRACT now. The sides record is the AUTHORITY for completion - the
+// boot block re-derives the done set from it and prunes times/via against it -
+// so it is written FIRST: if it fails, the save stops and the previous coherent
+// state survives whole. Every other write is checked too; the first failing
+// record is named in saveFailKey. Callers that stay silent (saveQuiet, used by
+// the finish/undo transactions, which do their own gated writes and messaging)
+// suppress the episode warning; everyone else gets one warning per failure
+// episode (saveWarned resets on the next fully successful save).
+let saveFailKey = null, saveWarned = false, saveQuiet = false;
 function saveAll() {
-  lsSet(LS.done, JSON.stringify([...doneSet]));
-  lsSet(LS.times, JSON.stringify(doneTimes));
-  lsSet(LS.via, JSON.stringify(doneVia));
-  lsSet(LS.notes, JSON.stringify(notes));
-  lsSet(LS.hist, JSON.stringify(history));
-  saveStart();
-  lsSet(LS.cov, JSON.stringify(coveredIdx));
-  lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes }));
+  saveFailKey = null;
+  if (!lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes }))) saveFailKey = 'sides';
+  else {
+    if (!lsSet(LS.done, JSON.stringify([...doneSet]))) saveFailKey = 'done';
+    if (!lsSet(LS.times, JSON.stringify(doneTimes)) && !saveFailKey) saveFailKey = 'times';
+    if (!lsSet(LS.via, JSON.stringify(doneVia)) && !saveFailKey) saveFailKey = 'via';
+    if (!lsSet(LS.notes, JSON.stringify(notes)) && !saveFailKey) saveFailKey = 'notes';
+    if (!lsSet(LS.hist, JSON.stringify(history)) && !saveFailKey) saveFailKey = 'history';
+    if (!saveStart() && !saveFailKey) saveFailKey = 'start';
+    if (!lsSet(LS.cov, JSON.stringify(coveredIdx)) && !saveFailKey) saveFailKey = 'coverage';
+  }
+  if (saveFailKey) { if (!saveQuiet && !saveWarned) { saveWarned = true; toast('Storage is not saving (' + saveFailKey + ') - export a backup now', 4200); } return false; }
+  saveWarned = false;
+  return true;
 }
 // Aux flush (production model): the trail JSON is the big write (~250 KB at cap) - at most every 45 s while
 // recording, always when forced (page hide/close). Dirty flags clear ONLY when the write actually lands, so a
@@ -2992,31 +3008,54 @@ function finishRun() {
   const snap = buildSnap();
   const archiving = !!(snap && doneSet.size >= 3); // production rule: under 3 streets clears WITHOUT being saved
   const prevHist = history;
+  // Beta 1.57: the finish is a small TRANSACTION (Phase 2 storage integrity) -
+  // both gated writes land BEFORE any state changes, so a storage failure
+  // leaves the run fully intact instead of half-finished: (1) the archive
+  // record, (2) the cleared authority (sides) record. Gate 2 failing rolls
+  // gate 1 back. Before 1.57 only the archive was gated; the cleared board
+  // written afterwards was not, so a failed sides write resurrected the
+  // finished clean beside its own archive entry on the next launch.
+  let newHist = null;
   if (archiving) {
-    const newHist = trimHistory([...history, snap]);
+    newHist = trimHistory([...history, snap]);
     if (!lsSet(LS.hist, JSON.stringify(newHist))) { toast('Storage full — finish stopped, run intact', 3600); return; } // verified write BEFORE anything clears
-    history = newHist;
   }
+  const clearedPieces = {}, clearedTimes = {};
+  for (const n of STREETNAMES) { clearedPieces[n] = STRETCH[n].parts.map(() => 0); clearedTimes[n] = {}; }
+  if (!lsSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes }))) {
+    if (archiving) lsSet(LS.hist, JSON.stringify(prevHist)); // roll the archive back - the finish did not happen
+    toast('Storage problem — finish stopped, your clean is intact', 4200);
+    return;
+  }
+  if (archiving) history = newHist;
   undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun };
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; coveredIdx = {};
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
-  stopGps(); deselect(); saveAll(); finishChange();
+  stopGps(); deselect();
+  saveQuiet = true; const restOk = saveAll(); saveQuiet = false; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
+  finishChange();
   const rb = $('resetBtn'); rb.textContent = 'Undo'; rb.classList.add('undoing'); rb.style.display = '';
   clearTimeout(undoTimer);
   undoTimer = setTimeout(() => { undoSnap = null; rb.textContent = 'Finish'; rb.classList.remove('undoing'); updateCount(); }, 8000);
-  toast(archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved', 3000);
+  toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved') + (restOk ? '' : ' — some details could not be written (' + saveFailKey + '); they retry on the next save'), 3400);
   if (archiving) maybeBackupNudge();
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
 function doUndo() {
   if (!undoSnap) return;
+  // Beta 1.57: the undo follows the same transaction discipline - the restored
+  // history and authority records are written from the snapshot FIRST; a
+  // failure keeps the undo on offer (snapshot retained, button unchanged)
+  // instead of half-undoing.
+  if (!lsSet(LS.hist, JSON.stringify(undoSnap.hist))) { toast('Storage problem — undo stopped, nothing changed', 3600); return; }
+  if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { lsSet(LS.hist, JSON.stringify(history)); toast('Storage problem — undo stopped, nothing changed', 3600); return; }
   clearTimeout(undoTimer);
   const undoSnapGpsWas = !!undoSnap.gpsWas; // undo restores the pre-finish state: GPS restarts only if it was actually running for the run (a fresh watch's first error toast would otherwise overwrite the 'Finish undone' toast)
   doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov;
   history = undoSnap.hist;
   undoSnap = null;
   const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing');
-  saveAll(); finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
+  saveQuiet = true; saveAll(); saveQuiet = false; finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
   toast('Finish undone — run restored');
 }
 function checkStale() {
@@ -3398,7 +3437,7 @@ $('xPre').addEventListener('click', async () => {
         new Promise(res => setTimeout(res, 3000))]);
       swOk = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
     }
-    if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected - please tell Muse.'; return; }
+    if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; return; } // Beta 1.57: wording stands on its own (second audit, item 5)
   }
   try {
     const urls = new Set();
@@ -3489,6 +3528,7 @@ $('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return;
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(e => { window.__swErr = (e && e.name) || 'error'; }); // Beta 1.53: a refused registration (e.g. policy-blocked) used to vanish into this catch - record WHY; online use is unaffected either way, but the offline preload below refuses to run without the worker and can now say why
+  if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist().catch(() => {}); } catch (e) {} } // Beta 1.57 (second audit, item 6): ask the platform to exempt this origin's data (progress + offline maps) from automatic storage eviction where supported. An installed home-screen app is already outside Safari's 7-day tab eviction; this covers tab use and other browsers. Fire-and-forget - the answer changes nothing in the UI.
   // Stage 2 (audit G-6): the first-ever boot is not worker-controlled, so the map's own style
   // fetches cache nothing and the map cannot load offline until some later visit. Once the
   // worker is ready this page IS controlled - warm both style files through it if they are
