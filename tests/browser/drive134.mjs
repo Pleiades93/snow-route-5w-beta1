@@ -125,7 +125,7 @@ ok('W3 return-to-front re-measures and restores the values', await poll120(expec
 ok('W4a corruption lands a third time', await ev(corrupt));
 await ev(`window.dispatchEvent(new Event('orientationchange'))`);
 ok('W4 rotation re-measures and restores the values', await poll120(expect, 10000));
-ok('W5 title block sits lower (header top padding 15px in the rig, no safe-area inset)', await ev(`getComputedStyle(document.getElementById('hud')).paddingTop === '15px'`));
+ok('W5 title block sits at its lowered position (header top padding 25px in the rig, no safe-area inset)', await ev(`getComputedStyle(document.getElementById('hud')).paddingTop === '25px'`));
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));
 proc.kill('SIGKILL'); process.exit(0);
