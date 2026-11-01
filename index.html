@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-JyXW5NLG2VjJovS1nDZSdix2Hu3cLMwH38amIOlAMTg6lu2xYob0L1pemB5ACxqV' https://cdn.jsdelivr.net; style-src-elem 'sha384-u7101NLs0QZgWOobF8/Y8CUbqRboopkRXT5K53bKIdHvHrjcx3mZR2P8q5Fqixk4' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-5Fi8UtGzbU1bOgTQezTIVPjKnCkYBhOCmfHHIVE63mEO4HTTLZM25DQxjyGUmwfc' https://cdn.jsdelivr.net; style-src-elem 'sha384-u7101NLs0QZgWOobF8/Y8CUbqRboopkRXT5K53bKIdHvHrjcx3mZR2P8q5Fqixk4' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -297,7 +297,7 @@ const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
 const MAIN = new Set(['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark']);
 const SPOT = { 'Columbus': [1, 0.47], 'Mellings': [1, 0.55], 'Valeria': [1, 0.45], 'Santa Barbara': [3, 0.40], 'Kingsnorth': [0, 0.57], 'Bell Harbour': [0, 0.45], 'Romeo': [-1, 0.40], 'Astona': [-1, 0.60], 'Bourbon': [-1, 0.55], 'Fifth': [-1, 0.55] };
 const TRAIL_MAX = 8000;
-const LS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', night: 'snowroute.v2.night', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', exp: 'snowroute.v5.export', pre: 'snowroute.v5.preload', prep: 'snowroute.prep.v1', heal: 'snowroute.v5.heal' };
+const LS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', night: 'snowroute.v2.night', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', exp: 'snowroute.v5.export', pre: 'snowroute.v5.preload', prep: 'snowroute.prep.v1' };
 const BACKUP_KEYS = [LS.done, LS.times, LS.hist, LS.night, LS.notes, LS.via, LS.trail, LS.cov, LS.start, LS.flip, LS.sides];
 
 function distM(a, b) { const dx = (a[1] - b[1]) * MLNG, dy = (a[0] - b[0]) * MLAT; return Math.hypot(dx, dy); }
@@ -3575,8 +3575,6 @@ if ('serviceWorker' in navigator) {
 // before; the settled anchor and the settle-release remain.
 let fullH = 0;
 let nudgeCount = 0, nudgeRecovered = 0, lastNudgeAt = 0; // Beta 1.58: recovery-nudge bookkeeping (see maybeNudge)
-let healStats = {}; try { healStats = JSON.parse(localStorage.getItem(LS.heal) || '{}') || {}; } catch (e) { healStats = {}; } // Beta 1.59: persisted boot-heal tally (device-local, never backed up)
-function saveHealStats() { try { localStorage.setItem(LS.heal, JSON.stringify(healStats)); } catch (e) { /* storage full/blocked: the tally is diagnostic only */ } }
 const inStandalone = () => !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
 function syncViewport() {
   try {
@@ -3684,36 +3682,6 @@ window.addEventListener('pageshow', syncViewport);
 window.addEventListener('orientationchange', () => { fullH = 0; setTimeout(syncViewport, 250); }); // Beta 1.54: the settled size belongs to the old rotation - forget it and let it re-derive
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncViewport(); });
 [400, 1200, 3000, 6500].forEach(ms => setTimeout(syncViewport, ms));
-// Beta 1.59: the boot heal. The strip investigation (2026-11-01) proved the
-// short stage is chosen by iOS before the page's first layout and cannot be
-// reached from inside it - but on Andrew's install a FRESH layout sometimes
-// lands full (reopening the app fixes some bad launches). So when a launch
-// still reports short after the settle window, the app asks for that fresh
-// layout itself: ONE reload, early enough to land behind the splash, and
-// never over an open clean. Guards: home-screen installs only, portrait,
-// sessionStorage loop-guard (one attempt per launch, outcome counted once).
-// The persisted tally (healStats a/r/s = attempted / recovered / still
-// short) is the verdict mechanism: if iOS locks the size per launch, r
-// stays 0 and this mechanism comes back out.
-function bootHeal() {
-  try {
-    if (!inStandalone() || !fullH) return;
-    if (window.innerHeight >= window.innerWidth) { /* portrait only: the settled anchor is a portrait measurement */ } else return;
-    const short = window.innerHeight < fullH - 2;
-    const tried = !!sessionStorage.getItem('sr.heal');
-    const counted = !!sessionStorage.getItem('sr.healN');
-    if (short && !tried && !runStart) {
-      sessionStorage.setItem('sr.heal', '1');
-      healStats.a = (healStats.a || 0) + 1; saveHealStats();
-      location.reload();
-    } else if (tried && !counted) {
-      sessionStorage.setItem('sr.healN', '1');
-      if (short) healStats.s = (healStats.s || 0) + 1; else healStats.r = (healStats.r || 0) + 1;
-      saveHealStats();
-    }
-  } catch (e) { /* sessionStorage unavailable (private mode): no heal, no harm */ }
-}
-setTimeout(bootHeal, 1100);
 let __tailDone = false;
 window.__tailAt = Date.now();
 function __bootTail() { if (__tailDone) return; __tailDone = true; bootMap(); applyNight(); refreshAll(); checkStale(); syncWake(); if (runStart) startGps(true); }
@@ -3756,6 +3724,6 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 (() => { const el = $('diag'), ver = $('ver'); if (!el || !ver) return; let taps = [];
   ver.addEventListener('click', () => { const now = Date.now(); taps = taps.filter(t => now - t < 2000); taps.push(now); if (taps.length < 5) return; taps = [];
     const on = el.style.display !== 'block'; el.style.display = on ? 'block' : 'none';
-    if (on) { const upd = () => { const vv = window.visualViewport; const tb = $('tabBar'), mb = $('map'); el.textContent = 'ih ' + window.innerHeight + ' iw ' + window.innerWidth + ' | vv h ' + (vv ? Math.round(vv.height) : '-') + ' top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' pTop ' + (vv ? Math.round(vv.pageTop) : '-') + ' sc ' + (vv ? vv.scale : '-') + ' | scr ' + screen.width + 'x' + screen.height + ' | docH ' + document.documentElement.clientHeight + ' bodyH ' + Math.round(document.body.getBoundingClientRect().height) + ' | tabB ' + (tb ? Math.round(tb.getBoundingClientRect().bottom) : '-') + ' mapB ' + (mb ? Math.round(mb.getBoundingClientRect().bottom) : '-') + ' | fullH ' + fullH + ' | vvh ' + document.documentElement.style.getPropertyValue('--vvh') + ' vvb ' + document.documentElement.style.getPropertyValue('--vvb') + ' | kb ' + document.body.classList.contains('kb') + ' sa ' + inStandalone() + ' | nudge ' + nudgeCount + '/' + nudgeRecovered + ' | heal ' + (healStats.a || 0) + '/' + (healStats.r || 0) + '/' + (healStats.s || 0); }; upd(); el._iv = setInterval(upd, 500); }
+    if (on) { const upd = () => { const vv = window.visualViewport; const tb = $('tabBar'), mb = $('map'); el.textContent = 'ih ' + window.innerHeight + ' iw ' + window.innerWidth + ' | vv h ' + (vv ? Math.round(vv.height) : '-') + ' top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' pTop ' + (vv ? Math.round(vv.pageTop) : '-') + ' sc ' + (vv ? vv.scale : '-') + ' | scr ' + screen.width + 'x' + screen.height + ' | docH ' + document.documentElement.clientHeight + ' bodyH ' + Math.round(document.body.getBoundingClientRect().height) + ' | tabB ' + (tb ? Math.round(tb.getBoundingClientRect().bottom) : '-') + ' mapB ' + (mb ? Math.round(mb.getBoundingClientRect().bottom) : '-') + ' | fullH ' + fullH + ' | vvh ' + document.documentElement.style.getPropertyValue('--vvh') + ' vvb ' + document.documentElement.style.getPropertyValue('--vvb') + ' | kb ' + document.body.classList.contains('kb') + ' sa ' + inStandalone() + ' | nudge ' + nudgeCount + '/' + nudgeRecovered; }; upd(); el._iv = setInterval(upd, 500); }
     else if (el._iv) { clearInterval(el._iv); el._iv = null; } }); })();
 </script></body></html>
