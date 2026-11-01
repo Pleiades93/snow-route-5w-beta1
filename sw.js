@@ -36,7 +36,10 @@ async function netFirst(r, cacheName) {   // fresh when the network answers fast
   let fp; try { fp = fetch(r); } catch (e) { fp = Promise.reject(e); }   // a synchronous throw becomes a rejection the fallback below already handles
   let res = null, netErr = false;
   try { res = await Promise.race([fp, new Promise((_, j) => setTimeout(() => j(new Error('slow')), 3500))]); }
-  catch (e) { try { res = await fp; } catch (e2) { netErr = true; } }   // SEC-7: a slow network is still a network - wait for the real answer before surrendering to cache/error
+  catch (e) {   // SEC-7: a slow network is still a network - wait for the real answer before surrendering to cache/error. Beta 1.48 (audit B03): for NAVIGATIONS that wait is bounded (a further 5 s) - a connection that never answers at all must not hang the app's start when a cached copy exists; other requests keep the unbounded SEC-7 wait.
+    if (r.mode === 'navigate') { try { res = await Promise.race([fp, new Promise((_, j) => setTimeout(() => j(new Error('stalled')), 5000))]); } catch (e2) { netErr = true; } }
+    else { try { res = await fp; } catch (e2) { netErr = true; } }
+  }
   try {
     if (res && res.ok) { try { await c.put(r, res.clone()); } catch (e) {} return res; }   // NEW-02 (audit 5): awaited + caught like cacheFirst - a failed cache write must never sink a good response or escape as an unhandled rejection
     // Server answered with an error status (503 etc.): prefer a good cached copy
@@ -88,11 +91,11 @@ async function cacheFirst(r, cacheName) {
     return Response.error();
   }
 }
-async function staleWhileRevalidate(r, cacheName) {   // Beta 1.41: answer from cache at once, refresh it in the background - for assets whose URL is not versioned (the sprite sheets), where pure cache-first would freeze them forever and netFirst makes a theme flip wait out a network race
+async function staleWhileRevalidate(r, cacheName, e) {   // Beta 1.41: answer from cache at once, refresh it in the background - for assets whose URL is not versioned (the sprite sheets), where pure cache-first would freeze them forever and netFirst makes a theme flip wait out a network race
   const c = await caches.open(cacheName);
   const hit = await c.match(r);
   const np = fetch(r).then(res => { if (res && res.ok) c.put(r, res.clone()).catch(() => {}); return res; }).catch(() => null);
-  if (hit) return hit;
+  if (hit) { if (e) { try { e.waitUntil(np); } catch (err) {} } return hit; } // Beta 1.48 (audit B07): bind the background refresh to the fetch event's lifetime - unbound, the worker may sleep before the cache update lands
   const res = await np;
   return res || Response.error();
 }
@@ -101,7 +104,7 @@ self.addEventListener('fetch', e => {
   if (r.method !== 'GET') return;
   const u = new URL(r.url);
   const mapHost = u.hostname === 'tiles.basemaps.cartocdn.com' || u.hostname === 'protomaps.github.io'; // Beta 1.33: Protomaps tiles (CARTO-hosted) + glyphs/sprites; the styles themselves are embedded in the page
-  if (mapHost && u.pathname.includes('/sprites/') && u.pathname.endsWith('.json')) e.respondWith(staleWhileRevalidate(r, TILES));
+  if (mapHost && u.pathname.includes('/sprites/') && u.pathname.endsWith('.json')) e.respondWith(staleWhileRevalidate(r, TILES, e));
   else if (mapHost && (u.pathname.endsWith('.json') || u.pathname.includes('/styles/'))) e.respondWith(netFirst(r, TILES));
   else if (mapHost) e.respondWith(cacheFirst(r, TILES));
   else if (u.hostname === 'unpkg.com' || u.hostname === 'cdn.jsdelivr.net') e.respondWith(cacheFirst(r, CACHE));

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-nSIyXSxEG7Risi/KAOD1NwdFBZtHs9SJOt4tE7Flf2XBmeWWMhgAUhbfGX+XRGh5' https://cdn.jsdelivr.net; style-src-elem 'sha384-KyRxU7dZ9yYg0Cm6phYJ/QKMlD4viU5QzdjgSfMpqCeEUu/gXJakn3xnqMpoKTKg' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-cDMzw4+T7QYA3XGeKE59M1bibcr1AvsF6ASan1OQDRpBEZKo4iwztsysGvnRH2ub' https://cdn.jsdelivr.net; style-src-elem 'sha384-PvLA+xPLwamKeD7GsLO59H8lneuO0x7m8pnIQgkhaas+zxktskv8lAdCl5twxjpT' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob:; child-src blob:; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -28,7 +28,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #eceff2; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
-  body.night { background: #14171d; } /* frame colour follows the mode (Beta 1.47): Safari paints its strips and the area behind its bars with the page frame colour - light by day, dark by night, so the app reads as one full screen */
+  body.night { background: #14171d; } /* frame colour follows the mode (Beta 1.48): Safari paints its strips and the area behind its bars with the page frame colour - light by day, dark by night, so the app reads as one full screen */
   /* MENU ANIMATION BASELINE (Andrew, 2026-10-30; pace set by Andrew in Beta 1.29): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. The pace is deliberately a touch slow - smooth and fluid beats snappy. */
   :root { --anim-dur: 420ms; --ease-open: cubic-bezier(.22,.9,.28,1); --ease-close: cubic-bezier(.72,0,.1,.78); }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
@@ -229,7 +229,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.47</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.48</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3188,12 +3188,13 @@ function startGps(fromRun) {
   watchId = navigator.geolocation.watchPosition(acceptFix, gpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
   clearInterval(camTimer); camTimer = setInterval(followCam, 50); // the camera keeps easing to centre on its own clock (Beta 1.28 fix): when follow only ran inside glide ticks, centring stalled the moment a glide ended and the dot could rest off-centre (drive126 F2 caught it under the Kalman aim-lead)
   clearInterval(staleWatchTimer);
-  staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { stopGps(true); startGps(gpsFromRun); } }, 15000);
+  staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run
   $('gpsBtn').classList.add('on');
 }
 function stopGps(silent) {
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
   watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer); clearInterval(camTimer);
+  if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
   $('gpsBtn').classList.remove('on'); $('spd').classList.add('hidden');
 }
 $('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) stopGps(); else startGps(false); });
@@ -3234,7 +3235,7 @@ function showX(mode) {
   ta.readOnly = mode !== 'restore';
   $('xImp').style.display = mode === 'restore' ? '' : 'none';
   if (mode === 'gpx') { ta.value = buildGpx(); $('xTitle').textContent = 'GPS trail (GPX)'; }
-  else if (mode === 'backup') { ta.value = buildBackup(); $('xTitle').textContent = 'Backup — share or copy this and keep it safe'; }
+  else if (mode === 'backup') { const bb = buildBackup(); ta.value = bb || 'Backup failed — your saved data could not be read. Nothing was exported.'; $('xTitle').textContent = 'Backup — share or copy this and keep it safe'; }
   else if (mode === 'restore') { ta.value = ''; $('xTitle').textContent = 'Restore — paste a backup here, then tap Import backup'; }
   else { ta.value = buildReport(); $('xTitle').textContent = 'Snow log'; }
   $('xShare').style.display = navigator.share ? '' : 'none';
@@ -3253,9 +3254,9 @@ $('xRes').addEventListener('click', () => showX('restore'));
 $('xCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('xText').value); toast('Copied'); } catch (e) { $('xText').select(); toast('Select and copy manually'); } });
 $('xShare').addEventListener('click', async () => { if (navigator.share) { try { await navigator.share({ text: $('xText').value }); } catch (e) { /* dismissed */ } } else toast('Share is not offered here — use Copy'); });
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
-function backupObj() { const data = {}; for (const k of BACKUP_KEYS) { const v = lsGet(k); if (v != null) data[k] = v; } return { app: 'snowroute-backup', v: 1, at: new Date().toISOString(), data }; }
-function buildBackup() { return JSON.stringify(backupObj(), null, 1); }
-function downloadBackup() { dl(new Blob([buildBackup()], { type: 'application/json' }), 'route5w-backup.json'); toast('Backup downloaded'); }
+function backupObj() { const data = {}; for (const k of BACKUP_KEYS) { let v = null; try { v = localStorage.getItem(k); } catch (e) { return null; } if (v != null) data[k] = v; } return { app: 'snowroute-backup', v: 1, at: new Date().toISOString(), data }; } // Beta 1.48 (audit B04): read RAW, not via lsGet - lsGet returns null for a read FAILURE as well as an absent key, so a broken read used to produce a valid-looking backup with a piece silently missing. A failed read now fails the whole export (null).
+function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, null, 1) : null; }
+function downloadBackup() { const b = buildBackup(); if (!b) { toast('Backup failed — your saved data could not be read', 3600); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
 let clrArmed = false, clrTimer = 0;
 $('xClr').addEventListener('click', () => {
   if (!clrArmed) { clrArmed = true; $('xClr').textContent = 'Sure?'; clrTimer = setTimeout(() => { clrArmed = false; $('xClr').textContent = 'Clear trail'; }, 5000); return; }

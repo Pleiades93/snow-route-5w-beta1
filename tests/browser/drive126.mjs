@@ -135,8 +135,16 @@ await ev(`(() => { map.setPitch(0); return true; })()`);
 // Follow outside a run: watch on, no run started; fixes march east; the camera
 // must ease after them so the dot never leaves the screen.
 const base = JSON.parse(await ev(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; return JSON.stringify({ lat: mid[0], lng: mid[1] }); })()`));
-const feed = async (lat, lng) => ev('acceptFix({ coords: { latitude: ' + lat + ', longitude: ' + lng + ', accuracy: 10, speed: 3, heading: 90 }, timestamp: Date.now() })');
-await ev(`(() => { watchId = 4242; followPaused = false; return true; })()`);
+const feed = async (lat, lng) => ev('window.__wpOk({ coords: { latitude: ' + lat + ', longitude: ' + lng + ', accuracy: 10, speed: 3, heading: 90 }, timestamp: Date.now() })');
+// Beta 1.48 (audit A01): the old setup wrote watchId directly, so the app's
+// real start path - including the 50 ms camera-follow timer startGps
+// creates - never ran, and F2 judged a camera lifecycle no user has had
+// since the Beta 1.28 camTimer fix. Now a deterministic geolocation mock
+// feeds the REAL startGps(false); fixes arrive through the very callback
+// startGps registered with the (mocked) watch.
+await ev(`(() => { window.__wpOk = null; navigator.geolocation.watchPosition = (ok) => { window.__wpOk = ok; return 4242; }; navigator.geolocation.clearWatch = () => {}; startGps(false); return true; })()`);
+const LC = JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, cam: camTimer !== 0, run: gpsFromRun, cb: typeof window.__wpOk === 'function' }))()`));
+ok('F2b GPS runs through the real startGps lifecycle (watch + camera timer live) | ' + JSON.stringify(LC), LC.wid === 4242 && LC.cam === true && LC.run === false && LC.cb === true);
 await feed(base.lat, base.lng); await sleep(600);                    // first fix (centres once, by design)
 await feed(base.lat, base.lng + 0.004); await sleep(500);
 await feed(base.lat, base.lng + 0.008); await sleep(500);
@@ -163,7 +171,21 @@ for (let i = 0; i < 100 && !dotSettled; i++) {
 }
 DOT = JSON.parse(await ev(`(() => { const p = projLL(dispPos); const c = map.getCanvas(); return JSON.stringify({ dx: Math.abs(p.x - c.clientWidth / 2), dy: Math.abs(p.y - c.clientHeight / 2), w: c.clientWidth, h: c.clientHeight }); })()`));
 ok('F2 the dot settles kind of in the centre of the screen | dot ' + JSON.stringify(DOT), dotSettled === true && DOT.dx < DOT.w * 0.12 && DOT.dy < DOT.h * 0.12);
-await ev(`(() => { watchId = null; return true; })()`);
+// Negative control (audit A01): with following PAUSED - the app's own flag,
+// the one a user drag sets - the same machinery must NOT converge. This is
+// what proves the F2 band can tell following from not-following.
+await ev(`(() => { followPaused = true; return true; })()`);
+const C0 = JSON.parse(await ev(`JSON.stringify(map.getCenter())`));
+await feed(base.lat, base.lng + 0.016); await sleep(500);
+await feed(base.lat, base.lng + 0.016); await sleep(2500);
+const C2 = JSON.parse(await ev(`JSON.stringify(map.getCenter())`));
+ok('F2c negative control: follow paused, camera does not chase the dot | centre moved lng ' + Math.abs(C2.lng - C0.lng).toFixed(5), Math.abs(C2.lng - C0.lng) < 0.002);
+await ev(`(() => { followPaused = false; startGps(true); return true; })()`);
+const LC3 = JSON.parse(await ev(`(() => JSON.stringify({ run: gpsFromRun }))()`));
+ok('F2e a run-owned start marks the live watch as run GPS', LC3.run === true);
+await ev(`(() => { stopGps(); return true; })()`);
+const LC2 = JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, run: gpsFromRun }))()`));
+ok('F2d stopGps through the real handler clears the watch and run ownership', LC2.wid === null && LC2.run === false);
 
 // Night labels: reload into night mode and read the basemap text paint back.
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); location.reload(); return true; })()`);

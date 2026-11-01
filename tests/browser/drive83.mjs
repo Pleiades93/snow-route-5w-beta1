@@ -147,11 +147,28 @@ ok('SEC-4 flush after restore does NOT clobber restored trail', A.ls === '[[43.8
 await sleep(1500);   // the restore's reload lands
 A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length, lat: trail.length ? trail[0][0] : null }))()`));
 ok('SEC-4 after reload, trail is the restored one', A.tl === 1 && A.lat === 43.8);
-// P6 SEC-6a: a fully failed prep does not mark itself done
-await ev(`(() => { localStorage.removeItem('snowroute.prep.v1'); window.Image = class { set src(v) { setTimeout(() => this.onerror && this.onerror(), 5); } }; prepOfflineMaps(); return true; })()`);
-await sleep(2500);
-A = JSON.parse(await ev(`(() => JSON.stringify({ prep: localStorage.getItem('snowroute.prep.v1') }))()`));
-ok('SEC-6a failed prep leaves PREP_KEY unset (will retry)', A.prep === null);
+// P6 SEC-6a (rewritten Beta 1.48, audit B06): the old check called
+// prepOfflineMaps() - a function that no longer exists - so it passed while
+// testing nothing, and asserted an unrelated key. This drives the REAL
+// preload (the Snow log panel's Download button) with every fetch failing,
+// and asserts the app reports the failure honestly: zero saved, the full
+// list counted, no exception.
+const e6 = exc();
+await ev(`(() => { localStorage.removeItem('snowroute.v5.preload'); window.__realFetch83 = window.fetch; window.fetch = () => Promise.reject(new Error('offline')); $('xPre').click(); return true; })()`);
+let stat83 = '';
+for (let i = 0; i < 60; i++) { stat83 = await ev(`$('xPreStat').textContent`); if (/Offline maps: saved/.test(stat83)) break; await sleep(250); }
+await ev(`(() => { window.fetch = window.__realFetch83; return true; })()`);
+A = JSON.parse(await ev(`(() => { const rec = JSON.parse(localStorage.getItem('snowroute.v5.preload') || 'null'); return JSON.stringify({ stat: $('xPreStat').textContent, saved: rec && rec.saved, total: rec && rec.total }); })()`));
+ok('SEC-6a real preload on a dead network reports saved 0 of the full list | ' + JSON.stringify(A), A.saved === 0 && A.total > 800 && /saved 0 of/.test(A.stat));
+ok('SEC-6a failed preload raised no exception', exc() === e6);
+// P7 (Beta 1.48, audit B04): a backup must fail CLOSED when a key cannot be
+// read - a valid-looking backup with a piece silently missing is worse than
+// none. One key's read is made to throw; buildBackup must return null.
+const e7 = exc();
+await ev(`(() => { const orig = Storage.prototype.getItem; Storage.prototype.getItem = function (k) { if (k === 'snowroute.v2') throw new Error('read fail'); return orig.call(this, k); }; window.__bb = buildBackup(); Storage.prototype.getItem = orig; return true; })()`);
+A = JSON.parse(await ev(`(() => JSON.stringify({ bb: window.__bb }))()`));
+ok('B04 backup fails closed when a key cannot be read', A.bb === null);
+ok('B04 the failed read raises no stray exception', exc() === e7);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));
 console.log(JSON.stringify(R, null, 1));
 proc.kill('SIGKILL');
