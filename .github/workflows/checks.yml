@@ -33,3 +33,18 @@ jobs:
         run: node tests/browser/selftest-runner.mjs
       - name: Browser tests (deterministic drives)
         run: node tests/browser/run.mjs
+  offline-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Locate Chrome
+        run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+      - name: Offline end-to-end (real service worker, real caches; Beta 1.53 / audit B08)
+        run: |
+          python3 -m http.server 8077 --directory . >/dev/null 2>&1 &
+          sleep 1
+          node tests/browser/e2e-offline.mjs

@@ -1,5 +1,10 @@
 # Changelog
 
+## Beta 1.53 — 2026-11-01
+- **Offline maps actually save now (the "saved 0 of 894" fix).** Andrew's phone downloaded the offline set and reported "saved 0 of 894 files" on a working connection. Root cause, proven end-to-end: the app's own Content Security Policy stamped `worker-src blob:` only — and the service worker (the component that saves tiles as they pass through it) is a same-origin file, so its registration was **policy-blocked on every load**. The app worked perfectly online (nothing visibly wrong), the registration error was swallowed by a catch labelled "SW is optional", and no offline copy was ever stored. Fix: `csp_stamp.py` now stamps `worker-src blob: 'self'; child-src blob: 'self'` (`blob:` stays for the map library's internal workers), and the build's CSP verification **asserts** `'self'` is present — the build refuses to ship a policy that blocks the worker ever again.
+- **The download refuses to lie.** The preload handler now confirms the service worker actually controls the page before fetching (waiting for control the same way the first-boot warm path does); if it still doesn't, the download stops immediately with "Offline maps NOT saved: the part of the app that saves them is not running" instead of burning 894 fetches on a guaranteed zero. A refused registration now records its reason (`window.__swErr`) so the message can name it.
+- Same defect exists in production's stamp (v5.81) — flagged to Andrew 2026-11-01; patching production is his separate call.
+
 User-facing changes and important reliability fixes. Versions are the
 in-app labels (header, under the app name). Since Beta 1.36 the label is
 just "Beta X.Y" and the app is called Snow Route Beta.

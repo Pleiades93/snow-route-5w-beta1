@@ -52,7 +52,7 @@ POLICY_TEMPLATE = (
     "connect-src 'self' "
     "https://tiles.basemaps.cartocdn.com https://protomaps.github.io "
     "https://cdn.jsdelivr.net; "
-    "worker-src blob:; child-src blob:; "
+    "worker-src blob: 'self'; child-src blob: 'self'; "   # 'self' is load-bearing: the service worker is a same-origin file, and blob:-only here silently blocked its registration - killing ALL offline capability while the app looked fine online (2026-11-01, Andrew's 'saved 0 of 894'). blob: stays for the map library's internal workers. The build gate asserts 'self' is present.
     "font-src 'none'; manifest-src 'self'; "
     "base-uri 'none'; form-action 'none'; object-src 'none'"
 )
