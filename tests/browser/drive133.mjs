@@ -137,6 +137,8 @@ const trailAfterClean = ST.trail;
 ok('R1 a clean records trail and coverage on the same watch | ' + JSON.stringify(ST), ST.run === true && ST.clean === true && ST.trail >= 6 && ST.cov > 0);
 const drawn = JSON.parse(await ev(`(() => { const d = (map.getSource('trail') || {})._data || { features: [] }; return JSON.stringify(d.features.length); })()`));
 ok('R2 the recorded trail is drawn | features ' + drawn, drawn >= 1);
+const recOn = await ev(`$('gpsBtn').classList.contains('rec')`);
+ok('R3 the Locate tab wears its recording face (red) when a clean starts on an already-running view-only watch (Beta 1.64, audit F06) | rec ' + recOn, recOn === true);
 
 // Phase S: clean cancelled - Locate is view-only again, nothing more records.
 await ev(`cancelStart()`);

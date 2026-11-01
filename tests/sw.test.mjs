@@ -150,6 +150,16 @@ const tileCacheMock = {
   async keys() { return [...tileStore.keys()].map(u => ({ url: u })); },
   async delete(r) { const u = typeof r === 'string' ? r : r.url; return tileStore.delete(u); }
 };
+// 10. F09 (Beta 1.64): a map JSON request whose network NEVER settles must
+// still reach its cached fallback - the wait is bounded (3.5 s race + 8 s);
+// it used to hang forever despite a cached copy. (This case takes ~11.5 s
+// by design - it waits out the real bound. It sits before the seed section
+// below replaces the caches mock.)
+store.clear(); store.set(styleReq.url, cachedResp.clone());
+fetchImpl = () => new Promise(() => {});
+r = await netFirst(styleReq, 'c');
+check('F09 stalled style request falls back to cache', (await r.text()) === 'CACHED-SHELL');
+
 globalThis.caches = { async open() { return tileCacheMock; } };
 delete cacheFirst._n; // simulate a fresh worker
 fetchImpl = async () => new Response('TILE-NEW', { status: 200 });

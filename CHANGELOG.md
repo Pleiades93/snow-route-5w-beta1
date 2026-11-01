@@ -1,5 +1,17 @@
 # Changelog
 
+## Beta 1.64
+GPS and defensive round (deep audit F05-F09 + R01; third audit's trail item).
+- Starting a clean on an already-running view-only GPS watch now flips the Locate tab to its red recording face; the state sync sat below an early return and never ran (F06, drive133 R3).
+- The on-map trail now shows only the current clean; the stored trail (snow log, GPX, backups) still keeps every clean (F05, drive141).
+- Trail redraws are throttled - at most every 3 seconds, or once 5 new points have accumulated - instead of a full rebuild of up to 8,000 points on every fix (third audit; drive141).
+- A GPS callback whose own timestamp is older than the last accepted fix is ignored, so a delayed callback cannot move the dot, trail or coverage backwards (R01, drive141).
+- Stored shapes are normalized at load: a string in place of the completion-times object no longer kills the boot in the cleanup loop, and side timestamps are sanitized to [time, time] pairs so marking cannot throw on a nested string (F07, drive141).
+- Service-worker network waits are now bounded for every request class: a request that never answers falls back to its cached copy after about 11.5 seconds instead of hanging (F09, sw.test).
+- The compass listener is removed when GPS stops; it used to be re-registered on every start and never removed (F08, drive141).
+- Dead code removed (an unused escaping helper, two leftover paint helpers from the half-band era, an unused distance helper, an unused glow constant). The two segLenM functions are NOT duplicates - the paint engine's private one sums a different metric for label geometry, the app-global one serves the progress meter - both stay, now commented as such.
+- Tests: new drive141 (7 checks), drive133 gains R3, sw.test gains the stalled-request case (22 total).
+
 ## Beta 1.63 - 2026-11-01
 Data correctness, from the Beta 1.60 deep audit (adjudicated the same
 day; findings F01-F04):
