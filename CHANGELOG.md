@@ -1,5 +1,29 @@
 # Changelog
 
+## Beta 1.63 - 2026-11-01
+Data correctness, from the Beta 1.60 deep audit (adjudicated the same
+day; findings F01-F04):
+- F01: a note draft now belongs to its street. renderStreets records
+  which street's editor is in the DOM (noteEdFor); switching streets
+  finalizes the old editor against ITS street before the new one
+  renders, and a draft is only ever restored into its own street's
+  editor. One street's note can no longer appear in - or be saved to -
+  another street.
+- F02: the Finish rollback is verified (write checked + read back).
+  If rolling the archive back fails, the message says the archive
+  could not be undone and asks for a backup export, instead of
+  claiming the clean is intact. The Undo mirror rollback is verified
+  the same way.
+- F03: lsDel returns its result and saveStart propagates it, so a
+  failed deletion of the run-start record surfaces through saveAll
+  like any other failed write (it used to report success regardless).
+- F04: success messages now branch on the save result - Saved /
+  Note saved / Clean deleted / All marks cleared / Clean started are
+  only claimed when the write landed; otherwise the message names
+  the storage problem.
+Tests: drive136 gains the rollback-failure (F6) and removeItem (F7)
+fault cases; new drive140 covers the note-draft matrix (switch with a
+pending draft, both streets noted, same-street re-render).
 ## Beta 1.62 - 2026-11-01
 Cleanup, at Andrew's direction (the post-strip soak deferral was lifted
 the same day): the strip-era machinery comes out now that the

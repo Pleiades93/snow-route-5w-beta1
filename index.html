@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-cmBkJaQ5118tneHpLrt/2oMcNS04200W+LsYq8uTjneqRXkj/YXXDwGQXMRTRz2v' https://cdn.jsdelivr.net; style-src-elem 'sha384-++kik9rUi+cRxaJmFPr7G+IpkL7js3qfKYd4RluUpT1anPpGfZvvncWJ9C2WvIxx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-mgjqml0/90CepYOimvEFFwoobXj3eCpCWT5EnJtynA7LstiElKAFaokaG4osv2bs' https://cdn.jsdelivr.net; style-src-elem 'sha384-++kik9rUi+cRxaJmFPr7G+IpkL7js3qfKYd4RluUpT1anPpGfZvvncWJ9C2WvIxx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -232,7 +232,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.62</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.63</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -318,7 +318,7 @@ function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList
 function flagStorage() { document.body.classList.add('storage-bad'); }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { flagStorage(); return false; } }
-function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { flagStorage(); } }
+function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } } // Beta 1.63 (audit F03): deletions report like writes - a failed removeItem used to be invisible while saveStart claimed success
 function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
 // Tap guard — 400 ms per control
 const tapLast = {};
@@ -414,11 +414,11 @@ for (const h of history) {
 history = history.filter(h => Object.keys(h.items).length > 0);
 function isFullRun(h) { return !!(h && h.items && Object.keys(h.items).length >= 34); }
 function trimHistory(list) { const out = list.slice(); while (out.length > 10) { const i = out.findIndex(h => !isFullRun(h)); out.splice(i >= 0 ? i : 0, 1); } return out; }
-function saveHistory() { history = trimHistory(history); lsSet(LS.hist, JSON.stringify(history)); }
+function saveHistory() { history = trimHistory(history); return lsSet(LS.hist, JSON.stringify(history)); } // Beta 1.63 (audit F04): the delete-clean handler branches on this
 // Run start (production): epoch milliseconds, stored as a bare digit string (NOT JSON).
 let runStart = 0;
 try { runStart = +lsGet(LS.start) || 0; } catch (e) { runStart = 0; }
-function saveStart() { if (runStart) return lsSet(LS.start, String(runStart)); lsDel(LS.start); return true; } // Beta 1.57: reports its result like every other write, for the saveAll contract
+function saveStart() { if (runStart) return lsSet(LS.start, String(runStart)); return lsDel(LS.start); } // Beta 1.57: reports its result like every other write, for the saveAll contract
 let trail = parseJ(lsGet(LS.trail), []);
 // Trail (production): [lat, lng, epochSeconds] triples; out-of-range or impossible points are dropped at load (SEC-9a bounds).
 trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
@@ -2510,7 +2510,7 @@ onMapReady(() => map.on('click', e => {
 }));
 
 // ===== MARKING (one finish path) =====
-function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); saveAll(); syncWake(); }
+function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const ok = saveAll(); syncWake(); return ok; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result
 function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
   const bit = side ? 2 : 1; const was = pieces[name][idx];
   const now = on ? (was | bit) : (was & ~bit);
@@ -2600,13 +2600,15 @@ function updateCount() {
 
 // ===== LIST SHEET =====
 let listFilter = 'all';
-let noteOpenFor = null, noteSaveTimer = 0;
+let noteOpenFor = null, noteSaveTimer = 0, noteEdFor = null; // Beta 1.63 (audit F01): noteEdFor names the street whose editor is actually in the DOM - the draft's owner
 let srowCache = { sig: '', rows: new Map() }; // Beta 1.50 (audit P06): rows kept between renders when the visible set is unchanged
 function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
   const scroller = $('sheetBody'); const keepScroll = scroller ? scroller.scrollTop : 0; // Beta 1.31: a rebuild must not yank the list back to the top while he is working in it
   const openEd = el.querySelector('.noteEd textarea');
   const draft = openEd ? openEd.value : null; // an in-progress note survives re-renders
+  const draftFor = openEd ? noteEdFor : null; // Beta 1.63 (audit F01): the draft belongs to draftFor's street only - never poured into another street's editor
+  if (draft !== null && draftFor && draftFor !== noteOpenFor) { clearTimeout(noteSaveTimer); setNoteText(draftFor, draft); } // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire)
   const arr = STREETNAMES.filter(n => listFilter === 'all' || (listFilter === 'done') === streetComplete(n));
   if (listFilter === 'done') arr.sort((a, b) => String(doneTimes[b] || '').localeCompare(String(doneTimes[a] || '')));
   if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">' + (listFilter === 'done' ? 'Nothing completed yet' : 'All streets done ✓') + '</div>'; srowCache = { sig: '', rows: new Map() }; return; }
@@ -2665,19 +2667,19 @@ function renderStreets() { // production row design: tap a street's name area to
       ed.className = 'noteEd';
       ed.innerHTML = '<textarea placeholder="Note for this street — e.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nhint">Saves automatically</div>';
       const ta = ed.querySelector('textarea');
-      ta.value = draft !== null ? draft : noteTextOf(n);
+      ta.value = (draft !== null && draftFor === n) ? draft : noteTextOf(n); noteEdFor = n;
       const hint = ed.querySelector('.nhint');
       ta.addEventListener('input', () => {
         hint.textContent = 'Saving…';
         clearTimeout(noteSaveTimer);
-        noteSaveTimer = setTimeout(() => { setNoteText(n, ta.value); paintNt(); hint.textContent = 'Saved ✓'; }, 400);
+        noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok ? 'Saved ✓' : 'Not saved — storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
       });
       ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); setNoteText(n, ta.value); paintNt(); });
       el.appendChild(ed);
     }
   });
   if (scroller) scroller.scrollTop = keepScroll;
-  if (!el.querySelector('.noteEd')) kbSync(); // Beta 1.56: an editor removed by a rebuild must not leave the keyboard state stuck on - reported to the owner (app4 kbSync), which releases it through the settle path
+  if (!el.querySelector('.noteEd')) { noteEdFor = null; kbSync(); } // Beta 1.56: an editor removed by a rebuild must not leave the keyboard state stuck on - reported to the owner (app4 kbSync), which releases it through the settle path
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
 function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the height the sheet has at this moment for the whole slide-down, and clear it only after the motion ends. Clearing it instantly (the old way) snapped the sheet to its default height mid-close, which is why closing felt broken while opening felt fine.
@@ -2909,9 +2911,9 @@ function openClean(i) {
     }
     clearTimeout(cleanDelTimer);
     history.splice(cleanIdx, 1);
-    saveHistory();
+    const okDel = saveHistory();
     backToCleans();
-    toast('Clean deleted');
+    if (okDel) toast('Clean deleted'); else toast('Storage problem — the delete could not be saved; the clean may return on reload', 4200); // Beta 1.63 (audit F04)
     updateCount();
   };
   cv.appendChild(del);
@@ -2942,7 +2944,7 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
-function startClean() { runStart = Date.now(); saveAll(); startGps(true); updateCount(); syncWake(); toast('Clean started · ' + fmtClock(new Date())); checkStale(); }
+function startClean() { runStart = Date.now(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart) toast('Clean started · ' + fmtClock(new Date())); else toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); checkStale(); } // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; saveAll(); if (wasRunGps) stopGps(); updateCount(); syncWake(); toast('Start cancelled'); }
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
@@ -2953,8 +2955,8 @@ function clearAllMarks() {
   if (!any) { toast('Nothing marked to clear'); return; }
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set();
-  deselect(); finishChange();
-  toast('All marks cleared');
+  deselect(); const okClear = finishChange();
+  if (okClear) toast('All marks cleared'); else toast('Storage problem — the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
 $('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
@@ -3023,7 +3025,10 @@ function finishRun() {
   const clearedPieces = {}, clearedTimes = {};
   for (const n of STREETNAMES) { clearedPieces[n] = STRETCH[n].parts.map(() => 0); clearedTimes[n] = {}; }
   if (!lsSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes }))) {
-    if (archiving) lsSet(LS.hist, JSON.stringify(prevHist)); // roll the archive back - the finish did not happen
+    if (archiving) { // roll the archive back - the finish did not happen. Beta 1.63 (audit F02): the rollback is CHECKED and READ BACK - if it fails, the stored history and the stored board disagree, and the message must say so instead of claiming the clean is intact.
+      const rbOk = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
+      if (!rbOk) { toast('Storage failure — finish stopped, but the archive could not be undone. Export a backup now', 6000); return; }
+    }
     toast('Storage problem — finish stopped, your clean is intact', 4200);
     return;
   }
@@ -3048,7 +3053,7 @@ function doUndo() {
   // failure keeps the undo on offer (snapshot retained, button unchanged)
   // instead of half-undoing.
   if (!lsSet(LS.hist, JSON.stringify(undoSnap.hist))) { toast('Storage problem — undo stopped, nothing changed', 3600); return; }
-  if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { lsSet(LS.hist, JSON.stringify(history)); toast('Storage problem — undo stopped, nothing changed', 3600); return; }
+  if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { const rbOk = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history); toast(rbOk ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the history restore could not be undone. Export a backup now', rbOk ? 3600 : 6000); return; } // Beta 1.63 (audit F02): the mirror rollback is verified too
   clearTimeout(undoTimer);
   const undoSnapGpsWas = !!undoSnap.gpsWas; // undo restores the pre-finish state: GPS restarts only if it was actually running for the run (a fresh watch's first error toast would otherwise overwrite the 'Finish undone' toast)
   doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov;
@@ -3087,7 +3092,7 @@ function setNoteText(n, txt) {
   else if (i >= 0) { arr[i] = Object.assign({}, arr[i], { text: t, at: new Date().toISOString() }); }
   else arr.push({ k: 'note', at: new Date().toISOString(), text: t });
   if (arr.length) notes[n] = arr; else delete notes[n];
-  saveAll();
+  return saveAll(); // Beta 1.63 (audit F04): callers announce from the result
 }
 function flagText(n) { return (Array.isArray(notes[n]) ? notes[n] : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : (FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : '')).join('; '); }
 let noteFor = null;
@@ -3095,8 +3100,8 @@ function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note —
 $('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden'));
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
-  setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderStreets(); toast('Note saved');
+  const okNote = setNoteText(noteFor, $('noteText').value);
+  $('noteModal').classList.add('hidden'); renderStreets(); if (okNote) toast('Note saved'); else toast('Storage problem — the note could not be saved', 4200); // Beta 1.63 (audit F04)
 });
 
 // ===== GPS (checklist SS7) =====
