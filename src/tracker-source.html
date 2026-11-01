@@ -230,7 +230,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.49</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.50</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -483,6 +483,14 @@ const GLP = (() => {
     GLM.getSource('centres').setData(CUR.centres);
     GLM.getSource('bands').setData(CUR.bands);
     GLM.getSource('edges').setData(CUR.edges);
+    GLM.getSource('sel').setData(CUR.sel);
+    GLM.getSource('selBand').setData(CUR.selBand);
+    GLM.getSource('selEdges').setData(CUR.selEdges);
+    if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
+    managePulse();
+  }
+  function pushSelSources() { // Beta 1.50 (audit P01): a selection change used to re-send EVERY source - all street families included - though only the selection family changed
+    if (!GLM || !CUR || !GLM.getSource('centres')) return;
     GLM.getSource('sel').setData(CUR.sel);
     GLM.getSource('selBand').setData(CUR.selBand);
     GLM.getSource('selEdges').setData(CUR.selEdges);
@@ -2151,6 +2159,7 @@ function managePulse() {
     let ph = 0;
     pulseTimer = setInterval(() => {
       if (!GLM) return;
+      if (typeof document !== 'undefined' && document.hidden) return; // Beta 1.50 (audit P04): no paint churn while the app is not on screen - the phase simply waits and resumes on return
       ph += pulseRate;
       const s = 0.5 + 0.5 * Math.sin(ph);   // 0..1 breathing cycle
       const set = (id, v) => { if (GLM.getLayer(id)) GLM.setPaintProperty(id, 'line-opacity', v); };
@@ -2183,7 +2192,7 @@ function managePulse() {
     if (!GLM || !CUR) return;
     const SC = buildSelC();
     CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selEdges = buildSel('e');
-    pushSources();
+    pushSelSources();
   }
   function active() { return !!GLM; }
   function setFont(stack) { if (Array.isArray(stack) && stack.length) fontStack = stack.slice(); }
@@ -2451,9 +2460,15 @@ function positionChips() {
     x = Math.max(22, Math.min(cw - 22, x)); y = Math.max(22, Math.min(ch - 22, y));
     kids[side].style.left = (x - 20) + 'px'; kids[side].style.top = (y - 20) + 'px';
     const done = groupSideDone(side);
-    kids[side].querySelector('.chipBtn').innerHTML = done
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg)"><path d="M4 12 H19 M13 5.5 L19.5 12 L13 18.5"/></svg>';
+    const btn = kids[side].querySelector('.chipBtn');
+    const ang = Math.round(Math.atan2(dy, dx) * 180 / Math.PI);
+    const ckey = done ? 'done' : 'a' + ang;
+    if (btn.dataset.k !== ckey) { // Beta 1.50 (audit P02): positionChips runs on EVERY map move - rebuilding the chip's SVG each time was pure waste; rebuild only when the picture actually changes (done state, or the arrow's whole-degree direction)
+      btn.dataset.k = ckey;
+      btn.innerHTML = done
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + ang + 'deg)"><path d="M4 12 H19 M13 5.5 L19.5 12 L13 18.5"/></svg>';
+    }
   });
 }
 onMapReady(() => map.on('move', positionChips));
@@ -2568,15 +2583,38 @@ function updateCount() {
 // ===== LIST SHEET =====
 let listFilter = 'all';
 let noteOpenFor = null, noteSaveTimer = 0;
+let srowCache = { sig: '', rows: new Map() }; // Beta 1.50 (audit P06): rows kept between renders when the visible set is unchanged
 function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
   const scroller = $('sheetBody'); const keepScroll = scroller ? scroller.scrollTop : 0; // Beta 1.31: a rebuild must not yank the list back to the top while he is working in it
   const openEd = el.querySelector('.noteEd textarea');
   const draft = openEd ? openEd.value : null; // an in-progress note survives re-renders
-  el.innerHTML = '';
   const arr = STREETNAMES.filter(n => listFilter === 'all' || (listFilter === 'done') === streetComplete(n));
   if (listFilter === 'done') arr.sort((a, b) => String(doneTimes[b] || '').localeCompare(String(doneTimes[a] || '')));
-  if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">' + (listFilter === 'done' ? 'Nothing completed yet' : 'All streets done ✓') + '</div>'; return; }
+  if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">' + (listFilter === 'done' ? 'Nothing completed yet' : 'All streets done ✓') + '</div>'; srowCache = { sig: '', rows: new Map() }; return; }
+  // Beta 1.50 (audit P06): a routine mark used to rebuild all 34 rows from
+  // scratch. When the visible set and order are unchanged and no note editor
+  // is open, update the kept rows in place instead; anything structural
+  // (filter change, editor open, a row gone) falls back to the full rebuild.
+  const sig = listFilter + '|' + arr.join(',');
+  if (!noteOpenFor && sig === srowCache.sig && !el.querySelector('.noteEd')) {
+    let okAll = srowCache.rows.size === arr.length;
+    if (okAll) for (const n of arr) { const c = srowCache.rows.get(n); if (!c || c.row.parentElement !== el) { okAll = false; break; } }
+    if (okAll) {
+      for (const n of arr) {
+        const c = srowCache.rows.get(n);
+        c.row.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
+        const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
+        c.row.querySelector('.tm').textContent = (notes[n] && notes[n].some(f => f.k !== 'note') ? '⚑ ' : '') + (doneAt ? 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')' : '');
+        c.paintNt();
+      }
+      if (scroller) scroller.scrollTop = keepScroll;
+      if (document.activeElement && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') document.body.classList.remove('kb');
+      return;
+    }
+  }
+  el.innerHTML = '';
+  srowCache = { sig, rows: new Map() };
   arr.forEach(n => {
     const d = document.createElement('div');
     d.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
@@ -2603,6 +2641,7 @@ function renderStreets() { // production row design: tap a street's name area to
       if (ta) { ta.focus(); setTimeout(() => { const t2 = el.querySelector('.noteEd textarea'); if (t2) t2.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 400); } // Beta 1.31: once the keyboard has arrived, make sure the editor sits in view inside the sheet
     });
     el.appendChild(d);
+    srowCache.rows.set(n, { row: d, paintNt });
     if (noteOpenFor === n) {
       const ed = document.createElement('div');
       ed.className = 'noteEd';
@@ -3358,8 +3397,9 @@ $('xPre').addEventListener('click', async () => {
       }
     }
     const list = [...urls];
-    let done = 0;
-    for (const u of list) { try { await fetch(u, { mode: 'cors' }); } catch (e) { /* failures simply never confirm below */ } done++; if (done % 200 === 0) st.textContent = 'Downloading… ' + done + '/' + list.length; }
+    let done = 0, nextU = 0;
+    const preWorker = async () => { while (nextU < list.length) { const u = list[nextU++]; try { await fetch(u, { mode: 'cors' }); } catch (e) { /* failures simply never confirm below */ } done++; if (done % 200 === 0) st.textContent = 'Downloading… ' + done + '/' + list.length; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below
+    await Promise.all([preWorker(), preWorker(), preWorker(), preWorker(), preWorker()]);
     let saved = 0;
     for (const u of list) { try { if (await caches.match(u)) saved++; } catch (e) {} } // Stage 2 (audit G-5): report only resources CONFIRMED in the offline cache
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length }));
@@ -3465,7 +3505,7 @@ function syncViewport() {
     de.style.setProperty('--vvb', Math.max(0, window.innerHeight - vv.offsetTop - vv.height) + 'px');
     const ae = document.activeElement;
     if ((!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
-    if (typeof map !== 'undefined' && map) map.resize();
+    if (typeof map !== 'undefined' && map) { const mc = map.getContainer(); const mw = mc.clientWidth, mh = mc.clientHeight; if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw; syncViewport._h = mh; map.resize(); } } // Beta 1.50 (audit P10): this fires on every visual-viewport scroll tick - only pay for a map resize when the container actually changed size
   } catch (e) { /* map/viewport not up yet */ }
 }
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', syncViewport); window.visualViewport.addEventListener('scroll', syncViewport); }
