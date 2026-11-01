@@ -102,8 +102,9 @@ async function shot(name) {
 
 // drive135: Beta 1.54 viewport/keyboard hardening (Andrew's deep-dive, 2026-11-01).
 // The app now keeps a SETTLED size (fullH) and trusts it over a stuck short report
-// in a home-screen install; while typing, the chrome offsets are pinned to the
-// values captured as the keyboard opened; and the typing freeze releases only
+// in a home-screen install; while typing, the menus ride above the keyboard
+// (offsets follow the live report, as they always have - 1.54's pin broke this
+// and 1.55 reverted it); and the typing freeze releases only
 // after the reported height SETTLES, not the instant a field blurs. The rig
 // simulates the keyboard by resizing the emulated screen mid-session (a real
 // visualViewport change) and forces display-mode: standalone via emulated media.
@@ -138,8 +139,8 @@ ok('V2a typing state on (kb class)', await ev(`document.body.classList.contains(
 ok('V2b bottom offset at rest before the keyboard moves (0px) | ' + await ev(`document.documentElement.style.getPropertyValue('--vvb')`), await ev(`document.documentElement.style.getPropertyValue('--vvb')`) === '0px');
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 560, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(450);
-const pin = JSON.parse(await ev(`JSON.stringify({ vvb: document.documentElement.style.getPropertyValue('--vvb'), vvh: document.documentElement.style.getPropertyValue('--vvh'), dur: getComputedStyle($('sheet')).transitionDuration })`));
-ok('V2c keyboard up: bottom offset PINNED (0px), usable height follows the keyboard (560px), sheet frozen | ' + JSON.stringify(pin), pin.vvb === '0px' && pin.vvh === '560px' && pin.dur === '0s');
+const pin = JSON.parse(await ev(`JSON.stringify({ vvb: document.documentElement.style.getPropertyValue('--vvb'), vvh: document.documentElement.style.getPropertyValue('--vvh'), dur: getComputedStyle($('sheet')).transitionDuration, sb: $('sheet').getBoundingClientRect().bottom, ih: window.innerHeight })`));
+ok('V2c keyboard up: usable height follows the keyboard (560px), sheet frozen, and the sheet sits flush on the LIVE bottom offset (tracks live sizing - no pin) | ' + JSON.stringify(pin), pin.vvh === '560px' && pin.dur === '0s' && Math.abs(pin.sb - (pin.ih - parseFloat(pin.vvb))) <= 1); // Beta 1.55: 1.54 pinned the offsets while typing and hid the note box behind the keyboard on the phone. The rig cannot split window height from visible height the way iOS does, so this asserts the sheet tracks the live variables; the pin's ABSENCE is locked mechanically by the beta-kb-pin-absent registry probe
 await ev(`document.querySelector('.noteEd textarea').blur()`);
 await sleep(120);
 ok('V3a freeze HOLDS just after blur while the height is still short (the 1.31 instant release is gone)', await ev(`document.body.classList.contains('kb')`));

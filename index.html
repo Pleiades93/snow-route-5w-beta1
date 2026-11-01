@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-mpbXhdL5hQEHaUNZhWWdKreKCb/Fz+NbcZsL1CTBnNXILvyUMnChWm30i8607cvd' https://cdn.jsdelivr.net; style-src-elem 'sha384-7Idu4DPgLETDLC3PrKmj59wb102FRwQ5tk6m1DB9dFh+wFgIDNlc3o4/KB/qTjgx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-qi4Q2/YTuep0qem990x/7FDpqaQkyNRH1qkDdQhWQ6dbx9UrF1p4dUpTNckcKaO5' https://cdn.jsdelivr.net; style-src-elem 'sha384-7Idu4DPgLETDLC3PrKmj59wb102FRwQ5tk6m1DB9dFh+wFgIDNlc3o4/KB/qTjgx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -231,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.54</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.55</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -281,6 +281,7 @@
   <button id="xPre">Download offline maps</button>
 </div><div id="xPreStat"></div></div></div>
 <div id="toast"></div>
+<div id="diag" style="display:none; position:fixed; left:8px; bottom:120px; z-index:3000; background:rgba(0,0,0,.85); color:#7dff9a; font:10px/1.5 ui-monospace, Menlo, monospace; padding:6px 8px; border-radius:6px; pointer-events:none; white-space:pre-wrap; max-width:92vw"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 <script>
 // ===== ROUTE DATA (the physical route — verbatim from production) =====
@@ -3526,10 +3527,12 @@ if ('serviceWorker' in navigator) {
 // in a home-screen install the web view IS the full screen, so screen.height is
 // knowable from the first frame) and, when a short report arrives with no keyboard
 // up, trusts the settled size instead - a stuck report can no longer paint a strip.
-// While the keyboard is up, the top/bottom offsets hold the values captured as it
-// opened (kbPin) and only the usable height follows the live report, so the menus
-// stop chasing the keyboard's motion.
-let fullH = 0, kbPin = null;
+// Beta 1.55 CORRECTION: 1.54 additionally PINNED the top/bottom offsets while the
+// keyboard was up - that stopped the menus riding above the keyboard (their
+// pre-1.54 behaviour) and put the note box behind it, out of sight (Andrew,
+// 2026-11-01). The pin is OUT: offsets follow the live report while typing, as
+// before; the settled anchor and the settle-release remain.
+let fullH = 0;
 const inStandalone = () => !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
 function syncViewport() {
   try {
@@ -3539,8 +3542,7 @@ function syncViewport() {
     if (!kb && vv.height > fullH) fullH = vv.height;
     if (!kb && inStandalone() && window.innerHeight >= window.innerWidth && window.screen.height > fullH) fullH = window.screen.height;
     let t, h, b;
-    if (kb) { t = kbPin ? kbPin.t : vv.offsetTop; h = vv.height; b = kbPin ? kbPin.b : Math.max(0, window.innerHeight - vv.offsetTop - vv.height); }
-    else if (inStandalone() && fullH && vv.height < fullH - 2) { t = 0; h = fullH; b = Math.max(0, window.innerHeight - fullH); }
+    if (!kb && inStandalone() && fullH && vv.height < fullH - 2) { t = 0; h = fullH; b = Math.max(0, window.innerHeight - fullH); }
     else { t = vv.offsetTop; h = vv.height; b = Math.max(0, window.innerHeight - t - h); }
     de.style.setProperty('--vvt', t + 'px');
     de.style.setProperty('--vvh', h + 'px');
@@ -3555,9 +3557,7 @@ window.addEventListener('resize', syncViewport);
 // Beta 1.31: the keyboard state - while ANY text field has focus, the sheets stop resizing and
 // animating (body.kb rules in the stylesheet). This is what made note editing feel broken:
 // the sheet kept re-animating its height against the keyboard's own motion on every viewport tick.
-// Beta 1.54: the keyboard lifecycle. Opening: capture the chrome offsets BEFORE the
-// keyboard moves anything (focusin fires first) - syncViewport holds them while typing.
-// Closing: do NOT drop the frozen state the moment the field blurs (1.31 did, while the
+// Beta 1.54/1.55: the keyboard lifecycle. Closing: do NOT drop the frozen state the moment the field blurs (1.31 did, while the
 // keyboard was still sliding away and the reported height still growing - the sheet's
 // animation switched back on against a moving target and 'reanimated up like opening
 // for the first time', Andrew 2026-11-01). Instead wait until the reported height
@@ -3567,7 +3567,6 @@ let kbSettle = null;
 document.addEventListener('focusin', e => {
   if (!e.target.matches('textarea, input')) return;
   if (kbSettle) { clearInterval(kbSettle); kbSettle = null; }
-  if (!document.body.classList.contains('kb')) { const de = document.documentElement; kbPin = { t: parseFloat(de.style.getPropertyValue('--vvt')) || 0, b: parseFloat(de.style.getPropertyValue('--vvb')) || 0 }; }
   document.body.classList.add('kb');
 });
 document.addEventListener('focusout', e => {
@@ -3584,7 +3583,7 @@ document.addEventListener('focusout', e => {
       const vv = window.visualViewport; const h = vv ? vv.height : 0;
       if (h === lastH) stable++; else { stable = 0; lastH = h; }
       if (stable >= 2 || (fullH && h >= fullH - 2) || Date.now() - t0 > 1500) {
-        clearInterval(kbSettle); kbSettle = null; kbPin = null;
+        clearInterval(kbSettle); kbSettle = null;
         document.body.classList.remove('kb'); syncViewport(); setTimeout(syncViewport, 350);
       }
     };
@@ -3602,7 +3601,7 @@ syncViewport();
 // every moment the size is known to have settled: page shown or resumed,
 // return to the front, rotation, and a short ladder of post-boot re-checks.
 window.addEventListener('pageshow', syncViewport);
-window.addEventListener('orientationchange', () => { fullH = 0; kbPin = null; setTimeout(syncViewport, 250); }); // Beta 1.54: the settled size belongs to the old rotation - forget it and let it re-derive
+window.addEventListener('orientationchange', () => { fullH = 0; setTimeout(syncViewport, 250); }); // Beta 1.54: the settled size belongs to the old rotation - forget it and let it re-derive
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncViewport(); });
 [400, 1200, 3000, 6500].forEach(ms => setTimeout(syncViewport, ms));
 let __tailDone = false;
@@ -3640,4 +3639,13 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }
   }, 120);
 })();
+// Beta 1.55 DIAGNOSTIC (temporary - remove when the cold-start strip is closed):
+// tap the version label 5 times to toggle a live viewport readout. Which of
+// screen / window / visible-area reports short while the strip shows decides
+// the fix; Andrew screenshots it in the bad state.
+(() => { const el = $('diag'), ver = $('ver'); if (!el || !ver) return; let taps = [];
+  ver.addEventListener('click', () => { const now = Date.now(); taps = taps.filter(t => now - t < 2000); taps.push(now); if (taps.length < 5) return; taps = [];
+    const on = el.style.display !== 'block'; el.style.display = on ? 'block' : 'none';
+    if (on) { const upd = () => { const vv = window.visualViewport; el.textContent = 'ih ' + window.innerHeight + ' iw ' + window.innerWidth + ' | vv h ' + (vv ? Math.round(vv.height) : '-') + ' top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' | scr ' + screen.width + 'x' + screen.height + ' | fullH ' + fullH + ' | vvh ' + document.documentElement.style.getPropertyValue('--vvh') + ' vvb ' + document.documentElement.style.getPropertyValue('--vvb') + ' | kb ' + document.body.classList.contains('kb') + ' sa ' + inStandalone(); }; upd(); el._iv = setInterval(upd, 500); }
+    else if (el._iv) { clearInterval(el._iv); el._iv = null; } }); })();
 </script></body></html>
