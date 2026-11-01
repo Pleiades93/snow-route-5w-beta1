@@ -66,8 +66,8 @@ async function cacheFirst(r, cacheName) {
       if (res && res.ok) {
         try {
           await c.put(r.url, res.clone());
-          const ks = await c.keys();
-          if (ks.length > MAX_TILES) await c.delete(ks[0]);
+          cacheFirst._n = (cacheFirst._n || 0) + 1; // Beta 1.50 (audit P08): counting the whole cache after EVERY tile put made bulk caching crawl - check in batches of 25 puts and trim back to the cap (overshoot between checks is at most 24 tiles)
+          if (cacheFirst._n % 25 === 0) { const ks = await c.keys(); for (let i = 0; i < ks.length - MAX_TILES; i++) await c.delete(ks[i]); }
         } catch (e) {}
       }
       return res;
@@ -81,8 +81,8 @@ async function cacheFirst(r, cacheName) {
       try {
         await c.put(r.url || r, res.clone());
         if (cacheName === TILES) {
-          const ks = await c.keys();
-          if (ks.length > MAX_TILES) await c.delete(ks[0]);
+          cacheFirst._n = (cacheFirst._n || 0) + 1; // Beta 1.50 (audit P08): batched eviction check, as above
+          if (cacheFirst._n % 25 === 0) { const ks = await c.keys(); for (let i = 0; i < ks.length - MAX_TILES; i++) await c.delete(ks[i]); }
         }
       } catch (e) {}   // a failed cache write must not sink a good network response
     }
