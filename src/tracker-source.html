@@ -230,7 +230,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.55</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.56</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2610,7 +2610,7 @@ function renderStreets() { // production row design: tap a street's name area to
         c.paintNt();
       }
       if (scroller) scroller.scrollTop = keepScroll;
-      if (document.activeElement && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') document.body.classList.remove('kb');
+      kbSync(); // Beta 1.56: renders never touch the kb class - the keyboard owner (app4) reconciles
       return;
     }
   }
@@ -2639,7 +2639,7 @@ function renderStreets() { // production row design: tap a street's name area to
       noteOpenFor = noteOpenFor === n ? null : n;
       renderStreets();
       const ta = el.querySelector('.noteEd textarea');
-      if (ta) { ta.focus(); setTimeout(() => { const t2 = el.querySelector('.noteEd textarea'); if (t2) t2.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 400); } // Beta 1.31: once the keyboard has arrived, make sure the editor sits in view inside the sheet
+      if (ta) { ta.focus(); setTimeout(() => { const t2 = el.querySelector('.noteEd textarea'); const sc = $('sheetBody'); if (t2 && sc) { const tr = t2.getBoundingClientRect(), sr = sc.getBoundingClientRect(); if (tr.bottom > sr.bottom) sc.scrollTop += tr.bottom - sr.bottom + 8; else if (tr.top < sr.top) sc.scrollTop -= sr.top - tr.top + 8; } }, 400); } // Beta 1.56: container-local ensure-visible - 1.31's smooth scrollIntoView panned the whole page and fought iOS's own focus pan (external audit B4, 2026-11-01); adjusting the sheet's own scroll position moves nothing else
     });
     el.appendChild(d);
     srowCache.rows.set(n, { row: d, paintNt });
@@ -2660,7 +2660,7 @@ function renderStreets() { // production row design: tap a street's name area to
     }
   });
   if (scroller) scroller.scrollTop = keepScroll;
-  if (!el.querySelector('.noteEd') && document.activeElement && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') document.body.classList.remove('kb'); // an editor removed by a rebuild must not leave the keyboard state stuck on
+  if (!el.querySelector('.noteEd')) kbSync(); // Beta 1.56: an editor removed by a rebuild must not leave the keyboard state stuck on - reported to the owner (app4 kbSync), which releases it through the settle path
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
 function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the height the sheet has at this moment for the whole slide-down, and clear it only after the motion ends. Clearing it instantly (the old way) snapped the sheet to its default height mid-close, which is why closing felt broken while opening felt fine.
@@ -3568,25 +3568,33 @@ document.addEventListener('focusin', e => {
   if (kbSettle) { clearInterval(kbSettle); kbSettle = null; }
   document.body.classList.add('kb');
 });
+function startKbSettle() { // Beta 1.56: the settle sampler has ONE home - focusout and kbSync both start it here
+  if (!document.body.classList.contains('kb')) return;
+  if (kbSettle) clearInterval(kbSettle);
+  let lastH = -1, stable = 0; const t0 = Date.now();
+  const step = () => {
+    const ae2 = document.activeElement;
+    if (ae2 && (ae2.tagName === 'TEXTAREA' || ae2.tagName === 'INPUT')) { clearInterval(kbSettle); kbSettle = null; return; }
+    const vv = window.visualViewport; const h = vv ? vv.height : 0;
+    if (h === lastH) stable++; else { stable = 0; lastH = h; }
+    if (stable >= 2 || (fullH && h >= fullH - 2) || Date.now() - t0 > 1500) {
+      clearInterval(kbSettle); kbSettle = null;
+      document.body.classList.remove('kb'); syncViewport(); setTimeout(syncViewport, 350);
+    }
+  };
+  kbSettle = setInterval(step, 100); step();
+}
+function kbSync() { // Beta 1.56: the keyboard state's single owner is this lifecycle. A render that destroys the focused editor (app2) calls kbSync() instead of removing the class itself - the release then goes through the same settle path as a normal blur, never an instant mid-animation unfreeze (external audit Issue B1, 2026-11-01)
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) return; // still typing in another field
+  startKbSettle();
+}
 document.addEventListener('focusout', e => {
   if (!e.target.matches('textarea, input')) return;
   setTimeout(() => {
     const ae = document.activeElement;
     if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) return;   // moved to another field - still typing
-    if (!document.body.classList.contains('kb')) return;
-    if (kbSettle) clearInterval(kbSettle);
-    let lastH = -1, stable = 0; const t0 = Date.now();
-    const step = () => {
-      const ae2 = document.activeElement;
-      if (ae2 && (ae2.tagName === 'TEXTAREA' || ae2.tagName === 'INPUT')) { clearInterval(kbSettle); kbSettle = null; return; }
-      const vv = window.visualViewport; const h = vv ? vv.height : 0;
-      if (h === lastH) stable++; else { stable = 0; lastH = h; }
-      if (stable >= 2 || (fullH && h >= fullH - 2) || Date.now() - t0 > 1500) {
-        clearInterval(kbSettle); kbSettle = null;
-        document.body.classList.remove('kb'); syncViewport(); setTimeout(syncViewport, 350);
-      }
-    };
-    kbSettle = setInterval(step, 100); step();
+    startKbSettle();
   }, 0);
 });
 document.addEventListener('focusout', () => setTimeout(syncViewport, 60));
@@ -3645,6 +3653,6 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 (() => { const el = $('diag'), ver = $('ver'); if (!el || !ver) return; let taps = [];
   ver.addEventListener('click', () => { const now = Date.now(); taps = taps.filter(t => now - t < 2000); taps.push(now); if (taps.length < 5) return; taps = [];
     const on = el.style.display !== 'block'; el.style.display = on ? 'block' : 'none';
-    if (on) { const upd = () => { const vv = window.visualViewport; el.textContent = 'ih ' + window.innerHeight + ' iw ' + window.innerWidth + ' | vv h ' + (vv ? Math.round(vv.height) : '-') + ' top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' | scr ' + screen.width + 'x' + screen.height + ' | fullH ' + fullH + ' | vvh ' + document.documentElement.style.getPropertyValue('--vvh') + ' vvb ' + document.documentElement.style.getPropertyValue('--vvb') + ' | kb ' + document.body.classList.contains('kb') + ' sa ' + inStandalone(); }; upd(); el._iv = setInterval(upd, 500); }
+    if (on) { const upd = () => { const vv = window.visualViewport; const tb = $('tabBar'), mb = $('map'); el.textContent = 'ih ' + window.innerHeight + ' iw ' + window.innerWidth + ' | vv h ' + (vv ? Math.round(vv.height) : '-') + ' top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' pTop ' + (vv ? Math.round(vv.pageTop) : '-') + ' sc ' + (vv ? vv.scale : '-') + ' | scr ' + screen.width + 'x' + screen.height + ' | docH ' + document.documentElement.clientHeight + ' bodyH ' + Math.round(document.body.getBoundingClientRect().height) + ' | tabB ' + (tb ? Math.round(tb.getBoundingClientRect().bottom) : '-') + ' mapB ' + (mb ? Math.round(mb.getBoundingClientRect().bottom) : '-') + ' | fullH ' + fullH + ' | vvh ' + document.documentElement.style.getPropertyValue('--vvh') + ' vvb ' + document.documentElement.style.getPropertyValue('--vvb') + ' | kb ' + document.body.classList.contains('kb') + ' sa ' + inStandalone(); }; upd(); el._iv = setInterval(upd, 500); }
     else if (el._iv) { clearInterval(el._iv); el._iv = null; } }); })();
 </script></body></html>

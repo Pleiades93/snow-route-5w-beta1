@@ -149,6 +149,17 @@ await sleep(180);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 ok('V3b once the height is home, the freeze releases and the size is the settled one', await poll120(`!document.body.classList.contains('kb') && document.documentElement.style.getPropertyValue('--vvh') === '900px'`, 2500));
 ok('V3c bottom offset still 0px after the whole cycle', await ev(`document.documentElement.style.getPropertyValue('--vvb')`) === '0px');
+// W (Beta 1.56): keyboard ownership - with the keyboard UP (height unsettled), a rebuild that destroys the editor must NOT unfreeze the sheet (the pre-1.56 list code removed the class itself, instantly); the single owner holds it, then releases through the settle path once the height is home
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 560, deviceScaleFactor: 2, mobile: true }, S); await sleep(200);
+await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); if (ta) ta.focus(); return true; })()`); await sleep(250);
+const wBefore = await ev(`document.body.classList.contains('kb')`);
+await ev(`(() => { noteOpenFor = null; renderStreets(); return true; })()`);
+await sleep(120);
+const wHold = await ev(`document.body.classList.contains('kb')`);
+ok('W1 editor destroyed by a rebuild mid-typing: the freeze HOLDS while the height is unsettled (owner decides, not the render) | before ' + wBefore + ' hold ' + wHold, wBefore === true && wHold === true);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
+let wRel = false; for (let i = 0; i < 20 && !wRel; i++) { await sleep(150); wRel = await ev(`!document.body.classList.contains('kb')`); }
+ok('W2 once the height is home, the owner releases the freeze (no stuck keyboard state)', wRel === true);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 820, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(400);
 const stuck = JSON.parse(await ev(`JSON.stringify({ vvh: document.documentElement.style.getPropertyValue('--vvh'), vvb: document.documentElement.style.getPropertyValue('--vvb') })`));
