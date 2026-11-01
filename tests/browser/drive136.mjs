@@ -165,6 +165,26 @@ await ev(`__unstub()`);
 await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
 st = await state();
 ok('F5b undo succeeds after storage recovers: run restored, archive un-happened | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 0 && st.label === 'Finish' && /Finish undone/.test(st.toast));
+// F6 (Beta 1.63, audit F02): the ROLLBACK write itself fails - the archive
+// write lands, the authority write fails, and rolling the archive back
+// fails too. The stored history and the stored board now disagree, and
+// the app must SAY so (never 'your clean is intact'). Needs a sequenced
+// stub: the first history write passes, every later one throws, and the
+// sides write always throws.
+await ev(`(() => { const orig = Storage.prototype.setItem; let histWrites = 0; Storage.prototype.setItem = function (k, v) { if (k === 'snowroute.v5.sides') throw new Error('injected quota failure'); if (k === 'snowroute.v2.history') { histWrites++; if (histWrites > 1) throw new Error('injected quota failure'); } return orig.call(this, k, v); }; window.__seqOrig = orig; return true; })()`);
+await ev(`(() => { performReset(); return true; })()`); await sleep(300);
+st = await state();
+ok('F6 rollback write fails: finish stops, run intact in memory, the divergence is REPORTED (archive persisted, no intact claim) | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 1 && /could not be undone/.test(st.toast) && !/clean is intact/.test(st.toast));
+await ev(`(() => { Storage.prototype.setItem = window.__seqOrig; return true; })()`);
+await send('Page.navigate', { url: 'file://' + DIR + '/' + PAGE }, S);
+ok('F6b after reload the app boots on the diverged store without crashing (the archive is simply there)', await poll120(`typeof doneSet !== 'undefined'`, 30000));
+// F7 (Beta 1.63, audit F03): a failing removeItem must surface through
+// saveStart() - the delete path reports like every other write.
+await ev(`(() => { const orig = Storage.prototype.removeItem; Storage.prototype.removeItem = function (k) { throw new Error('injected delete failure'); }; window.__delOrig = orig; return true; })()`);
+const delFail = await ev(`(() => { runStart = 0; return saveStart(); })()`);
+await ev(`(() => { Storage.prototype.removeItem = window.__delOrig; return true; })()`);
+const delOk = await ev(`(() => { runStart = 0; return saveStart(); })()`);
+ok('F7 removeItem failure: saveStart reports false; healthy storage reports true | fail ' + delFail + ' ok ' + delOk, delFail === false && delOk === true);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 console.log(JSON.stringify(R, null, 1));
 proc.kill('SIGKILL'); process.exit(0);
