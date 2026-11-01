@@ -27,6 +27,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #eceff2; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+  html { min-height: min(100lvh, calc(100% + env(safe-area-inset-top))); } /* Beta 1.60: document-height floor. On iOS 26/27 a Home Screen app whose document is no taller than the (already short) viewport gets an undersized layout viewport - the 59pt strip (WebKit 313800 family). Forcing the document at least screen-tall makes WebKit grant the full viewport. Proven on Andrew's iPhone 2026-11-01 with bare probe pages (fresh installs: base probe ih 873, this rule ih 932 across launch/resume/keyboard). The app layout is fixed-position and unaffected by the taller document; overflow stays hidden. */
   body.night { background: #14171d; } /* frame colour follows the mode (Beta 1.48): Safari paints its strips and the area behind its bars with the page frame colour - light by day, dark by night, so the app reads as one full screen */
   /* MENU ANIMATION BASELINE (Andrew, 2026-10-30; pace set by Andrew in Beta 1.29): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. The pace is deliberately a touch slow - smooth and fluid beats snappy. */
   :root { --anim-dur: 420ms; --ease-open: cubic-bezier(.22,.9,.28,1); --ease-close: cubic-bezier(.72,0,.1,.78); }
@@ -230,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.58</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.60</div></div>
   </div>
   <div id="stats"></div>
 </div>
