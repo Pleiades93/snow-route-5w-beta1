@@ -76,6 +76,7 @@ async function handlePaused(p) {
 await send('Fetch.enable', { patterns: [
   { urlPattern: '*jsdelivr*', requestStage: 'Request' },
   { urlPattern: '*openfreemap*', requestStage: 'Request' },
+  { urlPattern: '*github.io*', requestStage: 'Request' },
   { urlPattern: '*arcgisonline*', requestStage: 'Request' },
   { urlPattern: '*unpkg*', requestStage: 'Request' },
   { urlPattern: '*cartocdn*', requestStage: 'Request' },
@@ -142,18 +143,25 @@ const fonts = JSON.parse(await ev(`JSON.stringify({
 ok('K2 note editors use >=16px text (no iOS focus auto-zoom) and the editor takes focus | ' + JSON.stringify(fonts),
   fonts.ed >= 16 && fonts.modal >= 16 && fonts.focused === 'TEXTAREA');
 
-// ---- K3: with the visible screen shrunk (the keyboard state), the header and
-// the open sheet stay inside the VISIBLE area --------------------------------
+// ---- K3: keyboard state (Beta 1.61 contract): the layout does NOT chase the
+// shrunk visible screen - the published height stays frozen at the full size,
+// the bottom offset stays 0, the header keeps the top of the screen, and the
+// sheet keeps its pre-keyboard size, flush with the layout bottom (the
+// keyboard overlays it). The rig cannot split layout height from visible
+// height the way the phone does (layout 932 vs visible 740), so the sheet's
+// top is asserted through its unchanged height rather than the stage top:
+// on the phone the frozen size is .74 of the FULL height, so its top sits
+// on-screen by construction. ----------------------------------------------
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 520, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(900);
 const shrunk = JSON.parse(await ev(`(() => { const vv = window.visualViewport; const hud = $('hud').getBoundingClientRect(); const sh = $('sheet').getBoundingClientRect();
   const cs = getComputedStyle(document.documentElement);
-  return JSON.stringify({ vvH: vv.height, vvT: vv.offsetTop, hudTop: hud.top, hudBottom: hud.bottom, sheetBottom: sh.bottom, sheetTop: sh.top,
+  return JSON.stringify({ vvH: vv.height, vvT: vv.offsetTop, hudTop: hud.top, hudBottom: hud.bottom, sheetBottom: sh.bottom, sheetTop: sh.top, sheetH: sh.height,
     vvh: cs.getPropertyValue('--vvh'), vvb: cs.getPropertyValue('--vvb'), ih: window.innerHeight }); })()`));
-ok('K3 keyboard-state: header and open sheet remain inside the visible screen | ' + JSON.stringify(shrunk),
+ok('K3 keyboard-state: header unmoved at the top, sheet frozen at its pre-keyboard size and flush with the layout bottom, published height frozen at full | ' + JSON.stringify(shrunk),
   shrunk.hudTop >= shrunk.vvT - 1 && shrunk.hudBottom <= shrunk.vvT + shrunk.vvH + 1 &&
-  shrunk.sheetBottom <= shrunk.vvT + shrunk.vvH + 2 && shrunk.sheetTop >= shrunk.vvT - 1 &&
-  Math.abs(parseFloat(shrunk.vvh) - shrunk.vvH) <= 1.5);
+  Math.abs(shrunk.sheetBottom - shrunk.ih) <= 1 && shrunk.sheetH > 600 && shrunk.sheetH <= 668 &&
+  shrunk.vvh === '900px' && shrunk.vvb === '0px');
 
 // ---- K4: keyboard closed again - everything settles back (Andrew: "it never
 // moves back" - this is the regression for exactly that) -----------------------
