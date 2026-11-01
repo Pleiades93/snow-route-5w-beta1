@@ -119,7 +119,7 @@ const poll120 = async (expr, ms) => { const t0 = Date.now(); while (Date.now() -
 ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`));
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 820, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(400);
-ok('V5 (tab mode first, no shim): a short live report rules as-is (820px) - the trust behaviour is home-screen-only', await ev(`document.documentElement.style.getPropertyValue('--vvh')`) === '820px');
+ok('V5 (tab mode first, no shim): a short live report rules as-is (820px)', await ev(`document.documentElement.style.getPropertyValue('--vvh')`) === '820px');
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(300);
 // The headless shell cannot emulate display-mode, so the rig shims the media
@@ -169,7 +169,7 @@ ok('W2 once the height is home, the owner releases the freeze (no stuck keyboard
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 820, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(400);
 const stuck = JSON.parse(await ev(`JSON.stringify({ vvh: document.documentElement.style.getPropertyValue('--vvh'), vvb: document.documentElement.style.getPropertyValue('--vvb') })`));
-ok('V4 stuck-short report (820, no keyboard): the settled 900 is trusted - no strip can paint | ' + JSON.stringify(stuck), stuck.vvh === '900px' && stuck.vvb === '0px');
+ok('V4 stuck-short report (820, no keyboard): the live report rules as-is (820px) - the 1.54 trust override is RETIRED (Beta 1.62); the full-stage guarantee is the document-height floor (1.60), which this rig cannot emulate and drive139 pins | ' + JSON.stringify(stuck), stuck.vvh === '820px' && stuck.vvb === '0px');
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(300);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');

@@ -1,5 +1,22 @@
 # Changelog
 
+## Beta 1.62 - 2026-11-01
+Cleanup, at Andrew's direction (the post-strip soak deferral was lifted
+the same day): the strip-era machinery comes out now that the
+document-height floor (1.60) holds the full stage on its own.
+- The 1.58 recovery nudges are REMOVED (function, counters, and the
+  syncViewport call): they moved the page by design and could still
+  twitch once during the splash handoff even though the stage now
+  always arrives full.
+- The 1.54 viewport trust override is REMOVED: syncViewport publishes
+  the live report, always. fullH remains only as the keyboard settle
+  sampler's reference.
+- The #diag diagnostic readout (1.55, always labelled temporary) is
+  REMOVED, element and tap handler together; its job - classifying the
+  strip - is done and device-verified.
+- The four strip-test probe pages are removed from the site.
+drive135's trust assertions are rewritten to the live-rules contract
+(V4/V5); drive137 (the nudge test) is retired with the machinery.
 ## Beta 1.61 - 2026-11-01
 Keyboard overlay, at Andrew's direction: while a note field is focused,
 the keyboard now slides OVER the app instead of resizing it. The layout
