@@ -54,6 +54,12 @@ def verify(bundle: str, src_text: str, sw_text: str) -> None:
     for host in ('tiles.basemaps.cartocdn.com', 'protomaps.github.io'):
         assert f'https://{host}' in stamped, f'CSP FAIL: policy omits map host {host} - the styles fetch tiles/glyphs/sprites from it (2026-10-29 dark-mode incident: tiles.basemaps.cartocdn.com was missing and the whole dark basemap was policy-blocked)'
     assert "worker-src blob: 'self'" in stamped, 'CSP FAIL: worker-src does not allow the same-origin service worker - registration would be policy-blocked and ALL offline capability silently dies (2026-11-01 incident: preload reported saved 0 of 894 on a working connection)'
+    import pathlib
+    chg = pathlib.Path(__file__).resolve().parent.parent.joinpath('CHANGELOG.md').read_text()
+    mv = re.search(r'## Beta (\d+\.\d+)', chg)
+    assert mv, 'VERSION FAIL: CHANGELOG has no Beta entry'
+    assert f'id="ver">Beta {mv.group(1)}<' in bundle, f'VERSION FAIL: the displayed version is not the CHANGELOG top entry (Beta {mv.group(1)}) - the in-app update checker compares this text; a stale label disables update detection (2026-11-01: 1.53 shipped still displaying Beta 1.52 because a label edit silently matched nothing)'
+    print(f'VERSION check: PASS (displayed version == CHANGELOG top, Beta {mv.group(1)})')
     print('CSP check: PASS (stamped policy hash matches the bundle\'s own script/style)')
     r = csp_stamp.strip_stamp(bundle)
     assert r == src_text, 'PARITY FAIL: index.html differs from source beyond the CSP stamp'
