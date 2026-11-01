@@ -79,6 +79,7 @@ await send('Fetch.enable', { patterns: [
   { urlPattern: '*arcgisonline*', requestStage: 'Request' },
   { urlPattern: '*unpkg*', requestStage: 'Request' },
   { urlPattern: '*cartocdn*', requestStage: 'Request' },
+  { urlPattern: '*github.io*', requestStage: 'Request' }, // the Protomaps glyphs/sprites host (see drive133): lets the style finish loading on the local rig too
   { urlPattern: '*sw.js', requestStage: 'Request' }
 ] }, S);
 await send('Page.enable', {}, S);
@@ -99,9 +100,10 @@ async function shot(name) {
 
 
 
-// drive129: Beta 1.28 facing cone (Andrew: the Apple Maps light beam on the GPS dot).
-// No beam until a facing is known; the beam points along the facing (compass funnel);
-// while moving, the GPS course takes over the funnel; GPS off removes the beam.
+// drive129: the facing beam (Beta 1.28 cone; Beta 1.49 gradient fan symbol -
+// Andrew's reference image). No beam until a facing is known; the beam's
+// rotation follows the facing (compass funnel); while moving, the GPS course
+// takes over the funnel; GPS off removes the beam.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, !!cond]);
 const ev = async (code) => evaluate(code);
@@ -112,18 +114,21 @@ ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 
 const base = JSON.parse(await ev(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; return JSON.stringify({ lat: mid[0], lng: mid[1] }); })()`));
 const gpsData = async () => JSON.parse(await ev(`(() => { const d = (map.getSource('gps') || {})._data || { features: [] }; return JSON.stringify(d.features.map(f => f.properties.k)); })()`));
-const coneBearing = async () => ev(`(() => { const d = map.getSource('gps')._data; const cone = d.features.find(f => f.properties.k === 'cone'); if (!cone) return -1; const cs = cone.geometry.coordinates[0]; const c = cs[0]; const arc = cs.slice(1, -1); let sx = 0, sy = 0; for (const p of arc) { sx += (p[0]-c[0]) * 80386; sy += (p[1]-c[1]) * 111320; } return Math.round(((Math.atan2(sx, sy) * 180 / Math.PI) + 360) % 360); })()`); // the fan's arc vertices all sit at the same radius, so a farthest-vertex probe is a float tie-break lottery (it read 23 for a 350 beam: the +33 edge) - the arc's centroid points exactly along the facing
+const coneBearing = async () => ev(`(() => { const d = (map.getSource('gps') || {})._data || { features: [] }; const b = d.features.find(f => f.properties.k === 'beam'); return b ? Math.round(b.properties.rot) : -1; })()`); // Beta 1.49: the beam is a symbol whose rotation rides the feature's rot property - read it directly
 const bangDiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
 
 await ev(`(() => { watchId = 4242; followPaused = false; return true; })()`);
 await ev(`acceptFix({ coords: { latitude: ${base.lat}, longitude: ${base.lng}, accuracy: 10, speed: 0, heading: null }, timestamp: Date.now() })`);
-await sleep(500);
-let K = await gpsData();
-ok('C1 a dot with no known facing carries no beam | kinds ' + JSON.stringify(K), K.includes('dot') && !K.includes('cone'));
+// Waits-hardened (Beta 1.49): the GPS layers land on a style restack that can
+// still be settling right after boot - poll for the dot instead of reading
+// once at 500 ms and mistaking a settling style for a missing dot.
+let K = [];
+for (let i = 0; i < 40; i++) { K = await gpsData(); if (K.includes('dot')) break; await sleep(250); }
+ok('C1 a dot with no known facing carries no beam | kinds ' + JSON.stringify(K), K.includes('dot') && !K.includes('beam'));
 
 await ev(`setFacing(90, 1)`); await sleep(200);
 K = await gpsData(); const B1 = await coneBearing();
-ok('C2 facing east draws the beam pointing east | kinds ' + JSON.stringify(K) + ' bearing ' + B1, K.includes('cone') && bangDiff(B1, 90) <= 7);
+ok('C2 facing east draws the beam pointing east | kinds ' + JSON.stringify(K) + ' bearing ' + B1, K.includes('beam') && bangDiff(B1, 90) <= 7);
 
 await ev(`setFacing(350, 1)`); await sleep(200);
 const B2 = await coneBearing();
@@ -134,10 +139,11 @@ await sleep(400);
 const B3 = await coneBearing();
 ok('C4 while moving, the GPS course takes over the beam | bearing ' + B3, bangDiff(B3, 90) <= 20);
 
-const LP = JSON.parse(await ev(`(() => { const l = map.getLayer('gps-cone'); return JSON.stringify({ op: l && map.getPaintProperty('gps-cone', 'fill-opacity') }); })()`));
+let LP = {};
+for (let i = 0; i < 40; i++) { LP = JSON.parse(await ev(`(() => JSON.stringify({ beam: !!map.getLayer('gps-beam'), img: map.getLayer('gps-beam') && map.getLayoutProperty('gps-beam', 'icon-image'), cone: !!map.getLayer('gps-cone'), shadow: !!map.getLayer('gps-shadow') }))()`)); if (LP.beam) break; await sleep(250); } // poll: a restack can be mid-flight at any single read
 await ev(`(() => { watchId = null; pushGps(); return true; })()`); await sleep(200);
 K = await gpsData();
-ok('C5 GPS off removes the beam; the cone layer wears the soft fill | kinds ' + JSON.stringify(K) + ' paint ' + JSON.stringify(LP), !K.includes('cone') && LP.op === 0.3);
+ok('C5 GPS off removes the beam; the beam is the gradient fan symbol and the cone layer is retired | kinds ' + JSON.stringify(K) + ' layers ' + JSON.stringify(LP), !K.includes('beam') && LP.beam === true && LP.img === 'beam-img' && LP.cone === false && LP.shadow === true);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 console.log(JSON.stringify(R, null, 1));

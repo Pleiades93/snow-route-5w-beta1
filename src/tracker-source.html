@@ -94,6 +94,8 @@
   /* (the tab bar's night surface comes from --card via body.night - no separate override) */
   body.night .tabItem { color: #dde5ec; }
   body.night .tabItem.on { color: #4da3ff; }
+  .tabItem.rec { color: #d92c1e; } /* Beta 1.49: the Locate tab wears red while a clean's GPS is recording (blue = view only) */
+  body.night .tabItem.rec { color: #ff6b5e; }
   .tabItem.red { color: #ff6b5e; }
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 74px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; } /* flex-start + the dock buttons' 24px top margin centres them on the big circle, not on the taller slot (Beta 1.23 fix - drive120 V1 measured a 29px offset) */ /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
   .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -228,7 +230,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.48</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.49</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2324,13 +2326,30 @@ function addReferenceLayers() {
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
   map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
 }
+function makeBeamImage() { // Beta 1.49: the facing beam as a painted fan (Andrew's reference image) - strong at the dot, fading with distance, with a soft skirt at the edges. Two passes (a wide faint fan under a narrower stronger one) fake the blur a flat polygon cannot do.
+  const S = 512, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+  const x = cv.getContext('2d'), c = S / 2;
+  const pass = (halfDeg, len, a0) => {
+    const g = x.createRadialGradient(c, c, 0, c, c, len);
+    g.addColorStop(0, 'rgba(26,140,255,' + a0 + ')');
+    g.addColorStop(0.55, 'rgba(26,140,255,' + (a0 * 0.55).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(26,140,255,0)');
+    x.fillStyle = g; x.beginPath(); x.moveTo(c, c);
+    const h = -Math.PI / 2, hd = halfDeg * Math.PI / 180;
+    x.arc(c, c, len, h - hd, h + hd); x.closePath(); x.fill();
+  };
+  pass(48, 238, 0.13); pass(38, 238, 0.22); pass(29, 238, 0.34); // three nested fans: the steps between them are small enough to read as one soft edge
+  return cv;
+}
 function addGpsLayers() {
   if (map.getSource('gps')) return;
   map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  map.addLayer({ id: 'gps-cone', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'cone'], paint: { 'fill-color': '#1a8cff', 'fill-opacity': 0.3 } }); // Beta 1.28: the facing beam, painted under the accuracy ring and the dot
+  if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); } // raw ImageData form: handing MapLibre the canvas element itself throws 'mismatched image size' (its size reads come back 0) and the throw silently killed this whole layer batch in the boot queue - found by drive129's layer checks before 1.49 ever shipped
+  map.addLayer({ id: 'gps-shadow', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 13, 'circle-color': '#000000', 'circle-opacity': 0.16, 'circle-blur': 1 } }); // Beta 1.49: the soft shadow under the dot (Andrew's reference image)
+  map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'], layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }); // Beta 1.49: gradient fan symbol, painted under the accuracy ring and the dot - replaces the flat cone polygon (Beta 1.28), which read as cheap
   map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#1a8cff', 'fill-opacity': 0.12 } });
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#1a8cff', 'line-width': 1.5, 'line-opacity': 0.5 } });
-  map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9, 'circle-color': '#1a8cff', 'circle-stroke-width': 3, 'circle-stroke-color': '#ffffff' } });
+  map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9.5, 'circle-color': '#1a8cff', 'circle-stroke-width': 4, 'circle-stroke-color': '#ffffff' } });
 }
 function addTrailLayers() {
   if (map.getSource('trail')) return;
@@ -3009,12 +3028,8 @@ let suggested = new Set();
 function pushGps() {
   const src = map.getSource('gps'); if (!src) return;
   const feats = [];
-  if (dispPos && watchId != null && facingDeg != null) { // the facing beam (Beta 1.28): a soft wedge from the dot along the facing direction, Apple Maps style
-    const R = 46, half = 33 * Math.PI / 180, h = facingDeg * Math.PI / 180;
-    const cone = [[dispPos[1], dispPos[0]]];
-    for (let a = -half; a <= half + 0.001; a += half / 4) { const b = h + a; cone.push([dispPos[1] + (R * Math.sin(b)) / MLNG, dispPos[0] + (R * Math.cos(b)) / MLAT]); }
-    cone.push([dispPos[1], dispPos[0]]);
-    feats.push({ type: 'Feature', properties: { k: 'cone' }, geometry: { type: 'Polygon', coordinates: [cone] } });
+  if (dispPos && watchId != null && facingDeg != null) { // the facing beam (Beta 1.49): a point carrying the facing - the gps-beam symbol layer paints the gradient fan image along it (Apple Maps style, Andrew's reference)
+    feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round(facingDeg * 10) / 10 }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
   }
   if (dispPos) {
     feats.push({ type: 'Feature', properties: { k: 'dot' }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
@@ -3150,7 +3165,7 @@ function acceptFix(pos) {
   const inB = sm[0] > routeBox.s - 0.0036 && sm[0] < routeBox.n + 0.0036 && sm[1] > routeBox.w - 0.005 && sm[1] < routeBox.e + 0.005;
   if (!inB && offRouteArmed) { offRouteArmed = false; toast("You are outside the route area — GPS won't mark streets here", 3600); }
   if (inB) offRouteArmed = true;
-  if (runStart) {
+  if (runStart && gpsFromRun) { // Beta 1.49 (Andrew's rule): route data is recorded ONLY by a clean's own GPS - the Locate tab's view-only watch never writes trail or coverage, even if a stale flag disagrees
     trail.push([+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)]);
     if (trail.length > TRAIL_MAX) trail.splice(0, trail.length - TRAIL_MAX);
     trailDirty = true; flushAux(false); drawTrail();
@@ -3189,14 +3204,15 @@ function startGps(fromRun) {
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run
   $('gpsBtn').classList.add('on');
+  $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
 }
 function stopGps(silent) {
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
   watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer); clearInterval(camTimer);
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
-  $('gpsBtn').classList.remove('on'); $('spd').classList.add('hidden');
+  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden');
 }
-$('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) stopGps(); else startGps(false); });
+$('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) stopGps(); else if (runStart) { startGps(true); toast('Clean in progress — recording your route', 2600); } else { startGps(false); toast('Location on — view only, not recording', 2400); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so
 
 // ===== EXPORT / BACKUP / RESTORE (production showX model: one panel, four modes) =====
 function fmtStamp(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString() + ' ' + fmtClock(d); }
