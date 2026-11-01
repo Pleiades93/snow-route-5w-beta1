@@ -104,7 +104,13 @@ async function shot(name) {
 // the short stage before first layout and the page cannot reach it - but a
 // fresh layout sometimes lands full, so a launch that is still short after
 // the settle window reloads ONCE behind the splash and counts the outcome
-// (healStats a/r/s). The rig pins screen.height to 900 via a document shim
+// (healStats a/r/s). NOTE: this headless shell does not reliably restore
+// sessionStorage across a file:// reload (observed: the heal flags lost on
+// the reload they guard, producing phantom second attempts in 2 of 3 runs -
+// the app mechanism itself verified exact under an instrumented setItem
+// log). The document shim therefore mirrors the two heal flags into
+// localStorage and restores them at document start, giving the drive the
+// spec sessionStorage semantics the device has. The rig pins screen.height to 900 via a document shim
 // while the emulated window plays the short stage (820): boot 1 must heal-
 // reload, boot 2 (window restored to 900 by the driver mid-flight) must
 // count a recovery and stop; a simulated second launch that stays short
@@ -115,7 +121,8 @@ const ev = async (code) => evaluate(code);
 const poll120 = async (expr, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 30000)) { const v = await ev(expr); if (v === true) return true; await sleep(300); } return false; };
 await sleep(2500);
 ok('B0 app boots for the heal tests', await poll120(`!!window.maplibregl && typeof glOk !== 'undefined'`, 45000));
-await send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => { try { const mm = window.matchMedia.bind(window); window.matchMedia = q => q.indexOf('display-mode') >= 0 ? { matches: true, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} } : mm(q); } catch (e) {} try { Object.defineProperty(window.screen, 'height', { get: () => 900, configurable: true }); } catch (e) {} try { sessionStorage.setItem('rig.boots', String(parseInt(sessionStorage.getItem('rig.boots') || '0', 10) + 1)); } catch (e) {} })();` }, S);
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => { try { const mm = window.matchMedia.bind(window); window.matchMedia = q => q.indexOf('display-mode') >= 0 ? { matches: true, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} } : mm(q); } catch (e) {} try { Object.defineProperty(window.screen, 'height', { get: () => 900, configurable: true }); } catch (e) {} try { const _set = sessionStorage.setItem.bind(sessionStorage), _rem = sessionStorage.removeItem.bind(sessionStorage); const mir = () => { try { return JSON.parse(localStorage.getItem('rig.ss') || '{}'); } catch (e) { return {}; } }; sessionStorage.setItem = (k, v) => { if (k === 'sr.heal' || k === 'sr.healN') { const m = mir(); m[k] = v; try { localStorage.setItem('rig.ss', JSON.stringify(m)); } catch (e) {} } return _set(k, v); }; sessionStorage.removeItem = (k) => { if (k === 'sr.heal' || k === 'sr.healN') { const m = mir(); delete m[k]; try { localStorage.setItem('rig.ss', JSON.stringify(m)); } catch (e) {} } return _rem(k); }; const m0 = mir(); for (const k of ['sr.heal', 'sr.healN']) if (m0[k] != null && sessionStorage.getItem(k) == null) _set(k, m0[k]); } catch (e) {}
+  try { sessionStorage.setItem('rig.boots', String(parseInt(sessionStorage.getItem('rig.boots') || '0', 10) + 1)); } catch (e) {} })();` }, S);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 820, deviceScaleFactor: 2, mobile: true }, S);
 await ev(`location.reload()`);
 ok('B1 a short launch heal-reloads exactly once | boots', await poll120(`sessionStorage.getItem('rig.boots') === '2'`, 12000));
