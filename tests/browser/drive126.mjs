@@ -143,8 +143,8 @@ const feed = async (lat, lng) => ev('window.__wpOk({ coords: { latitude: ' + lat
 // feeds the REAL startGps(false); fixes arrive through the very callback
 // startGps registered with the (mocked) watch.
 await ev(`(() => { window.__wpOk = null; navigator.geolocation.watchPosition = (ok) => { window.__wpOk = ok; return 4242; }; navigator.geolocation.clearWatch = () => {}; startGps(false); return true; })()`);
-const LC = JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, cam: camTimer !== 0, run: gpsFromRun, cb: typeof window.__wpOk === 'function' }))()`));
-ok('F2b GPS runs through the real startGps lifecycle (watch + camera timer live) | ' + JSON.stringify(LC), LC.wid === 4242 && LC.cam === true && LC.run === false && LC.cb === true);
+const LC = JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, cam: renderRaf !== 0, run: gpsFromRun, cb: typeof window.__wpOk === 'function' }))()`));
+ok('F2b GPS runs through the real startGps lifecycle (watch + render loop live) | ' + JSON.stringify(LC), LC.wid === 4242 && LC.cam === true && LC.run === false && LC.cb === true);
 await feed(base.lat, base.lng); await sleep(600);                    // first fix (centres once, by design)
 await feed(base.lat, base.lng + 0.004); await sleep(500);
 await feed(base.lat, base.lng + 0.008); await sleep(500);
