@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.66
+Render-loop refinement (drive127 arbitration): a running glide is settled to the current instant at each new fix before it re-anchors on the new aim, so the dot never chases leftover distance from a stale position in a browser that paints slowly; the frame-starvation pump checks every 100 ms instead of 250 ms. No threshold, estimator, or glide parameter changed - Beta 1.65's merge-commit battery caught drive127's stationary-wander and backtrack measures over their lines twice while the identical branch battery passed; the stale re-anchor is the mechanism, and this is its fix.
+
 ## Beta 1.65
 Smooth GPS round (Andrew's road test of 1.64 + the third audit's render item).
 - One frame-synced render loop now drives the GPS dot and the follow camera, replacing the 40 ms glide timer and the 50 ms camera timer that used to overlap at ~45 unsynced updates a second. The glide keeps its smoothstep easing and the camera keeps its 35%-per-50 ms convergence, both computed from the clock now, so the motion is the same at any frame rate - and the dot, ring and beam redraw only when something actually moved. Andrew's report on 1.64 was that the GPS jumped instead of gliding; this is the fix, and the loop also ends the two-timer battery waste the audit flagged.

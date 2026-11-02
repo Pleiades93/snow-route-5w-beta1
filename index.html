@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-T+C7op1OAiiBbieL8gjk5WdYnwxVEo74W7ewhRe1dM43ZzBm45H+PPOeqL6oNE7G' https://cdn.jsdelivr.net; style-src-elem 'sha384-SpJcC1pd6bJBUuT/mTX0CQqb/yDmjJnSP5uWGzxm6DeJs//ETS8IpJAVzgtVsZ7L' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-lQtcEiM0UZTa4E6dnunt1RKV7mK9ojlB2vAlQIxmaJZ94uGuWzYCpJX6RDv06N85' https://cdn.jsdelivr.net; style-src-elem 'sha384-SpJcC1pd6bJBUuT/mTX0CQqb/yDmjJnSP5uWGzxm6DeJs//ETS8IpJAVzgtVsZ7L' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -232,7 +232,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.65</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.66</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3161,7 +3161,7 @@ function renderLoop(now) {
   if (watchId == null && !glideActive) { renderRaf = 0; return; } // nothing left to animate: the loop parks itself until the next glide or GPS start
   renderRaf = requestAnimationFrame(renderLoop);
 }
-function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || glideActive) && performance.now() - lastFrameAt > 250) renderTick(performance.now()); if (watchId == null && !glideActive && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 250); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
+function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || glideActive) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && !glideActive && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
 function startRenderLoop() { if (!renderRaf) { lastCamAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } }
 function followCam(now) {
   if (!dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording and heading-up stay run-only.
@@ -3261,6 +3261,7 @@ function acceptFix(pos) {
   const speed = pos.coords.speed;
   lastFixAt = now; if (typeof pos.timestamp === 'number') lastFixTs = pos.timestamp; gpsAccM = acc;
   const { est: sm, aim } = kfUpdate(ll, acc, now); // the filter subsumes the old deadband: sub-noise moves barely shift the estimate, so no fix needs swallowing
+  renderTick(performance.now()); // Beta 1.66: settle the running glide to NOW before re-anchoring on the new aim - a glide that is re-aimed from a stale position (few ticks in a non-painting browser) makes the dot chase leftover distance, which is exactly the wander drive127 S1/S2 measure
   const firstFix = !gpsPos;
   gpsPos = sm;
   glideTo(aim);
