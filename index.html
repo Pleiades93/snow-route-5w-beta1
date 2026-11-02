@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-YhimDE1GMgUu/m4t1bP/5/vjTkP8x4lSBPcEwPgz0e78aJuwJhwxCHmXVj8thKbX' https://cdn.jsdelivr.net; style-src-elem 'sha384-SpJcC1pd6bJBUuT/mTX0CQqb/yDmjJnSP5uWGzxm6DeJs//ETS8IpJAVzgtVsZ7L' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-T+C7op1OAiiBbieL8gjk5WdYnwxVEo74W7ewhRe1dM43ZzBm45H+PPOeqL6oNE7G' https://cdn.jsdelivr.net; style-src-elem 'sha384-SpJcC1pd6bJBUuT/mTX0CQqb/yDmjJnSP5uWGzxm6DeJs//ETS8IpJAVzgtVsZ7L' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3136,17 +3136,15 @@ function drawTrail(force) {
   src.setData({ type: 'FeatureCollection', features: feats });
 }
 function havM(a, b) { const R = 6371000, dLa = (b[0] - a[0]) * Math.PI / 180, dLo = (b[1] - a[1]) * Math.PI / 180; const s = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(s)); }
-let renderRaf = 0, lastCamAt = 0, lastPushKey = ''; // Beta 1.65 (Andrew's road report: the GPS motion stuttered; third audit item 1): ONE frame-synced render loop drives the dot and the camera - the 40 ms glide timer and the 50 ms camera timer used to overlap at ~45 unsynced updates a second, and the camera's per-tick easing sped up whenever they overlapped
+let renderRaf = 0, renderPump = 0, lastFrameAt = 0, lastCamAt = 0, lastPushKey = ''; // Beta 1.65 (Andrew's road report: the GPS motion stuttered; third audit item 1): ONE frame-synced render loop drives the dot and the camera - the 40 ms glide timer and the 50 ms camera timer used to overlap at ~45 unsynced updates a second, and the camera's per-tick easing sped up whenever they overlapped
 let glideFrom = null, glideTarget = null, glideT0 = 0, glideDur = 0, glideActive = false;
 function glideTo(target) {
   glideFrom = dispPos ? dispPos.slice() : target.slice();
   glideTarget = target.slice();
   const d = havM(glideFrom, glideTarget); glideDur = Math.max(200, Math.min(1500, d * 30));
-  glideT0 = performance.now(); glideActive = true; // the glide is STATE now, not a timer - the render loop advances it from the clock; the smoothstep easing itself is unchanged (Beta 1.28)
+  glideT0 = performance.now(); glideActive = true; startRenderLoop(); // the glide is STATE now, not a timer - the render loop advances it from the clock; the smoothstep easing itself is unchanged (Beta 1.28). The loop starts here, not only in startGps: a fix can arrive on an existing watch (or be fed directly) and must still render
 }
-function renderLoop(now) {
-  if (watchId == null) { renderRaf = 0; return; }
-  renderRaf = requestAnimationFrame(renderLoop);
+function renderTick(now) {
   if (glideActive && glideTarget) {
     const t = Math.min(1, (now - glideT0) / glideDur);
     const e = t * t * (3 - 2 * t); // smoothstep: the glide eases in and out instead of starting/stopping dead (Beta 1.28) - linear segments meeting at each fix were half the visible jaggedness
@@ -3157,6 +3155,13 @@ function renderLoop(now) {
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
   followCam(now);
 }
+function renderLoop(now) {
+  lastFrameAt = now;
+  renderTick(now);
+  if (watchId == null && !glideActive) { renderRaf = 0; return; } // nothing left to animate: the loop parks itself until the next glide or GPS start
+  renderRaf = requestAnimationFrame(renderLoop);
+}
+function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || glideActive) && performance.now() - lastFrameAt > 250) renderTick(performance.now()); if (watchId == null && !glideActive && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 250); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
 function startRenderLoop() { if (!renderRaf) { lastCamAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } }
 function followCam(now) {
   if (!dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording and heading-up stay run-only.
@@ -3311,7 +3316,7 @@ function startGps(fromRun) {
 }
 function stopGps(silent) {
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); glideActive = false; if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); glideActive = false; if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
   $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden');
 }
