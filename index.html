@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Z2u5iSqyOR9M/R2PSJk6aS78Hv6gbNbg/dH1KW6YPLg6pkHsJba7YGSIZ421za+R' https://cdn.jsdelivr.net; style-src-elem 'sha384-++kik9rUi+cRxaJmFPr7G+IpkL7js3qfKYd4RluUpT1anPpGfZvvncWJ9C2WvIxx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-YhimDE1GMgUu/m4t1bP/5/vjTkP8x4lSBPcEwPgz0e78aJuwJhwxCHmXVj8thKbX' https://cdn.jsdelivr.net; style-src-elem 'sha384-SpJcC1pd6bJBUuT/mTX0CQqb/yDmjJnSP5uWGzxm6DeJs//ETS8IpJAVzgtVsZ7L' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -209,7 +209,7 @@
    iOS shows before the page loads (apple-touch-startup-image, head links) is the
    same blue + centred icon, so the two read as one continuous moment. */
 #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-#splashBg { position: absolute; inset: 0; background: #2b4bf2; }
+#splashBg { position: absolute; inset: -70px 0; background: #2b4bf2; } /* Beta 1.65: the cover overshoots the screen top and bottom by 70px, so while the screen size is still settling in the first frames no sliver of the app beneath (the tab bar) can show under the splash */
 #splashIcon { position: relative; width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 18px 50px rgba(0,0,0,.35); will-change: transform; }
 #splashTitle { position: relative; margin-top: 26px; color: #fff; font-size: 37px; font-weight: 700; letter-spacing: .2px; opacity: 0; animation: splashSlide .65s cubic-bezier(.16,.84,.3,1) .1s forwards; }
 @keyframes splashSlide { 0% { opacity: 0; transform: translateX(360px); } 55% { opacity: 1; } 82% { transform: translateX(-9px); } 100% { opacity: 1; transform: translateX(0); } }
@@ -232,7 +232,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.64</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.65</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2377,7 +2377,7 @@ function addGpsLayers() {
 function addTrailLayers() {
   if (map.getSource('trail')) return;
   map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#38bdf8', 'line-width': 3, 'line-opacity': 0.7 } });
+  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#38bdf8', 'line-width': 3, 'line-opacity': 0.7 } }, 'gps-shadow'); // Beta 1.65 (Andrew's road report): anchored UNDER the GPS stack - unanchored, the line could paint across the dot's face
 }
 function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for OUR route labels (Beta 1.6: same
   // typeface day and night - Versatiles names it noto_sans_regular, CARTO lists Noto Sans Regular inside its
@@ -3102,7 +3102,7 @@ $('noteYes').addEventListener('click', () => {
 
 // ===== GPS (checklist SS7) =====
 // Beta 1.64 (audit R01): lastFixTs is the last accepted fix's OWN timestamp - a callback carrying an older one is stale
-let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastFixTs = 0, camTimer = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, glideTimer = 0, followPaused = false, staleWatchTimer = 0;
+let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastFixTs = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, followPaused = false, staleWatchTimer = 0;
 const SAMPLES = {};
 (function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
 for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count
@@ -3136,24 +3136,36 @@ function drawTrail(force) {
   src.setData({ type: 'FeatureCollection', features: feats });
 }
 function havM(a, b) { const R = 6371000, dLa = (b[0] - a[0]) * Math.PI / 180, dLo = (b[1] - a[1]) * Math.PI / 180; const s = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(s)); }
+let renderRaf = 0, lastCamAt = 0, lastPushKey = ''; // Beta 1.65 (Andrew's road report: the GPS motion stuttered; third audit item 1): ONE frame-synced render loop drives the dot and the camera - the 40 ms glide timer and the 50 ms camera timer used to overlap at ~45 unsynced updates a second, and the camera's per-tick easing sped up whenever they overlapped
+let glideFrom = null, glideTarget = null, glideT0 = 0, glideDur = 0, glideActive = false;
 function glideTo(target) {
-  const from = dispPos ? dispPos.slice() : target.slice();
-  const d = havM(from, target); const dur = Math.max(200, Math.min(1500, d * 30));
-  const t0 = performance.now(); clearInterval(glideTimer);
-  glideTimer = setInterval(() => {
-    const t = Math.min(1, (performance.now() - t0) / dur);
-    const e = t * t * (3 - 2 * t); // smoothstep: the glide eases in and out instead of starting/stopping dead (Beta 1.28) - linear segments meeting at each fix were half the visible jaggedness
-    dispPos = [from[0] + (target[0] - from[0]) * e, from[1] + (target[1] - from[1]) * e];
-    pushGps(); followCam();
-    if (t >= 1) clearInterval(glideTimer);
-  }, 40);
+  glideFrom = dispPos ? dispPos.slice() : target.slice();
+  glideTarget = target.slice();
+  const d = havM(glideFrom, glideTarget); glideDur = Math.max(200, Math.min(1500, d * 30));
+  glideT0 = performance.now(); glideActive = true; // the glide is STATE now, not a timer - the render loop advances it from the clock; the smoothstep easing itself is unchanged (Beta 1.28)
 }
-function followCam() {
-  if (!dispPos || followPaused || watchId == null) return; // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive; the 25% dead-zone + per-glide-tick steps keep it gradual. Trail recording and heading-up stay run-only.
+function renderLoop(now) {
+  if (watchId == null) { renderRaf = 0; return; }
+  renderRaf = requestAnimationFrame(renderLoop);
+  if (glideActive && glideTarget) {
+    const t = Math.min(1, (now - glideT0) / glideDur);
+    const e = t * t * (3 - 2 * t); // smoothstep: the glide eases in and out instead of starting/stopping dead (Beta 1.28) - linear segments meeting at each fix were half the visible jaggedness
+    dispPos = [glideFrom[0] + (glideTarget[0] - glideFrom[0]) * e, glideFrom[1] + (glideTarget[1] - glideFrom[1]) * e];
+    if (t >= 1) glideActive = false;
+  }
+  const key = dispPos ? dispPos[0] + ',' + dispPos[1] + ',' + facingDeg + ',' + gpsAccM : '';
+  if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
+  followCam(now);
+}
+function startRenderLoop() { if (!renderRaf) { lastCamAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } }
+function followCam(now) {
+  if (!dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording and heading-up stay run-only.
   const c = map.getCanvas(); const p = projLL(dispPos);
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
-  if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
-  map.panBy([dx * 0.35, dy * 0.35], { animate: false }); // centre-lock (Andrew's clarification): ease a third of the way to centre on every glide tick - a gradual lock that keeps the dot kind of in the centre, never a snap and never a chase view
+  if (Math.abs(dx) < 2 && Math.abs(dy) < 2) { lastCamAt = now; return; }
+  const dt = Math.min(100, Math.max(1, now - lastCamAt)); lastCamAt = now;
+  const f = 1 - Math.pow(0.65, dt / 50); // Beta 1.65: the 1.28 ease (close 35% of the remaining offset per 50 ms) made time-based, so the convergence is identical at any frame rate - a gradual lock that keeps the dot kind of in the centre, never a snap and never a chase view
+  map.panBy([dx * f, dy * f], { animate: false });
 }
 onMapReady(() => map.on('dragstart', () => { followPaused = true; }));
 onMapReady(() => map.on('dragend', () => { if (runStart) northUp(); })); // during a run: ease back to north-up like a nav app. Outside a run (Beta 1.27): a rotation/tilt he deliberately set stays put.
@@ -3289,9 +3301,9 @@ function gpsError(e) {
 function startGps(fromRun) {
   if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
-  gpsFromRun = !!fromRun; followPaused = false; startCompass();
+  gpsFromRun = !!fromRun; followPaused = false; lastPushKey = ''; startCompass();
   watchId = navigator.geolocation.watchPosition(acceptFix, gpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
-  clearInterval(camTimer); camTimer = setInterval(followCam, 50); // the camera keeps easing to centre on its own clock (Beta 1.28 fix): when follow only ran inside glide ticks, centring stalled the moment a glide ended and the dot could rest off-centre (drive126 F2 caught it under the Kalman aim-lead)
+  startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring after a glide ends (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run
   $('gpsBtn').classList.add('on');
@@ -3299,7 +3311,7 @@ function startGps(fromRun) {
 }
 function stopGps(silent) {
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); clearInterval(glideTimer); clearInterval(camTimer); stopCompass(); // Beta 1.64 (audit F08)
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); glideActive = false; if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
   $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden');
 }

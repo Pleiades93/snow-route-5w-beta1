@@ -1,5 +1,12 @@
 # Changelog
 
+## Beta 1.65
+Smooth GPS round (Andrew's road test of 1.64 + the third audit's render item).
+- One frame-synced render loop now drives the GPS dot and the follow camera, replacing the 40 ms glide timer and the 50 ms camera timer that used to overlap at ~45 unsynced updates a second. The glide keeps its smoothstep easing and the camera keeps its 35%-per-50 ms convergence, both computed from the clock now, so the motion is the same at any frame rate - and the dot, ring and beam redraw only when something actually moved. Andrew's report on 1.64 was that the GPS jumped instead of gliding; this is the fix, and the loop also ends the two-timer battery waste the audit flagged.
+- The trail line is anchored under the GPS layers: it could paint across the dot's face (Andrew's road report); the layer order is now pinned where the layers are created.
+- The splash cover overshoots the screen top and bottom by 70 px, so while the screen size settles in the first frames no sliver of the app beneath (the tab bar) can flash under the splash. The other half of Andrew's splash report - the icon jumping up at the handover - is the launch still iOS froze at install time (pre-fix geometry); it cannot be refreshed from the app side.
+- Tests: drive126's lifecycle check now asserts the render loop (it asserted the retired camera timer); the full battery arbitrates the motion drives.
+
 ## Beta 1.64
 GPS and defensive round (deep audit F05-F09 + R01; third audit's trail item).
 - Starting a clean on an already-running view-only GPS watch now flips the Locate tab to its red recording face; the state sync sat below an early return and never ran (F06, drive133 R3).
